@@ -18,12 +18,12 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["unstable"] }
+tauri = { version = "2.11.2", features = [] }
 url = "2"
 dpi = "0.1"
-tauri-plugin-opener = "2"
-tauri-plugin-store = "2"
-tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2.7.1"
+tauri-plugin-store = "2.5.0"
+tauri-plugin-dialog = "2.8.2"
 keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -32,8 +32,8 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "process",
 sysinfo = "0.30"
 reqwest = { version = "0.12", features = ["json"] }
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
-tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
+tauri-plugin-updater = "2.13.3"
+tauri-plugin-process = "2.4.0"
 
 [profile.release]
 opt-level   = "z"      # optimize for size (not speed)
