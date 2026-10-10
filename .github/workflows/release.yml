@@ -25,7 +25,14 @@ jobs:
         with:
           workspaces: ./src-tauri -> target
 
-      - run: npm ci
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies
+        run: npm ci --prefer-online --no-audit --no-fund
+        env:
+          npm_config_fetch_retries: 5
+          npm_config_fetch_retry_mintimeout: 20000
 
       - name: Build Tauri app
         run: npm run tauri build
