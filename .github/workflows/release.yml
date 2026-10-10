@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 on:
   push:
@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,44 +26,26 @@ jobs:
         with:
           workspaces: ./src-tauri -> target
 
-      - name: Clear npm cache
-        run: npm cache clean --force
-
       - name: Install dependencies
         run: npm ci --prefer-online --no-audit --no-fund
         env:
           npm_config_fetch_retries: 5
           npm_config_fetch_retry_mintimeout: 20000
 
-      - name: Build Tauri app
-        run: npm run tauri build
+      - name: Build and publish Tauri release
+        uses: tauri-apps/tauri-action@v1
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Prepare stable-named copies
-        shell: pwsh
-        run: |
-          $msi = Get-ChildItem src-tauri/target/release/bundle/msi/*.msi | Select-Object -First 1
-          $exe = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
-          if (-not $msi) { throw "No MSI found" }
-          if (-not $exe) { throw "No NSIS setup.exe found" }
-          $ver = "${{ github.ref_name }}".TrimStart("v")
-          Copy-Item $msi.FullName r0-latest.msi
-          Copy-Item $exe.FullName r0-latest-setup.exe
-          Copy-Item $msi.FullName "r0-$ver.msi"
-          Copy-Item $exe.FullName "r0-$ver-setup.exe"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: r0 ${{ github.ref_name }}
-          generate_release_notes: true
-          files: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*-setup.exe
-            r0-latest.msi
-            r0-latest-setup.exe
-            r0-*.msi
-            r0-*-setup.exe
+          projectPath: .
+          tauriScript: npm run tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: r0 ${{ github.ref_name }}
+          releaseBody: "Download the Windows installer below."
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
+          updaterJsonPreferNsis: true
