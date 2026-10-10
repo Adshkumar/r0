@@ -26,9 +26,9 @@
     "plugins":  {
                     "updater":  {
                                     "endpoints":  [
-                                                      "https://github.com/r0-AI-IDE/r0/releases/latest/download/latest.json"
+                                                      "https://github.com/Adshkumar/r0/releases/latest/download/latest.json"
                                                   ],
-                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4Qjk0OUQzN0UwMEFBMTkKUldRWnFnQiswMG01K0hTeVpZTWltRC9NRkNaajdSbFVHWFRrV2hDQmtOVFNkaEdwY3RVdVE2MFAK",
+                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIzM0UzNEVEMzk4NzQ3MEUKUldRT1I0YzU3VFErSTZMOXRNa0JQWWxNYS9MZkg3VmVmMm91Vm9HV0lpTU43UnlySncwVVF0QmgK",
                                     "windows":  {
                                                     "installMode":  "quiet"
                                                 }
