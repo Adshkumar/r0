@@ -1,7 +1,7 @@
 [package]
 name = "r0"
-version = "0.1.5"
-description = "r0 Ã¢â‚¬â€ AI-native code editor"
+version = "0.1.6"
+description = "r0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AI-native code editor"
 authors = ["r0 IDE"]
 edition = "2021"
 
