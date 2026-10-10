@@ -26,3 +26,6 @@ dist-ssr
 
 # Tauri signing keys (never commit the literal ~ folder npx created here)
 ~/
+
+.tauri/
+*.key
