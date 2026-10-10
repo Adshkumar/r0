@@ -32,10 +32,11 @@ jobs:
         run: npm ci --prefer-online --no-audit --no-fund
         env:
           npm_config_fetch_retries: 5
-          npm_config_fetch_retry_mintimeout: 20000
-
-      - name: Build Tauri app
+          npm_config_fetch_retry_mintimeout: 20000      - name: Build Tauri app
         run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Prepare stable-named copies
         shell: pwsh
