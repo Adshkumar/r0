@@ -50,6 +50,9 @@ jobs:
           if (-not $exe) { throw "No NSIS setup.exe found." }
           Copy-Item $msi.FullName "r0-latest.msi"
           Copy-Item $exe.FullName "r0-latest-setup.exe"
+$ver = "${{ github.ref_name }}".TrimStart("v")
+Copy-Item $msi.FullName "r0-$ver.msi"
+Copy-Item $exe.FullName "r0-$ver-setup.exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -62,3 +65,5 @@ jobs:
             src-tauri/target/release/bundle/nsis/*-setup.exe
             r0-latest.msi
             r0-latest-setup.exe
+            r0-*.msi
+            r0-*-setup.exe
