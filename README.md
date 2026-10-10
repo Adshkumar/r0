@@ -1,187 +1,135 @@
-﻿<p align="center">
-  <img src="media/wordmark.svg" width="300" alt="r0 IDE" />
-</p>
-<p align="center">
-  A fast, agentic code editor built for AI-first development.<br/>
-  Bring your own keys. Run everything locally.
-</p>
+﻿<div align="center">
 
-<p align="center">
-  <a href="https://github.com/r0-AI-IDE/r0/releases">
-    <img src="https://img.shields.io/github/v/release/r0-AI-IDE/origin" alt="Version" />
-  </a>
-  <a href="https://github.com/r0-AI-IDE/r0/releases">
-    <img src="https://img.shields.io/github/downloads/r0-AI-IDE/r0/total?color=2ea043" alt="Downloads" />
-  </a>
-  <a href="https://github.com/r0-AI-IDE/origin">
-    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform" />
-  </a>
-  <a href="https://tauri.app/">
-    <img src="https://img.shields.io/badge/built%20with-Tauri%202-orange" alt="Tauri" />
-  </a>
-  <a href="https://github.com/r0-AI-IDE/r0/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License" />
-  </a>
-  <a href="https://github.com/r0-AI-IDE/r0/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/r0-AI-IDE/r0/ci.yml?branch=main&label=build" alt="CI" />
-  </a>
-</p>
+<img src="media/wordmark.svg" width="340" alt="r0 IDE" />
 
+### A fast, agentic code editor built for AI-first development.
 
-## Screenshots
+**Bring your own keys. Run everything locally. No telemetry. No lock-in.**
 
-<img src="media/r0-1-ss.png" alt="r0 IDE - Welcome screen with AI panel" width="100%" />
-<p align="center"><em>Welcome screen</em></p>
-<details>
-<summary>More screenshots</summary>
 <br/>
-<img src="media/r0-2-ss.png" alt="r0 IDE - Code editor" width="100%" />
-<p align="center"><em>Code editor with syntax highlighting and integrated terminal</em></p>
-<img src="media/r0-3-ss.png" alt="r0 IDE - Command palette" width="100%" />
-<p align="center"><em>Command palette with fuzzy file search and AI panel</em></p>
+
+[![Version](https://img.shields.io/github/v/release/Adshkumar/r0?style=for-the-badge&color=7c3aed&labelColor=1a1a2e)](https://github.com/Adshkumar/r0/releases)
+[![Downloads](https://img.shields.io/github/downloads/Adshkumar/r0/total?style=for-the-badge&color=2ea043&labelColor=1a1a2e)](https://github.com/Adshkumar/r0/releases)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge&labelColor=1a1a2e)](LICENSE)
+
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#-installation)
+[![Tauri](https://img.shields.io/badge/Tauri_2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+<br/>
+
+**[Install](#-installation)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[AI Providers](#-ai-providers)** · **[Build from source](#-building-from-source)** · **[Privacy](#-privacy--security)**
+
+</div>
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+  <img src="media/r0-1-ss.png" alt="r0 IDE — Welcome screen with AI panel" width="100%" />
+  <br/>
+  <em>Welcome screen with integrated AI panel</em>
+</div>
+
+<br/>
+
+<details>
+<summary><b>▸ Click to see more screenshots</b></summary>
+<br/>
+
+<div align="center">
+  <img src="media/r0-2-ss.png" alt="r0 IDE — Code editor" width="100%" />
+  <br/>
+  <em>Code editor with syntax highlighting and integrated terminal</em>
+  <br/><br/>
+  <img src="media/r0-3-ss.png" alt="r0 IDE — Command palette" width="100%" />
+  <br/>
+  <em>Command palette with fuzzy file search</em>
+</div>
+
 </details>
 
-## What is r0?
+---
 
-r0 is a native desktop IDE built on Tauri 2 and React. It combines a full code editor, real terminal, and a deeply integrated AI panel into a single lightweight app. No subscriptions, no telemetry, no cloud lock-in. You bring your API keys; r0 does the rest.
+## 💡 What is r0?
 
-The AI is not a sidebar afterthought. It has full agentic capabilities: it can read files, write code, run shell commands, and propose structured multi-step plans, all with your approval before anything touches disk.
+**r0** is a native desktop IDE built on **Tauri 2** and **React**. It merges a full code editor, a real terminal, and a deeply integrated AI panel into one lightweight app.
 
-## Features
+> **No subscriptions. No telemetry. No cloud lock-in.**
+> You bring your API keys; r0 does the rest.
 
-### Editor
-- **CodeMirror 6** with a fully custom theme driven by CSS variables
-- Syntax highlighting for TypeScript, JavaScript, Rust, Python, CSS, HTML, JSON, Markdown
-- Find & replace (`Ctrl+F` / `Ctrl+H`), per-tab cursor memory, dirty indicators
-- Inline AI diff view with Accept / Reject, powered by AI
-- New file, open file, save / save-as, close, all wired through the menu bar
+The AI is **not** a sidebar afterthought. It has full agentic capabilities — it can read files, write code, run shell commands, and propose structured multi-step plans, all with **your approval** before anything touches disk.
 
-### AI Panel
-- **17 providers** - Anthropic, OpenAI, Gemini, OpenRouter, DeepSeek, Mistral, Groq, xAI, Cohere, Ollama, LM Studio, vLLM, and more
-- **Bring Your Own Key** - keys stored in the OS keychain, never sent anywhere else
-- **Agent mode** - full agentic loop using Vercel AI SDK v6; up to 24 tool-use steps per run
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 📝 Editor
+- **CodeMirror 6** with a fully custom, CSS-variable-driven theme
+- Syntax highlighting for **TS, JS, Rust, Python, CSS, HTML, JSON, Markdown**
+- Find & replace (`Ctrl+F` / `Ctrl+H`)
+- Per-tab cursor memory + dirty indicators
+- Inline AI diff view with **Accept / Reject**
+- Full menu-bar file operations
+
+### 🤖 AI Panel
+- **17+ providers** — Anthropic, OpenAI, Gemini, OpenRouter, DeepSeek, Mistral, Groq, xAI, Cohere, Ollama, LM Studio, vLLM…
+- **Bring Your Own Key** — stored in OS keychain
+- **Agent mode** — up to 24 tool-use steps per run
   - Auto-execute: `read_file`, `list_directory`, `grep`, `glob`
   - Approval-gated: `write_file`, `edit`, `bash_run`
-- **Plan mode** - AI explores your codebase with read-only tools, proposes a structured plan with steps, then executes on your approval
-- **Ask mode** - plain chat with editor context; no tools
-- Inline diff tab per AI file edit, review the change before it hits disk
-- SEARCH/REPLACE block engine for precise, multi-region code edits
-- Markdown rendering with per-code-block Apply and Copy buttons
-- `@` file mention and `+` multi-file attach
-- Full chat session persistence via SQLite; session history; crash recovery
+- **Plan mode** — AI explores with read-only tools, proposes a plan, executes on approval
+- **Ask mode** — plain chat, no tools
+- SEARCH/REPLACE engine for precise multi-region edits
+- `@` file mention & `+` multi-file attach
+- SQLite session persistence + crash recovery
 
-### Terminal
+</td>
+<td width="50%" valign="top">
+
+### 💻 Terminal
 - Real PTY via `portable-pty` (Windows ConPTY)
-- Multiple tabs, inline rename, persistent history across tab switches
-- Theme sync, re-themes instantly when you switch IDE themes
+- Multiple tabs, inline rename
+- Persistent history across tab switches
+- Instant theme sync
 
-### Status Island
-- Persistent pill in the title bar that expands into an info card
-- **Current Task** - set a task name, mark it complete, or clear it
-- **What Changed** - live git status: files changed, commits ahead, recent log
-- **Memory** - live system RAM usage
-- **AI Spend** - token cost per model with a donut chart; reset anytime
+### 🏝 Status Island
+- Persistent pill in the title bar
+- **Current Task** — set / complete / clear
+- **What Changed** — live git status
+- **Memory** — real-time RAM usage
+- **AI Spend** — token cost donut chart
 
-### Source Control
-- File status (M / A / D / U) with colored indicators
-- Commit message + description form; Commit and Commit & Push
-- Git history timeline with up to 100 commits, author, hash, and relative date
+### 🌿 Source Control
+- File status (M / A / D / U)
+- Commit & Commit + Push
+- Git history (up to 100 commits)
 
-### Shell & Workspace
-- Command palette (`Ctrl+P`) - fuzzy file search, `@` file mode, `%` full-text search, commands
-- File tree with lazy-loading, right-click context menu (rename, delete, create, reveal)
-- Find in files with debounced search, grouped results, and click-to-jump
-- Settings panel - API keys, system prompt editor, theme switcher (`Ctrl+,`)
+### 🔍 Shell & Workspace
+- Command palette (`Ctrl+P`)
+- Fuzzy search, `@` file mode, `%` full-text
+- Lazy-loading file tree + right-click menu
+- Settings panel (`Ctrl+,`)
 - Multi-window support
 
-## Stack
+</td>
+</tr>
+</table>
 
-| Layer | Technology |
-|-------|-----------|
-| Shell | Tauri 2.x |
-| Frontend | React 19 + TypeScript |
-| Styling | Tailwind CSS v4 |
-| Fonts | Geist Sans + Geist Mono (bundled) |
-| Editor | CodeMirror 6 |
-| Terminal | `portable-pty` + xterm.js |
-| AI Runtime | Vercel AI SDK v6 |
-| HTTP Proxy | Rust `reqwest` (bypasses WebView2 CORS) |
-| Persistence | `tauri-plugin-store` + SQLite (`tauri-plugin-sql`) |
-| Secrets | OS keychain via `keyring` crate |
-| Build | Vite 7 |
+---
 
-## Installation
+## 📥 Installation
 
-Download the latest release from the [Releases](https://github.com/r0-AI-IDE/r0/releases) page.
+### 🪟 Windows — One-line install *(recommended)*
 
-**Windows**
+Open **PowerShell** and run:
 
-| Artifact                      | Description                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------ |
-| `r0_x.x.x_x64-setup.exe` | NSIS installer (~5.8 MB)                                                       |
-| `r0_x.x.x_x64_en-US.msi` | MSI installer (~7.5 MB)                                                        |
-| `r0.exe`                  | Portable standalone binary (requires WebView2, pre-installed on Windows 10/11) |
-
-**macOS**
-
-| Artifact                  | Description      |
-| ------------------------- | ---------------- |
-| `r0_x.x.x_x64.dmg`   | macOS disk image |
-
-**Linux**
-
-| Artifact                    | Description           |
-| --------------------------- | --------------------- |
-| `r0_x.x.x_amd64.deb`   | Debian/Ubuntu package |
-
-## Building from Source
-
-**Prerequisites:** [Rust](https://rustup.rs/), [Node.js 20+](https://nodejs.org/), [Tauri CLI prerequisites](https://tauri.app/start/prerequisites/)
-
-```bash
-git clone https://github.com/r0-AI-IDE/r0.git
-cd r0
-npm install
-npm run dev        # dev mode (hot reload)
-npm run build      # full release build + installers
-```
-
-## AI Providers
-
-r0 supports any provider that speaks OpenAI-compatible SSE. Add your API key in Settings (`Ctrl+,`) → AI Providers. Keys are stored in the OS keychain.
-
-| Provider | Type | Notable Models |
-|----------|------|----------------|
-| Anthropic | Cloud | Claude 3.5 Sonnet, Claude 3 Opus |
-| Cohere | Cloud | Command R, Command R+ |
-| DeepSeek | Cloud | DeepSeek V3, DeepSeek R1 |
-| Google Gemini | Cloud | Gemini 1.5 Pro, Gemini Flash |
-| Groq | Cloud | Llama 3, Mixtral (fast inference) |
-| LM Studio | Local | Any GGUF model |
-| Mistral | Cloud | Mistral Large, Codestral |
-| Ollama | Local | Any model pulled locally |
-| OpenAI | Cloud | GPT-4o, GPT-4 Turbo, o1 |
-| OpenRouter | Cloud | 100+ models via unified API |
-| vLLM | Local | Self-hosted inference server |
-| xAI | Cloud | Grok-2, Grok Beta |
-
-## Data & Privacy
-
-- All AI requests route through a local Rust HTTP proxy, no third-party relay
-- API keys live in your OS keychain
-- Chat history is stored in a local SQLite database (`AppData\Roaming\com.r0ide.ide\`)
-- No telemetry, no analytics, no accounts
-
-## License
-
-Apache 2.0 - see [LICENSE](LICENSE)
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=r0-AI-IDE%2Forigin&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=r0-AI-IDE/origin&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=r0-AI-IDE/origin&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=r0-AI-IDE/origin&type=date&legend=top-left" />
- </picture>
-</a>
+```powershell
+irm https://raw.githubusercontent.com/Adshkumar/r0/main/install.ps1 | iex
