@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "r0"
 version = "0.1.5"
 description = "r0 â€” AI-native code editor"

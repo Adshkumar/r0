@@ -1,4 +1,4 @@
-﻿# r0 one-line installer for Windows
+# r0 one-line installer for Windows
 $ErrorActionPreference = 'Stop'
 
 $setupUrl = 'https://github.com/Adshkumar/r0/releases/latest/download/r0-latest-setup.exe'

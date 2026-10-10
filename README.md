@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <img src="media/wordmark.svg" width="340" alt="r0 IDE" />
 
