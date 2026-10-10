@@ -133,3 +133,186 @@ Open **PowerShell** and run:
 
 ```powershell
 irm https://raw.githubusercontent.com/Adshkumar/r0/main/install.ps1 | iex
+```
+
+Downloads the latest release and launches the installer. r0 appears in your Start Menu when it finishes.
+
+### ⚡ Windows — Direct terminal install
+
+Prefer a raw command? These stable URLs always point to the newest release.
+
+**NSIS installer** (setup wizard):
+
+```powershell
+$u='https://github.com/Adshkumar/r0/releases/latest/download/r0-latest-setup.exe'
+$m="$env:TEMP\r0-setup.exe"
+iwr $u -OutFile $m
+& $m
+```
+
+**MSI installer** (silent, good for scripts):
+
+```powershell
+$u='https://github.com/Adshkumar/r0/releases/latest/download/r0-latest.msi'
+$m="$env:TEMP\r0.msi"
+iwr $u -OutFile $m
+msiexec /i $m /qb
+```
+
+**Versioned MSI** (pin a specific release):
+
+```powershell
+$v="0.1.5"
+$u="https://github.com/Adshkumar/r0/releases/download/v$v/r0-$v.msi"
+$m="$env:TEMP\r0-$v.msi"
+iwr $u -OutFile $m
+msiexec /i $m /qb
+```
+
+> 💡 `msiexec /i <file>.msi /qb` shows a small progress bar; use `/qn` for fully silent.
+
+### 📦 Windows — Manual download
+
+Grab an installer from the **[latest release →](https://github.com/Adshkumar/r0/releases/latest)**
+
+| Artifact | Description |
+|----------|-------------|
+| `r0-latest-setup.exe` | **NSIS installer** — stable link, always newest version |
+| `r0-latest.msi` | **MSI installer** — stable link, for enterprise / group policy |
+| `r0-0.1.5-setup.exe` | Versioned NSIS installer |
+| `r0-0.1.5.msi` | Versioned MSI installer |
+| `r0_0.1.5_x64-setup.exe` | Tauri-generated NSIS installer |
+| `r0_0.1.5_x64_en-US.msi` | Tauri-generated MSI installer |
+| `r0.exe` | Portable binary — requires WebView2 (pre-installed on Win 10/11) |
+
+### 🍎 macOS & 🐧 Linux
+
+Prebuilt `.dmg` / `.deb` / `.AppImage` packages are **not yet published**.
+
+👉 In the meantime, please [**build from source**](#-building-from-source).
+
+---
+
+## 🚀 Quick Start
+
+1. **Launch r0**
+2. On the welcome screen, click **Configure AI Keys** — or press `Ctrl+,` anytime
+3. Add your provider API key (Anthropic, OpenAI, Gemini, Ollama, Groq, …)
+4. Open a folder or create a new file
+5. Open the **AI panel** and start coding
+
+> **First time?** Try **Ask mode** for a simple chat, then switch to **Agent mode** once you trust it.
+
+---
+
+## 🧠 AI Providers
+
+r0 speaks **OpenAI-compatible SSE**, so any provider that follows that protocol works. Add your key in **Settings** (`Ctrl+,`) → **AI Providers**. Keys are stored in your OS keychain.
+
+| Provider | Type | Notable Models |
+|----------|------|----------------|
+| **Anthropic** | ☁️ Cloud | Claude 3.5 Sonnet, Claude 3 Opus |
+| **OpenAI** | ☁️ Cloud | GPT-4o, GPT-4 Turbo, o1 |
+| **Google Gemini** | ☁️ Cloud | Gemini 1.5 Pro, Gemini Flash |
+| **OpenRouter** | ☁️ Cloud | 100+ models via unified API |
+| **DeepSeek** | ☁️ Cloud | DeepSeek V3, DeepSeek R1 |
+| **Mistral** | ☁️ Cloud | Mistral Large, Codestral |
+| **Groq** | ☁️ Cloud | Llama 3, Mixtral (fast inference) |
+| **xAI** | ☁️ Cloud | Grok-2, Grok Beta |
+| **Cohere** | ☁️ Cloud | Command R, Command R+ |
+| **Ollama** | 🏠 Local | Any model pulled locally |
+| **LM Studio** | 🏠 Local | Any GGUF model |
+| **vLLM** | 🏠 Local | Self-hosted inference server |
+
+---
+
+## 🛠 Building from Source
+
+> **Prerequisites:** [Rust](https://rustup.rs) · [Node.js 20+](https://nodejs.org) · [Tauri prerequisites](https://tauri.app/start/prerequisites/)
+
+```bash
+git clone https://github.com/Adshkumar/r0.git
+cd r0
+npm install
+
+npm run tauri dev       # dev mode (hot reload)
+npm run tauri build     # production build + installers
+```
+
+Installers land in `src-tauri/target/release/bundle/`:
+
+| Platform | Output |
+|----------|--------|
+| **Windows** | `bundle/msi/*.msi` · `bundle/nsis/*-setup.exe` |
+| **macOS** | `bundle/dmg/*.dmg` |
+| **Linux** | `bundle/deb/*.deb` · `bundle/appimage/*.AppImage` |
+
+---
+
+## 🧩 Architecture
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Shell** | Tauri 2.x | Native app window, IPC, filesystem, OS APIs |
+| **Frontend** | React 19 + TypeScript + Vite 7 | UI, editor, terminal, panels |
+| **Styling** | Tailwind CSS v4 | All theming via CSS variables |
+| **Fonts** | Geist Sans + Geist Mono | Bundled — no network requests |
+| **Editor** | CodeMirror 6 | Syntax highlighting, inline diffs |
+| **Terminal** | `portable-pty` + xterm.js | Native terminal (ConPTY on Windows) |
+| **AI Runtime** | Vercel AI SDK v6 | Streaming, tool calls, agent loop |
+| **HTTP Proxy** | Rust `reqwest` | Bypasses WebView2 CORS restrictions |
+| **Persistence** | `tauri-plugin-store` + SQLite | Settings, session history, crash recovery |
+| **Secrets** | `keyring` crate | OS-native keychain storage |
+
+---
+
+## 🔒 Privacy & Security
+
+- ✅ **No telemetry** — zero data leaves your machine except AI requests *you* trigger
+- ✅ **Local AI proxy** — every request routes through Rust, no third-party relay
+- ✅ **OS keychain** — API keys stored in macOS Keychain / Windows Credential Manager / Linux Secret Service
+- ✅ **Approval-gated tools** — file writes and shell commands require explicit confirmation
+- ✅ **Local storage only** — chat history in SQLite at `AppData\Roaming\com.r0ide.ide\`
+- ❌ No accounts · ❌ No analytics · ❌ No cloud sync
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first.
+
+```bash
+git checkout -b feature/amazing-idea
+# make your changes
+git commit -m "feat: amazing idea"
+git push origin feature/amazing-idea
+# open a Pull Request
+```
+
+Found a bug? [Open an issue →](https://github.com/Adshkumar/r0/issues)
+
+---
+
+## 📄 License
+
+Released under the **Apache 2.0 License** — see [LICENSE](LICENSE) for the full text.
+
+---
+
+## ⭐ Star History
+
+<div align="center">
+
+<a href="https://www.star-history.com/?repos=Adshkumar%2Fr0&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&legend=top-left" />
+  </picture>
+</a>
+
+<br/><br/>
+
+**If r0 is useful to you, please consider ⭐ starring the repo — it really helps!**
+
+</div>
