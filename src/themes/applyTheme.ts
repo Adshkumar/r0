@@ -11,4 +11,6 @@ export function applyTheme(theme: r0Theme): void {
     root.style.setProperty(tokenToCssVar(token), value);
   }
   root.setAttribute("data-theme", theme.type);
+  root.setAttribute("data-theme-name", theme.name.toLowerCase().replace(/^r0\s+/, ""));
+  root.style.colorScheme = theme.type;
 }

@@ -1,0 +1,44 @@
+[package]
+name = "r0"
+version = "0.1.7"
+description = "r0 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AI-native code editor"
+authors = ["r0 IDE"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "r0_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.3", features = ["unstable"] }
+url = "2"
+dpi = "0.1"
+tauri-plugin-opener = "2.7.1"
+tauri-plugin-store = "2.5.0"
+tauri-plugin-dialog = "2.8.2"
+keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+portable-pty = "0.8"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "process", "io-util", "time"] }
+sysinfo = "0.30"
+reqwest = { version = "0.12", features = ["json"] }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-updater = "2.13.3"
+tauri-plugin-process = "2.4.0"
+
+[profile.release]
+opt-level   = "z"      # optimize for size (not speed)
+lto         = "thin"   # cross-crate dead-code elimination
+codegen-units = 1      # single codegen unit lets LLVM optimise across more code
+strip       = true     # strip debug symbols from the binary
+panic       = "abort"  # removes unwinding machinery (~200 KB)
+

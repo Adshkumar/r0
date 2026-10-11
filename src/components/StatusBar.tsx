@@ -40,11 +40,11 @@ export default function StatusBar({ language, line, col, branch, onOpenSettings,
   const isDark = theme.type === 'dark';
 
   function toggleTheme() {
-    const target = isDark
-      ? themes.find(t => t.type === 'light')
-      : themes.find(t => t.type === 'dark');
+    const currentIndex = themes.findIndex(t => t.name === theme.name);
+    const target = themes[(currentIndex + 1) % themes.length];
     if (target) setTheme(target);
   }
+  const nextTheme = themes[(themes.findIndex(t => t.name === theme.name) + 1) % themes.length];
 
   return (
     <div
@@ -104,7 +104,7 @@ export default function StatusBar({ language, line, col, branch, onOpenSettings,
         </StatusItem>
         <StatusItem
           onClick={toggleTheme}
-          title={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          title={`Switch to ${nextTheme?.name ?? (isDark ? 'Light' : 'Dark')} Theme`}
         >
           {isDark
             ? <Sun size={11} />

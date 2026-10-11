@@ -57,6 +57,14 @@
 *::-webkit-scrollbar { width: 6px; height: 6px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
+[data-theme-name="dracula"] *,
+[data-theme-name="dracula"] *::before,
+[data-theme-name="dracula"] *::after {
+  scrollbar-color: var(--r0-border-subtle) transparent;
+}
+[data-theme-name="dracula"] *::-webkit-scrollbar-thumb {
+  background-color: var(--r0-border-subtle);
+}
 
 /* Anchor the document chrome to the viewport rectangle the compositor
    maintains, rather than to a computed height. `position: fixed; inset: 0`
@@ -73,7 +81,7 @@ html, body, #root {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background-color: #0a0a0a;
+  background-color: var(--r0-bg-base, #0a0a0a);
 }
 
 /* `#root`'s direct child uses Tailwind `h-full` (height: 100%). With the

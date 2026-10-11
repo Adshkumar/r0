@@ -8,9 +8,10 @@ const themeModules = import.meta.glob<{ default: r0Theme }>(
   { eager: true }
 );
 
-export const builtinThemes: r0Theme[] = Object.values(themeModules).map(
-  (m) => m.default
-);
+const themeOrder = ["r0 Light", "r0 Dark", "r0 Dracula"];
+export const builtinThemes: r0Theme[] = Object.values(themeModules)
+  .map((m) => m.default)
+  .sort((a, b) => themeOrder.indexOf(a.name) - themeOrder.indexOf(b.name));
 
 function resolveDefaultTheme(): r0Theme {
   // 1. Respect saved preference

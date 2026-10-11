@@ -85,14 +85,19 @@ const sectionLabel: React.CSSProperties = {
 
 export default function PersonalizePage({ onBack, onComplete, onSkip }: Props) {
   const { setTheme, themes } = useTheme();
-  const [selectedTheme,  setSelectedTheme]  = useState<string>('dark');
+  const [selectedTheme,  setSelectedTheme]  = useState<string>(() => {
+    const savedTheme = localStorage.getItem('r0-theme');
+    if (savedTheme === 'r0 Light') return 'light';
+    if (savedTheme === 'r0 Dracula') return 'dracula';
+    return 'dark';
+  });
   const [selectedKeymap, setSelectedKeymap] = useState<string>('vscode');
   const [selectedImport, setSelectedImport] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
-  function handleThemeSelect(id: 'dark' | 'light') {
+  function handleThemeSelect(id: 'dark' | 'light' | 'dracula') {
     setSelectedTheme(id);
-    const name = id === 'dark' ? 'r0 Dark' : 'r0 Light';
+    const name = id === 'dark' ? 'r0 Dark' : id === 'light' ? 'r0 Light' : 'r0 Dracula';
     const t = themes.find(t => t.name === name);
     if (t) setTheme(t);
   }
@@ -133,7 +138,7 @@ export default function PersonalizePage({ onBack, onComplete, onSkip }: Props) {
           <div>
             <div style={sectionLabel}>Theme</div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              {THEMES.map(t => <SelectCard key={t.id} label={t.label} selected={selectedTheme === t.id} onClick={() => handleThemeSelect(t.id as 'dark' | 'light')}><ThemePreview t={t} /></SelectCard>)}
+              {[...THEMES].sort((a, b) => ['light', 'dark', 'dracula'].indexOf(a.id) - ['light', 'dark', 'dracula'].indexOf(b.id)).map(t => <SelectCard key={t.id} label={t.label} selected={selectedTheme === t.id} onClick={() => handleThemeSelect(t.id)}><ThemePreview t={t} /></SelectCard>)}
             </div>
           </div>
 
