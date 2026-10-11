@@ -59,10 +59,14 @@
 *::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
 [data-theme-name="dracula"] *,
 [data-theme-name="dracula"] *::before,
-[data-theme-name="dracula"] *::after {
+[data-theme-name="dracula"] *::after,
+[data-theme-name="cobalt2"] *,
+[data-theme-name="cobalt2"] *::before,
+[data-theme-name="cobalt2"] *::after {
   scrollbar-color: var(--r0-border-subtle) transparent;
 }
-[data-theme-name="dracula"] *::-webkit-scrollbar-thumb {
+[data-theme-name="dracula"] *::-webkit-scrollbar-thumb,
+[data-theme-name="cobalt2"] *::-webkit-scrollbar-thumb {
   background-color: var(--r0-border-subtle);
 }
 

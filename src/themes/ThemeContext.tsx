@@ -8,7 +8,7 @@ const themeModules = import.meta.glob<{ default: r0Theme }>(
   { eager: true }
 );
 
-const themeOrder = ["r0 Light", "r0 Dark", "r0 Dracula"];
+const themeOrder = ["r0 Light", "r0 Dark", "r0 Dracula", "Cobalt2"];
 export const builtinThemes: r0Theme[] = Object.values(themeModules)
   .map((m) => m.default)
   .sort((a, b) => themeOrder.indexOf(a.name) - themeOrder.indexOf(b.name));

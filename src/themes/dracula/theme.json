@@ -27,6 +27,7 @@
     "accent.purple": "#BD93F9",
     "accent.cyan": "#8BE9FD",
     "accent.red": "#FF5555",
+    "editor.cursor": "#8BE9FD",
 
     "syntax.comment": "#6272A4",
     "syntax.keyword": "#FF79C6",

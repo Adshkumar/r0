@@ -1,7 +1,9 @@
-name: Release
+﻿name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -14,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -25,6 +29,90 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
+
+      - name: Configure Git
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Automatically bump version and create tag
+        if: github.ref == 'refs/heads/main'
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $parts = $package.version.Split('.')
+          if ($parts.Count -ne 3 -or $parts | Where-Object { $_ -notmatch '^\d+$' }) {
+            throw "Expected a three-part numeric version in package.json."
+          }
+
+          $version = "$($parts[0]).$($parts[1]).$([int]$parts[2] + 1)"
+          $tag = "v$version"
+
+          if (git tag -l $tag) {
+            throw "Tag $tag already exists. Resolve the existing tag before continuing."
+          }
+
+          $package.version = $version
+          $package | ConvertTo-Json -Depth 100 | Set-Content package.json -Encoding utf8
+
+          if (-not (Test-Path package-lock.json)) {
+            throw "package-lock.json was not found; refusing to continue."
+          }
+
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          $lock.version = $version
+          if ($lock.packages -and $lock.packages.PSObject.Properties['']) {
+            $lock.packages.''.version = $version
+          }
+          $lock | ConvertTo-Json -Depth 100 | Set-Content package-lock.json -Encoding utf8
+
+          $tauriPath = "src-tauri/tauri.conf.json"
+          $tauri = Get-Content $tauriPath -Raw | ConvertFrom-Json
+          $tauri.version = $version
+          $tauri | ConvertTo-Json -Depth 100 | Set-Content $tauriPath -Encoding utf8
+
+          $cargoPath = "src-tauri/Cargo.toml"
+          $cargo = Get-Content $cargoPath -Raw
+          $cargo = [regex]::Replace(
+            $cargo,
+            '(?m)^version\s*=\s*"[^"]+"',
+            "version = `"$version`"",
+            1
+          )
+          Set-Content $cargoPath $cargo -Encoding utf8
+
+          cargo update --manifest-path src-tauri/Cargo.toml --workspace
+          if ($LASTEXITCODE -ne 0) { throw "Updating Cargo.lock failed." }
+
+          git add package.json package-lock.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+          git commit -m "chore: release $version"
+          if ($LASTEXITCODE -ne 0) { throw "Version commit failed." }
+
+          git tag $tag
+          if ($LASTEXITCODE -ne 0) { throw "Creating release tag failed." }
+
+          git push origin HEAD:main
+          if ($LASTEXITCODE -ne 0) { throw "Pushing the version commit failed. Check branch protection and permissions." }
+
+          git push origin $tag
+          if ($LASTEXITCODE -ne 0) { throw "Pushing the release tag failed." }
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Select release tag
+        id: release
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -eq "refs/heads/main") {
+            "tag=${{ steps.version.outputs.tag }}" >> $env:GITHUB_OUTPUT
+          } else {
+            "tag=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+          }
 
       - name: Install dependencies
         run: npm ci --prefer-online --no-audit --no-fund
@@ -41,8 +129,8 @@ jobs:
         with:
           projectPath: .
           tauriScript: npm run tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: r0 ${{ github.ref_name }}
+          tagName: ${{ steps.release.outputs.tag }}
+          releaseName: r0 ${{ steps.release.outputs.tag }}
           releaseBody: "Download the Windows installer below."
           releaseDraft: false
           prerelease: false
@@ -56,13 +144,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $ErrorActionPreference = "Stop"
-          $tag = $env:GITHUB_REF_NAME
+          $tag = "${{ steps.release.outputs.tag }}"
           $repo = $env:GITHUB_REPOSITORY
           $temp = Join-Path $env:RUNNER_TEMP "r0-installer"
           New-Item -ItemType Directory -Force -Path $temp | Out-Null
+
           gh release download $tag --repo $repo --pattern "r0_*_x64-setup.exe" --dir $temp
+          if ($LASTEXITCODE -ne 0) { throw "Could not download the release installer." }
+
           $installer = Get-ChildItem $temp -Filter "r0_*_x64-setup.exe" | Select-Object -First 1
           if (-not $installer) { throw "Windows installer was not found." }
+
           $stable = Join-Path $temp "r0-latest-setup.exe"
           Copy-Item $installer.FullName $stable -Force
           gh release upload $tag $stable --repo $repo --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Uploading the stable installer failed." }

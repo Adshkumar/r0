@@ -81,7 +81,7 @@ export const r0BaseTheme = EditorView.theme({
   },
   '.cm-content': {
     padding: '8px 0',
-    caretColor: 'var(--r0-accent-blue)',
+    caretColor: 'var(--r0-editor-cursor, var(--r0-accent-blue))',
   },
   '.cm-gutters': {
     backgroundColor: 'transparent',
@@ -103,7 +103,7 @@ export const r0BaseTheme = EditorView.theme({
     color: 'var(--r0-fg-muted)',
   },
   '.cm-cursor, .cm-dropCursor': {
-    borderLeftColor: 'var(--r0-accent-blue)',
+    borderLeftColor: 'var(--r0-editor-cursor, var(--r0-accent-blue))',
     borderLeftWidth: '2px',
   },
   '&.cm-focused .cm-matchingBracket': {
