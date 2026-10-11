@@ -1,4 +1,4 @@
-﻿name: Release
+name: Release
 
 on:
   push:
@@ -63,4 +63,6 @@ jobs:
           gh release download $tag --repo $repo --pattern "r0_*_x64-setup.exe" --dir $temp
           $installer = Get-ChildItem $temp -Filter "r0_*_x64-setup.exe" | Select-Object -First 1
           if (-not $installer) { throw "Windows installer was not found." }
-          gh release upload $tag "$($installer.FullName)#r0-latest-setup.exe" --repo $repo --clobber
+          $stable = Join-Path $temp "r0-latest-setup.exe"
+          Copy-Item $installer.FullName $stable -Force
+          gh release upload $tag $stable --repo $repo --clobber
