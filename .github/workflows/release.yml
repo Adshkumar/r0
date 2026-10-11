@@ -63,7 +63,7 @@ jobs:
             throw "package-lock.json was not found; refusing to continue."
           }
 
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           $lock.version = $version
           if ($lock.packages -and $lock.packages.PSObject.Properties['']) {
             $lock.packages.''.version = $version
