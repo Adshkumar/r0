@@ -325,7 +325,7 @@ function AppearanceSection() {
                   border: `1px solid ${t.colors["border.default"]}`,
                   flexShrink: 0,
                 }}>
-                  {["bg.sidebar", "bg.editor", "accent.purple"].map(token => (
+                  {["bg.sidebar", "bg.editor", "accent.blue"].map(token => (
                     <span key={token} style={{ flex: 1, backgroundColor: t.colors[token] }} />
                   ))}
                 </div>
