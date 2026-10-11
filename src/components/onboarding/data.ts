@@ -35,7 +35,7 @@ export const PROVIDERS: Provider[] = [
 ];
 
 export interface ThemeOption {
-  id: 'dark' | 'light';
+  id: 'dark' | 'light' | 'dracula';
   label: string;
   previewBg: string;
   lines: Array<{ color: string; width: string }>;
@@ -62,6 +62,17 @@ export const THEMES: ThemeOption[] = [
       { color: '#ccc',    width: '60%' },
       { color: '#b32c62', width: '45%' },
       { color: '#ddd',    width: '75%' },
+    ],
+  },
+  {
+    id: 'dracula',
+    label: 'r0 Dracula',
+    previewBg: '#282A36',
+    lines: [
+      { color: '#8BE9FD', width: '85%' },
+      { color: '#44475A', width: '60%' },
+      { color: '#FF79C6', width: '45%' },
+      { color: '#50FA7B', width: '75%' },
     ],
   },
 ];

@@ -296,6 +296,7 @@ function AppearanceSection() {
               <button
                 key={t.name}
                 onClick={() => setTheme(t)}
+                aria-pressed={isActive}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -315,12 +316,19 @@ function AppearanceSection() {
                   if (!isActive) e.currentTarget.style.backgroundColor = "var(--r0-bg-base)";
                 }}
               >
-                <div style={{
-                  width: 20, height: 20, borderRadius: "50%",
-                  border: "2px solid var(--r0-border-default)",
-                  backgroundColor: t.type === "dark" ? "#0a0a0a" : "#ffffff",
+                <div aria-hidden="true" style={{
+                  display: "flex",
+                  width: 30,
+                  height: 20,
+                  overflow: "hidden",
+                  borderRadius: "5px",
+                  border: `1px solid ${t.colors["border.default"]}`,
                   flexShrink: 0,
-                }} />
+                }}>
+                  {["bg.sidebar", "bg.editor", "accent.purple"].map(token => (
+                    <span key={token} style={{ flex: 1, backgroundColor: t.colors[token] }} />
+                  ))}
+                </div>
                 <span style={{ fontSize: "13px", color: "var(--r0-fg-default)", fontWeight: isActive ? 500 : 400 }}>
                   {t.name}
                 </span>

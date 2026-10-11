@@ -1,0 +1,66 @@
+﻿name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install dependencies
+        run: npm ci --prefer-online --no-audit --no-fund
+        env:
+          npm_config_fetch_retries: 5
+          npm_config_fetch_retry_mintimeout: 20000
+
+      - name: Build and publish Tauri release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: .
+          tauriScript: npm run tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: r0 ${{ github.ref_name }}
+          releaseBody: "Download the Windows installer below."
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
+          updaterJsonPreferNsis: true
+
+      - name: Publish stable Windows download link
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $tag = $env:GITHUB_REF_NAME
+          $repo = $env:GITHUB_REPOSITORY
+          $temp = Join-Path $env:RUNNER_TEMP "r0-installer"
+          New-Item -ItemType Directory -Force -Path $temp | Out-Null
+          gh release download $tag --repo $repo --pattern "r0_*_x64-setup.exe" --dir $temp
+          $installer = Get-ChildItem $temp -Filter "r0_*_x64-setup.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Windows installer was not found." }
+          gh release upload $tag "$($installer.FullName)#r0-latest-setup.exe" --repo $repo --clobber

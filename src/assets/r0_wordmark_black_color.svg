@@ -1,6 +1,10 @@
-<svg width="200" height="81" viewBox="0 0 200 81" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(0, 0) scale(0.78)">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M55.8918 5.31256V10.6251H75.1738H94.4558V28.6288V46.6325H99.7279H105V23.3163V0H80.4459H55.8918V5.31256ZM41.1447 29.5204V45.538L29.734 34.1693L18.3234 22.8006L14.6549 26.4708L10.9864 30.1411L22.2128 41.3751L33.4391 52.6091H16.7196H0V58.18V63.7508H16.3777H32.7554L21.189 75.2928L9.62254 86.8348L13.5356 90.7558L17.4486 94.6768L29.2966 82.8586L41.1447 71.0403V86.9487V102.857H46.3429H51.5411L51.5597 86.7747L51.5783 70.6921L62.9336 82.0047L74.289 93.3173L77.9573 89.7032C79.9749 87.7154 81.6257 86.0551 81.6257 86.0136C81.6257 85.9721 76.6236 80.9477 70.51 74.8483L59.3943 63.7584L75.8927 63.7545L92.3912 63.7508V58.2146C92.3912 53.1619 92.3806 52.6743 92.2708 52.6321C92.2046 52.6066 92.0889 52.6243 92.0137 52.6713C91.911 52.7355 86.7609 52.7567 71.3037 52.7567H50.7303V33.1297V13.5028H45.9375H41.1447V29.5204Z" fill="#0A0A0A"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="56" viewBox="0 0 180 56" fill="none">
+  <g transform="translate(4 4)" stroke="#111" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="8" y="8" width="42" height="36" rx="4"/>
+    <path d="M8 17h42"/>
+    <path d="M13 12.5h.1M17 12.5h.1M21 12.5h.1" stroke-width="3"/>
+    <path d="m22 24-6 4 6 4m10-8 6 4-6 4m-2-9-4 10"/>
+    <path d="m37 38 2.8 2.8 10.6-10.6-2.8-2.8L37 38Zm0 0-.3 3.6 3.1-.8m8.7-13.4 2-2a2 2 0 0 1 2.8 2.8l-2 2"/>
   </g>
-  <text x="95" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Geist Sans', 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="52" fill="#0A0A0A" letter-spacing="-1px">r0</text>
+  <text x="70" y="44" fill="#111" font-family="Geist, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="44" font-weight="650" letter-spacing="-2.5">r0</text>
 </svg>
