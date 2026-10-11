@@ -297,18 +297,6 @@ Found a bug? [Open an issue →](https://github.com/Adshkumar/r0/issues)
 
 Released under the **Apache 2.0 License** — see [LICENSE](LICENSE) for the full text.
 
----
-
-## ⭐ Star History
-
-<div align="center">
-
-<a href="https://www.star-history.com/?repos=Adshkumar%2Fr0&type=date&legend=top-left">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Adshkumar/r0&type=date&legend=top-left" />
-  </picture>
 </a>
 
 <br/><br/>
