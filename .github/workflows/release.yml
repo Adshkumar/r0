@@ -1,4 +1,4 @@
-﻿name: Release
+name: Release
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
 
           $package = Get-Content package.json -Raw | ConvertFrom-Json
           $parts = $package.version.Split('.')
-          if ($parts.Count -ne 3 -or $parts | Where-Object { $_ -notmatch '^\d+$' }) {
+          if (($parts.Count -ne 3) -or (@($parts | Where-Object { $_ -notmatch '^\d+$' }).Count -gt 0)) {
             throw "Expected a three-part numeric version in package.json."
           }
 
