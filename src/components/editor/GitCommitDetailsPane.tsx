@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { GitBranch, GitCommitHorizontal, GitCompare, Copy, FileText } from 'lucide-react';
 import {
   getGitCommitDetails,
@@ -9,22 +9,23 @@ import {
 interface Props {
   rootPath: string;
   hash: string;
-  onOpenDiff: (file: GitChangedFile, details: GitCommitDetails) => void;
+  onOpenDiff: (rootPath: string, file: GitChangedFile, details: GitCommitDetails) => void;
 }
 
 function localDate(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleString();
 }
 
-export default function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }: Props) {
+export default memo(function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }: Props) {
   const [parent, setParent] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [result, setResult] = useState<{
     key: string;
     details: GitCommitDetails | null;
     error: string | null;
   } | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
-  const requestKey = `${rootPath}:${hash}:${parent ?? ''}`;
+  const requestKey = `${rootPath}:${hash}:${parent ?? ''}:${retryCount}`;
   const currentResult = result?.key === requestKey ? result : null;
   const details = currentResult?.details ?? null;
   const error = currentResult?.error ?? null;
@@ -57,8 +58,13 @@ export default function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }: Pro
     return <div style={{ padding: 20, color: 'var(--r0-fg-subtle)', fontSize: 12 }}>Loading commit details…</div>;
   }
   if (error && !details) {
-    return <div style={{ padding: 20, color: 'var(--r0-semantic-error)', fontSize: 12 }}>{error}</div>;
-  }
+    return (
+      <div style={{ padding: 20, color: 'var(--r0-semantic-error)', fontSize: 12 }}>
+        <p>{error}</p>
+        <button onClick={() => setRetryCount(count => count + 1)} style={{ padding: '5px 10px', border: '1px solid var(--r0-border-default)', borderRadius: 4, background: 'var(--r0-bg-panel)', color: 'var(--r0-fg-default)', cursor: 'pointer', fontSize: 11 }}>Retry commit details</button>
+      </div>
+    );
+  });
   if (!details) return null;
 
   return (
@@ -127,7 +133,7 @@ export default function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }: Pro
             {details.files.map((file, index) => (
               <button
                 key={`${file.path}:${index}`}
-                onClick={() => onOpenDiff(file, details)}
+                onClick={() => onOpenDiff(rootPath, file, details)}
                 title={`${file.status}: ${file.old_path ? `${file.old_path} → ` : ''}${file.path}`}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '6px 8px', border: 0, borderRadius: 4, background: 'transparent', color: 'var(--r0-fg-default)', cursor: 'pointer' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--r0-bg-hover)'; }}

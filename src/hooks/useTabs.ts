@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeFile } from "../lib/fs";
 import { isImageFile } from "../lib/imagePreview";
@@ -120,16 +120,16 @@ export function useTabs() {
     setActiveTab(tabPath);
   }
 
-  function openGitCommitTab(rootPath: string, hash: string) {
+  const openGitCommitTab = useCallback((rootPath: string, hash: string) => {
     const path = `__git_commit__${encodeURIComponent(rootPath)}__${hash}`;
     setTabs(prev => prev.some(tab => tab.path === path)
       ? prev
       : [...prev, { path, name: `Commit ${hash.slice(0, 7)}`, isDirty: false, kind: 'git-commit', commitHash: hash, gitRootPath: rootPath }]
     );
     setActiveTab(path);
-  }
+  }, []);
 
-  function openGitDiffTab(input: NonNullable<Tab['gitDiff']> & { key: string; rootPath: string }) {
+  const openGitDiffTab = useCallback((input: NonNullable<Tab['gitDiff']> & { key: string; rootPath: string }) => {
     const path = `__git_diff__${encodeURIComponent(input.rootPath)}__${input.key}`;
     const oldName = input.oldFilePath.split(/[\\/]/).filter(Boolean).pop() ?? input.oldFilePath;
     const newName = input.newFilePath.split(/[\\/]/).filter(Boolean).pop() ?? input.newFilePath;
@@ -156,7 +156,7 @@ export function useTabs() {
         }]
     );
     setActiveTab(path);
-  }
+  }, []);
 
   async function handleSave(path: string) {
     const content = fileContentsRef.current[path];
