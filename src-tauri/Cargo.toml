@@ -1,6 +1,6 @@
 [package]
 name = "r0"
-version = "0.1.12"
+version = "0.1.13"
 description = "r0 ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â AI-native code editor"
 authors = ["r0 IDE"]
 edition = "2021"
@@ -41,6 +41,7 @@ lto         = "thin"   # cross-crate dead-code elimination
 codegen-units = 1      # single codegen unit lets LLVM optimise across more code
 strip       = true     # strip debug symbols from the binary
 panic       = "abort"  # removes unwinding machinery (~200 KB)
+
 
 
 
