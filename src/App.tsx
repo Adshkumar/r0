@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -342,13 +342,13 @@ function App() {
 
   function handleAbout() { setAboutOpen(true); }
 
-  function handleOpenCommit(hash: string) {
+  const handleOpenCommit = useCallback((hash: string) => {
     if (!folderPath) return;
     setSelectedCommit({ rootPath: folderPath, hash });
     openGitCommitTab(folderPath, hash);
-  }
+  }, [folderPath, openGitCommitTab]);
 
-  function handleOpenCommitFile(rootPath: string, file: GitChangedFile, details: GitCommitDetails) {
+  const handleOpenCommitFile = useCallback((rootPath: string, file: GitChangedFile, details: GitCommitDetails) => {
     const oldFilePath = file.old_path ?? file.path;
     openGitDiffTab({
       rootPath,
@@ -363,9 +363,9 @@ function App() {
       oldLabel: details.comparison_parent?.slice(0, 7) ?? 'empty',
       newLabel: details.hash.slice(0, 7),
     });
-  }
+  }, [openGitDiffTab]);
 
-  function handleOpenWorkingDiff(file: StatusFile) {
+  const handleOpenWorkingDiff = useCallback((file: StatusFile) => {
     if (!folderPath) return;
     const status = file.status.replace(/\s/g, '');
     const oldIsEmpty = status === '??' || status.includes('A');
@@ -383,7 +383,7 @@ function App() {
       oldLabel: oldIsEmpty ? 'empty' : 'HEAD',
       newLabel: newIsEmpty ? 'deleted' : 'Working Tree',
     });
-  }
+  }, [folderPath, openGitDiffTab]);
 
   const commands = {
     sidebarOpen, onToggleSidebar: () => setSidebarOpen(v => !v),
@@ -496,7 +496,7 @@ function App() {
                         <GitCommitDetailsPane
                           rootPath={rootPath}
                           hash={commitTab.commitHash}
-                          onOpenDiff={(file, details) => handleOpenCommitFile(rootPath, file, details)}
+                          onOpenDiff={handleOpenCommitFile}
                         />
                       );
                     })()

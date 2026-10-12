@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { GitBranch, GitCommitHorizontal, RefreshCw, ChevronRight } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from './ui/Toast';
 import {
-  getStatusFiles, getGitHistory, gitCommit, gitCommitPush,
+  getStatusFiles, getGitHistory, gitCommit, gitCommitPush, invalidateGitCache,
   type StatusFile, type GitHistoryCommit,
 } from '../lib/git';
 
@@ -34,6 +34,7 @@ function shortPath(p: string): string {
 
 const HISTORY_PAGE_SIZE = 100;
 const GRAPH_COLORS = ['#4daafc', '#c586c0', '#89d185', '#e2c08d', '#f48771', '#d7ba7d'];
+const EMPTY_HISTORY: GitHistoryCommit[] = [];
 
 function localDay(timestamp: number): string {
   const d = new Date(timestamp * 1000);
@@ -100,7 +101,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
   const [loadingOlder, setLoadingOlder] = useState(false);
   const currentRepository = repositoryState?.rootPath === folderPath ? repositoryState : null;
   const files = currentRepository?.files ?? [];
-  const history = currentRepository?.history ?? [];
+  const history = currentRepository?.history ?? EMPTY_HISTORY;
   const historyError = currentRepository?.error ?? null;
   const hasOlderHistory = currentRepository?.hasOlderHistory ?? false;
   const loadingHistory = !!folderPath && currentRepository === null;
@@ -154,6 +155,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
     if (!folderPath || refreshing) return;
     setRefreshing(true);
     try {
+      invalidateGitCache(folderPath);
       const result = await load();
       const f = result?.files ?? [];
       const h = result?.history ?? [];
@@ -161,8 +163,8 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
         `${f.length} change${f.length !== 1 ? 's' : ''} · ${h.length} commit${h.length !== 1 ? 's' : ''}`,
         'info',
       );
-    } catch {
-      showToast('Failed to refresh.', 'error');
+    } catch (error: unknown) {
+      showToast(`Failed to refresh Git data: ${String(error)}`, 'error');
     } finally {
       setRefreshing(false);
     }
@@ -210,21 +212,14 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
     }
   }
 
-  if (!folderPath) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <p style={{ fontSize: 12, color: 'var(--r0-fg-subtle)', textAlign: 'center', lineHeight: 1.5 }}>
-          Open a folder to use source control
-        </p>
-      </div>
-    );
-  }
-
   const canCommit = title.trim().length > 0 && !busy;
-  const filteredHistory = selectedDate
-    ? history.filter(commit => localDay(commit.author_time) === selectedDate)
-    : history;
-  const groupedHistory = Array.from(
+  const filteredHistory = useMemo(
+    () => selectedDate
+      ? history.filter(commit => localDay(commit.author_time) === selectedDate)
+      : history,
+    [history, selectedDate],
+  );
+  const groupedHistory = useMemo(() => Array.from(
     filteredHistory.reduce((groups, commit) => {
       const day = localDay(commit.author_time);
       const group = groups.get(day) ?? [];
@@ -232,20 +227,23 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
       groups.set(day, group);
       return groups;
     }, new Map<string, GitHistoryCommit[]>()),
-  );
-  const graph = graphPositions(history);
-  const visibleCommitY = new Map<string, number>();
-  let graphHeight = 0;
-  for (const [, commits] of groupedHistory) {
-    graphHeight += 24;
-    for (const commit of commits) {
-      visibleCommitY.set(commit.hash, graphHeight + 24);
-      graphHeight += 48;
+  ), [filteredHistory]);
+  const graph = useMemo(() => graphPositions(history), [history]);
+  const { visibleCommitY, graphHeight } = useMemo(() => {
+    const visibleCommitY = new Map<string, number>();
+    let graphHeight = 0;
+    for (const [, commits] of groupedHistory) {
+      graphHeight += 24;
+      for (const commit of commits) {
+        visibleCommitY.set(commit.hash, graphHeight + 24);
+        graphHeight += 48;
+      }
     }
-  }
+    return { visibleCommitY, graphHeight };
+  }, [groupedHistory]);
   const laneStep = graph.laneCount > 1 ? Math.min(9, 68 / (graph.laneCount - 1)) : 0;
   const graphWidth = 16 + Math.max(0, graph.laneCount - 1) * laneStep;
-  const graphSvg = (
+  const graphSvg = useMemo(() => (
     <svg
       aria-hidden="true"
       width={graphWidth}
@@ -270,7 +268,17 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
         ];
       })}
     </svg>
-  );
+  ), [filteredHistory, graph.positions, visibleCommitY, graphWidth, graphHeight, laneStep]);
+
+  if (!folderPath) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <p style={{ fontSize: 12, color: 'var(--r0-fg-subtle)', textAlign: 'center', lineHeight: 1.5 }}>
+          Open a folder to use source control
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}>

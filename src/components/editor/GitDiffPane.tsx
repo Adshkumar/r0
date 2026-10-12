@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { MergeView } from '@codemirror/merge';
 import { EditorView, lineNumbers } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
@@ -35,11 +35,12 @@ interface Props {
   tab: Tab;
 }
 
-export default function GitDiffPane({ rootPath, tab }: Props) {
+export default memo(function GitDiffPane({ rootPath, tab }: Props) {
   const mergeHost = useRef<HTMLDivElement>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const diff = tab.gitDiff;
   const fileName = diff?.newFilePath.split(/[\\/]/).filter(Boolean).pop() ?? tab.name;
-  const requestKey = `${rootPath}:${tab.path}`;
+  const requestKey = `${rootPath}:${tab.path}:${retryCount}`;
   const [result, setResult] = useState<{
     key: string;
     content: { old: string; current: string } | null;
@@ -94,6 +95,7 @@ export default function GitDiffPane({ rootPath, tab }: Props) {
     merge.dom.style.height = '100%';
     merge.dom.style.overflow = 'auto';
     merge.dom.style.backgroundColor = 'var(--r0-bg-editor)';
+    merge.dom.classList.add('r0-git-diff-view');
     return () => merge.destroy();
   }, [content, diff]);
 
@@ -104,11 +106,14 @@ export default function GitDiffPane({ rootPath, tab }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--r0-border-default)', background: 'var(--r0-bg-panel)', flexShrink: 0 }}>
         <GitCompare size={14} color="var(--r0-accent-blue)" />
         <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--r0-fg-default)' }}>{fileName}</span>
-        <span style={{ color: 'var(--r0-fg-subtle)', fontSize: 10, flexShrink: 0 }}>{loading ? 'Loading diff…' : `${diff.oldLabel}  ↔  ${diff.newLabel}`}</span>
+        <span title={`${diff.oldLabel} ↔ ${diff.newLabel}`} style={{ color: 'var(--r0-fg-subtle)', fontSize: 10, flexShrink: 1, minWidth: 0, maxWidth: '45%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loading ? 'Loading diff…' : `${diff.oldLabel}  ↔  ${diff.newLabel}`}</span>
       </div>
       {error ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <p style={{ maxWidth: 500, color: 'var(--r0-fg-muted)', textAlign: 'center', fontSize: 12, lineHeight: 1.6 }}>{error}</p>
+          <div style={{ maxWidth: 500, textAlign: 'center' }}>
+            <p style={{ color: 'var(--r0-fg-muted)', fontSize: 12, lineHeight: 1.6 }}>{error}</p>
+            <button onClick={() => setRetryCount(count => count + 1)} style={{ marginTop: 8, padding: '5px 10px', border: '1px solid var(--r0-border-default)', borderRadius: 4, background: 'var(--r0-bg-panel)', color: 'var(--r0-fg-default)', cursor: 'pointer', fontSize: 11 }}>Retry diff</button>
+          </div>
         </div>
       ) : loading ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--r0-fg-subtle)', fontSize: 12 }}>Loading historical file contents…</div>
@@ -117,4 +122,4 @@ export default function GitDiffPane({ rootPath, tab }: Props) {
       )}
     </div>
   );
-}
+});

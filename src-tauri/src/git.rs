@@ -212,11 +212,6 @@ fn history(path: &str, skip: usize, limit: usize) -> Result<Vec<GitHistoryCommit
         ],
     )?;
     let history = String::from_utf8_lossy(&out.stdout);
-    let head = output(path, &["rev-parse", "HEAD"])
-        .ok()
-        .filter(|head| head.status.success())
-        .map(|head| String::from_utf8_lossy(&head.stdout).trim().to_string())
-        .unwrap_or_default();
     history
         .lines()
         .filter(|line| !line.is_empty())
@@ -225,6 +220,10 @@ fn history(path: &str, skip: usize, limit: usize) -> Result<Vec<GitHistoryCommit
             if fields.len() != 8 {
                 return Err("Git returned malformed history data".to_string());
             }
+            let refs = split_refs(fields[7]);
+            let is_head = fields[7]
+                .split(", ")
+                .any(|reference| reference == "HEAD" || reference.starts_with("HEAD -> "));
             Ok(GitHistoryCommit {
                 hash: fields[0].to_string(),
                 parents: fields[1].split_whitespace().map(str::to_string).collect(),
@@ -237,8 +236,8 @@ fn history(path: &str, skip: usize, limit: usize) -> Result<Vec<GitHistoryCommit
                 committer_time: fields[6]
                     .parse()
                     .map_err(|_| "Invalid commit timestamp".to_string())?,
-                refs: split_refs(fields[7]),
-                is_head: fields[0] == head,
+                refs,
+                is_head,
             })
         })
         .collect()
@@ -262,6 +261,8 @@ fn valid_revision(revision: &str) -> bool {
 fn validate_relative_path(file_path: &str) -> Result<(), String> {
     let path = std::path::Path::new(file_path);
     if file_path.is_empty()
+        || file_path.contains('\r')
+        || file_path.contains('\n')
         || path.is_absolute()
         || path.components().any(|part| {
             matches!(
@@ -409,16 +410,13 @@ fn commit_details(
         &[
             "show",
             "-s",
-            "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%cn%x1f%ce%x1f%ct%x1f%D",
+            "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%cn%x1f%ce%x1f%ct%x1f%D%x1f%B",
             hash,
         ],
     )?;
     let metadata = String::from_utf8_lossy(&meta.stdout);
-    let fields: Vec<_> = metadata
-        .trim_end_matches(|c| c == '\r' || c == '\n')
-        .splitn(9, '\x1f')
-        .collect();
-    if fields.len() != 9 {
+    let fields: Vec<_> = metadata.splitn(10, '\x1f').collect();
+    if fields.len() != 10 {
         return Err("Git returned malformed commit data".to_string());
     }
     let parents: Vec<String> = fields[1].split_whitespace().map(str::to_string).collect();
@@ -513,10 +511,9 @@ fn commit_details(
             }
         })
         .collect();
-    let message =
-        String::from_utf8_lossy(&output_ok(path, &["show", "-s", "--format=%B", hash])?.stdout)
-            .trim_end()
-            .to_string();
+    let message = fields[9]
+        .trim_end_matches(|c| c == '\r' || c == '\n')
+        .to_string();
     Ok(GitCommitDetails {
         hash: fields[0].to_string(),
         parents,
@@ -548,18 +545,6 @@ pub async fn git_commit_details(
         .map_err(|e| format!("Git commit-details task failed: {e}"))?
 }
 
-fn read_revision_file(path: &str, revision: &str, file_path: &str) -> Result<String, String> {
-    if revision != "HEAD" && !valid_revision(revision) {
-        return Err("Invalid file revision".to_string());
-    }
-    let spec = format!("{revision}:{file_path}");
-    let out = output(path, &["show", &spec])?;
-    if !out.status.success() {
-        return Err(git_error(&out));
-    }
-    bytes_to_text(&out.stdout)
-}
-
 fn bytes_to_text(bytes: &[u8]) -> Result<String, String> {
     const MAX_TEXT_DIFF_BYTES: usize = 8 * 1024 * 1024;
     if bytes.len() > MAX_TEXT_DIFF_BYTES {
@@ -570,6 +555,147 @@ fn bytes_to_text(bytes: &[u8]) -> Result<String, String> {
     }
     String::from_utf8(bytes.to_vec())
         .map_err(|_| "This file is not valid UTF-8 text and cannot be displayed.".to_string())
+}
+
+fn stop_git_child(child: &mut std::process::Child, message: String) -> String {
+    let _ = child.kill();
+    let _ = child.wait();
+    message
+}
+
+fn read_revision_files(path: &str, specs: &[String]) -> Result<Vec<String>, String> {
+    use std::io::{BufRead, BufReader, Read, Write};
+    const MAX_TEXT_DIFF_BYTES: u64 = 8 * 1024 * 1024;
+
+    if specs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut child = git_cmd()
+        .args(["cat-file", "--batch"])
+        .current_dir(path)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Could not start Git: {e}"))?;
+    let write_result = {
+        let Some(mut stdin) = child.stdin.take() else {
+            return Err(stop_git_child(
+                &mut child,
+                "Git did not provide an input stream".to_string(),
+            ));
+        };
+        specs.iter().try_for_each(|spec| writeln!(stdin, "{spec}"))
+    };
+    if let Err(error) = write_result {
+        return Err(stop_git_child(
+            &mut child,
+            format!("Could not request Git file contents: {error}"),
+        ));
+    }
+
+    let Some(stdout) = child.stdout.take() else {
+        return Err(stop_git_child(
+            &mut child,
+            "Git did not provide an output stream".to_string(),
+        ));
+    };
+    let mut stdout = BufReader::new(stdout);
+    let mut contents = Vec::with_capacity(specs.len());
+    for _ in specs {
+        let mut header = Vec::with_capacity(128);
+        if let Err(error) = stdout.read_until(b'\n', &mut header) {
+            return Err(stop_git_child(
+                &mut child,
+                format!("Could not read Git object header: {error}"),
+            ));
+        }
+        let header = match std::str::from_utf8(&header) {
+            Ok(header) => header.trim_end(),
+            Err(_) => {
+                return Err(stop_git_child(
+                    &mut child,
+                    "Git returned an invalid object header".to_string(),
+                ));
+            }
+        };
+        let fields: Vec<_> = header.split_whitespace().collect();
+        if fields.len() != 3 || fields[1] != "blob" {
+            return Err(stop_git_child(
+                &mut child,
+                format!("Git could not read historical file: {header}"),
+            ));
+        }
+        let size: u64 = match fields[2].parse() {
+            Ok(size) => size,
+            Err(_) => {
+                return Err(stop_git_child(
+                    &mut child,
+                    "Git returned an invalid object size".to_string(),
+                ));
+            }
+        };
+        if size > MAX_TEXT_DIFF_BYTES {
+            return Err(stop_git_child(
+                &mut child,
+                "This file exceeds the 8 MiB text diff limit.".to_string(),
+            ));
+        }
+        let mut bytes = Vec::new();
+        if bytes.try_reserve_exact(size as usize).is_err() {
+            return Err(stop_git_child(
+                &mut child,
+                "Not enough memory to read this historical file.".to_string(),
+            ));
+        }
+        let read_result = (&mut stdout)
+            .take(size)
+            .read_to_end(&mut bytes)
+            .map_err(|e| format!("Could not read Git object contents: {e}"));
+        if let Err(error) = read_result {
+            return Err(stop_git_child(&mut child, error));
+        }
+        if bytes.len() as u64 != size {
+            return Err(stop_git_child(
+                &mut child,
+                "Git returned incomplete historical file contents".to_string(),
+            ));
+        }
+        let mut delimiter = [0];
+        if let Err(error) = stdout.read_exact(&mut delimiter) {
+            return Err(stop_git_child(
+                &mut child,
+                format!("Could not finish reading Git object: {error}"),
+            ));
+        }
+        if delimiter[0] != b'\n' {
+            return Err(stop_git_child(
+                &mut child,
+                "Git returned an invalid object delimiter".to_string(),
+            ));
+        }
+        match bytes_to_text(&bytes) {
+            Ok(text) => contents.push(text),
+            Err(error) => return Err(stop_git_child(&mut child, error)),
+        }
+    }
+    drop(stdout);
+    let status = child
+        .wait()
+        .map_err(|e| format!("Could not wait for Git: {e}"))?;
+    if !status.success() {
+        let mut stderr = String::new();
+        if let Some(mut pipe) = child.stderr.take() {
+            let _ = pipe.read_to_string(&mut stderr);
+        }
+        return Err(if stderr.trim().is_empty() {
+            format!("Git exited with status {status}")
+        } else {
+            stderr.trim().to_string()
+        });
+    }
+    Ok(contents)
 }
 
 fn file_diff(
@@ -594,14 +720,38 @@ fn file_diff(
             return Err("Invalid new file revision".to_string());
         }
     }
-    let old_content = if old_is_empty {
-        String::new()
+    let old_spec = if old_is_empty {
+        None
     } else {
-        read_revision_file(
-            &path,
-            old_revision.as_deref().ok_or("Old revision is missing")?,
-            &old_file_path,
-        )?
+        let revision = old_revision.as_deref().ok_or("Old revision is missing")?;
+        if revision != "HEAD" && !valid_revision(revision) {
+            return Err("Invalid old file revision".to_string());
+        }
+        Some(format!("{revision}:{old_file_path}"))
+    };
+    let new_spec = if new_is_empty || new_is_working_tree {
+        None
+    } else {
+        let revision = new_revision.as_deref().ok_or("New revision is missing")?;
+        Some(format!("{revision}:{new_file_path}"))
+    };
+    if let Some(revision) = &new_revision {
+        if !valid_revision(revision) {
+            return Err("Invalid new file revision".to_string());
+        }
+    }
+    let mut blob_specs = Vec::with_capacity(2);
+    if let Some(spec) = &old_spec {
+        blob_specs.push(spec.clone());
+    }
+    if let Some(spec) = &new_spec {
+        blob_specs.push(spec.clone());
+    }
+    let mut blobs = read_revision_files(&path, &blob_specs)?.into_iter();
+    let old_content = if old_spec.is_some() {
+        blobs.next().ok_or("Git did not return the old file")?
+    } else {
+        String::new()
     };
     let new_content = if new_is_empty {
         String::new()
@@ -618,11 +768,7 @@ fn file_diff(
             std::fs::read(resolved).map_err(|e| format!("Could not read working file: {e}"))?;
         bytes_to_text(&bytes)?
     } else {
-        read_revision_file(
-            &path,
-            new_revision.as_deref().ok_or("New revision is missing")?,
-            &new_file_path,
-        )?
+        blobs.next().ok_or("Git did not return the new file")?
     };
     Ok(GitFileDiff {
         old_content,

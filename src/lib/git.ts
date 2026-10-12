@@ -59,12 +59,135 @@ export interface GitFileDiff {
   new_content: string;
 }
 
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+  size: number;
+}
+
+const historyCache = new Map<string, CacheEntry<GitHistoryCommit[]>>();
+const detailsCache = new Map<string, CacheEntry<GitCommitDetails>>();
+const diffCache = new Map<string, CacheEntry<GitFileDiff>>();
+const inFlight = new Map<string, Promise<unknown>>();
+const repositoryVersions = new Map<string, number>();
+let cachedDiffBytes = 0;
+const MAX_CACHED_DIFF_BYTES = 16 * 1024 * 1024;
+
+function readCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key);
+    if (cache === diffCache) cachedDiffBytes -= entry.size;
+    return null;
+  }
+  cache.delete(key);
+  cache.set(key, entry);
+  return entry.value;
+}
+
+function writeCache<T>(
+  cache: Map<string, CacheEntry<T>>,
+  key: string,
+  value: T,
+  maxEntries: number,
+  size = 0,
+): void {
+  const previous = cache.get(key);
+  if (previous) cache.delete(key);
+  cache.set(key, { value, expiresAt: Date.now() + 30_000, size });
+  while (cache.size > maxEntries) {
+    const oldest = cache.keys().next().value as string | undefined;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
+function getRepositoryVersion(path: string): number {
+  return repositoryVersions.get(path) ?? 0;
+}
+
+async function cachedRequest<T>(
+  key: string,
+  cache: Map<string, CacheEntry<T>>,
+  load: () => Promise<T>,
+  maxEntries: number,
+  sizeOf?: (value: T) => number,
+  shouldCache = true,
+): Promise<T> {
+  const existing = readCache(cache, key);
+  if (existing !== null) return existing;
+  const pending = inFlight.get(key);
+  if (pending) return pending as Promise<T>;
+
+  const versionKey = key.slice(0, key.indexOf('\u0000'));
+  const version = getRepositoryVersion(versionKey);
+  const request = load();
+  inFlight.set(key, request);
+  try {
+    const value = await request;
+    if (shouldCache && getRepositoryVersion(versionKey) === version) {
+      const size = sizeOf?.(value) ?? 0;
+      if (cache !== diffCache || size <= MAX_CACHED_DIFF_BYTES) {
+        if (cache === diffCache) {
+          const previous = diffCache.get(key);
+          if (previous) cachedDiffBytes -= previous.size;
+          while (cachedDiffBytes + size > MAX_CACHED_DIFF_BYTES && diffCache.size) {
+            const oldest = diffCache.keys().next().value as string | undefined;
+            if (oldest === undefined) break;
+            const entry = diffCache.get(oldest);
+            if (entry) cachedDiffBytes -= entry.size;
+            diffCache.delete(oldest);
+          }
+          cachedDiffBytes += size;
+        }
+        writeCache(cache, key, value, maxEntries, size);
+      }
+    }
+    return value;
+  } finally {
+    if (inFlight.get(key) === request) inFlight.delete(key);
+  }
+}
+
+export function invalidateGitCache(path: string): void {
+  repositoryVersions.set(path, getRepositoryVersion(path) + 1);
+  const prefix = `${path}\u0000`;
+  for (const key of historyCache.keys()) {
+    if (key.startsWith(prefix)) historyCache.delete(key);
+  }
+  for (const key of detailsCache.keys()) {
+    if (key.startsWith(prefix)) detailsCache.delete(key);
+  }
+  for (const [key, entry] of diffCache) {
+    if (key.startsWith(prefix)) {
+      cachedDiffBytes -= entry.size;
+      diffCache.delete(key);
+    }
+  }
+  for (const key of inFlight.keys()) {
+    if (key.startsWith(prefix)) inFlight.delete(key);
+  }
+}
+
 export function getGitHistory(path: string, skip = 0, limit = 100): Promise<GitHistoryCommit[]> {
-  return invoke<GitHistoryCommit[]>('git_history', { path, skip, limit });
+  const key = `${path}\u0000history:${skip}:${limit}`;
+  return cachedRequest(
+    key,
+    historyCache,
+    () => invoke<GitHistoryCommit[]>('git_history', { path, skip, limit }),
+    12,
+  );
 }
 
 export function getGitCommitDetails(path: string, hash: string, parent: string | null): Promise<GitCommitDetails> {
-  return invoke<GitCommitDetails>('git_commit_details', { path, hash, parent });
+  const key = `${path}\u0000details:${hash}:${parent ?? ''}`;
+  return cachedRequest(
+    key,
+    detailsCache,
+    () => invoke<GitCommitDetails>('git_commit_details', { path, hash, parent }),
+    100,
+  );
 }
 
 export function getGitFileDiff(options: {
@@ -77,7 +200,7 @@ export function getGitFileDiff(options: {
   newIsEmpty: boolean;
   newIsWorkingTree: boolean;
 }): Promise<GitFileDiff> {
-  return invoke<GitFileDiff>('git_file_diff', {
+  const request = {
     path: options.path,
     oldRevision: options.oldRevision,
     newRevision: options.newRevision,
@@ -86,11 +209,23 @@ export function getGitFileDiff(options: {
     oldIsEmpty: options.oldIsEmpty,
     newIsEmpty: options.newIsEmpty,
     newIsWorkingTree: options.newIsWorkingTree,
-  });
+  };
+  const key = `${options.path}\u0000diff:${JSON.stringify(request)}`;
+  const immutable = !options.newIsWorkingTree
+    && options.oldRevision !== 'HEAD'
+    && options.newRevision !== 'HEAD';
+  return cachedRequest(
+    key,
+    diffCache,
+    () => invoke<GitFileDiff>('git_file_diff', request),
+    Number.MAX_SAFE_INTEGER,
+    value => (value.old_content.length + value.new_content.length) * 2,
+    immutable,
+  );
 }
 
 export async function getStatusFiles(path: string): Promise<StatusFile[]> {
-  return invoke<StatusFile[]>('git_status_files', { path }).catch(() => []);
+  return invoke<StatusFile[]>('git_status_files', { path });
 }
 
 export async function getGitLogFull(path: string): Promise<FullCommitEntry[]> {
@@ -99,8 +234,13 @@ export async function getGitLogFull(path: string): Promise<FullCommitEntry[]> {
 
 export async function gitCommit(path: string, title: string, description: string): Promise<void> {
   await invoke('git_commit', { path, title, description });
+  invalidateGitCache(path);
 }
 
 export async function gitCommitPush(path: string, title: string, description: string): Promise<void> {
-  await invoke('git_commit_push', { path, title, description });
+  try {
+    await invoke('git_commit_push', { path, title, description });
+  } finally {
+    invalidateGitCache(path);
+  }
 }
