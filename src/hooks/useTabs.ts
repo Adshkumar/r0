@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeFile } from "../lib/fs";
+import { isImageFile } from "../lib/imagePreview";
 import type { Tab } from "../components/editor/TabBar";
 import { useToast } from "../components/ui/Toast";
 
@@ -25,7 +26,14 @@ export function useTabs() {
 
   useEffect(() => {
     if (!activeTab || fileContents[activeTab] !== undefined) return;
-    if (activeTab.startsWith('__untitled__') || activeTab.startsWith('__diff__') || activeTab.startsWith('__preview__')) return;
+    if (
+      activeTab.startsWith('__untitled__') ||
+      activeTab.startsWith('__diff__') ||
+      activeTab.startsWith('__git_commit__') ||
+      activeTab.startsWith('__git_diff__') ||
+      activeTab.startsWith('__preview__') ||
+      isImageFile(activeTab)
+    ) return;
     readFile(activeTab)
       .then(content => setFileContents(prev => ({ ...prev, [activeTab]: content })))
       .catch((e) => {
@@ -112,6 +120,44 @@ export function useTabs() {
     setActiveTab(tabPath);
   }
 
+  function openGitCommitTab(rootPath: string, hash: string) {
+    const path = `__git_commit__${encodeURIComponent(rootPath)}__${hash}`;
+    setTabs(prev => prev.some(tab => tab.path === path)
+      ? prev
+      : [...prev, { path, name: `Commit ${hash.slice(0, 7)}`, isDirty: false, kind: 'git-commit', commitHash: hash, gitRootPath: rootPath }]
+    );
+    setActiveTab(path);
+  }
+
+  function openGitDiffTab(input: NonNullable<Tab['gitDiff']> & { key: string; rootPath: string }) {
+    const path = `__git_diff__${encodeURIComponent(input.rootPath)}__${input.key}`;
+    const oldName = input.oldFilePath.split(/[\\/]/).filter(Boolean).pop() ?? input.oldFilePath;
+    const newName = input.newFilePath.split(/[\\/]/).filter(Boolean).pop() ?? input.newFilePath;
+    const name = `${oldName} (${input.oldLabel}) ↔ ${newName} (${input.newLabel})`;
+    setTabs(prev => prev.some(tab => tab.path === path)
+      ? prev
+      : [...prev, {
+          path,
+          name,
+          isDirty: false,
+          kind: 'git-diff',
+          gitRootPath: input.rootPath,
+          gitDiff: {
+            oldRevision: input.oldRevision,
+            newRevision: input.newRevision,
+            oldFilePath: input.oldFilePath,
+            newFilePath: input.newFilePath,
+            oldIsEmpty: input.oldIsEmpty,
+            newIsEmpty: input.newIsEmpty,
+            newIsWorkingTree: input.newIsWorkingTree,
+            oldLabel: input.oldLabel,
+            newLabel: input.newLabel,
+          },
+        }]
+    );
+    setActiveTab(path);
+  }
+
   async function handleSave(path: string) {
     const content = fileContentsRef.current[path];
     if (content === undefined) return;
@@ -161,6 +207,7 @@ export function useTabs() {
     fileContentsRef,
     openTab, openTabAtLine, closeTab,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
+    openGitCommitTab, openGitDiffTab,
     handleSave, handleSaveAs, handleSaveAll,
   };
 }

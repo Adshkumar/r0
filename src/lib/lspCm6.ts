@@ -7,7 +7,13 @@ import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { LanguageServerClient, languageServerWithTransport } from 'codemirror-languageserver';
 import type { Transport } from 'codemirror-languageserver';
-import { getLspLanguage, getLspLanguageId, pathToUri, type LspLanguage } from './lsp';
+import {
+  getLspLanguage,
+  getLspLanguageId,
+  lspNotificationEventName,
+  pathToUri,
+  type LspLanguage,
+} from './lsp';
 
 // ── Tauri IPC Transport ───────────────────────────────────────────────────────
 // Routes codemirror-languageserver JSON-RPC messages through the existing
@@ -19,8 +25,8 @@ class TauriLspTransport implements Transport {
   private errorCallbacks: ((err: Error) => void)[] = [];
   private unlisten: UnlistenFn | null = null;
 
-  constructor(private language: LspLanguage) {
-    listen(`lsp-notification-${language}`, (event) => {
+  constructor(private language: LspLanguage, private rootPath: string) {
+    listen(lspNotificationEventName(language, rootPath), (event) => {
       const payload = event.payload as any;
       const msg = JSON.stringify(payload);
       this.messageCallbacks.forEach(cb => cb(msg));
@@ -53,6 +59,7 @@ class TauriLspTransport implements Transport {
       // id so the package can match it — avoids double-wrapping the result field.
       invoke('lsp_request', {
         language: this.language,
+        rootPath: this.rootPath,
         method: parsed.method,
         params: parsed.params ?? {},
       }).then((rawMsg: any) => {
@@ -70,6 +77,7 @@ class TauriLspTransport implements Transport {
       // JSON-RPC notification: fire and forget
       invoke('lsp_notify', {
         language: this.language,
+        rootPath: this.rootPath,
         method: parsed.method,
         params: parsed.params ?? {},
       }).catch(() => {});
@@ -135,7 +143,7 @@ async function getOrCreateClient(language: LspLanguage, rootPath: string): Promi
 
   const promise = (async () => {
     await invoke('lsp_start', { language, rootPath });
-    const transport = new TauriLspTransport(language);
+    const transport = new TauriLspTransport(language, rootPath);
     const client    = new LanguageServerClient({
       transport,
       rootUri,

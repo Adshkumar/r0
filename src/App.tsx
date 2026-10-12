@@ -6,9 +6,12 @@ import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import Onboarding from "./components/onboarding/Onboarding";
 import EditorEmptyState from "./components/editor/EditorEmptyState";
+import ImagePreview from "./components/editor/ImagePreview";
 import TabBar from "./components/editor/TabBar";
 import Editor, { type EditorHandle, type EditorContext } from "./components/editor/Editor";
 import AiDiffPane, { type AiDiffTabData } from "./components/editor/AiDiffPane";
+import GitCommitDetailsPane from "./components/editor/GitCommitDetailsPane";
+import GitDiffPane from "./components/editor/GitDiffPane";
 import WebPreviewPane from "./components/editor/WebPreviewPane";
 import StatusBar from "./components/StatusBar";
 import TerminalPanel, { type TerminalPanelHandle } from "./components/terminal/TerminalPanel";
@@ -22,7 +25,7 @@ import { streamText } from "ai";
 import { buildLanguageModel } from "./lib/agent/providers";
 import { loadApiKey } from "./lib/secrets";
 import type { AiCompletionFn } from "./lib/aiAutocomplete";
-import { getBranch } from "./lib/git";
+import { getBranch, type GitChangedFile, type GitCommitDetails, type StatusFile } from "./lib/git";
 import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { languageLabel } from "./components/editor/languageSupport";
@@ -32,6 +35,7 @@ import { CommandContext } from "./context/CommandContext";
 import { useTabs } from "./hooks/useTabs";
 import { useWorkspacePersistence } from "./hooks/useWorkspacePersistence";
 import { useGlobalKeybindings } from "./hooks/useGlobalKeybindings";
+import { isImageFile } from "./lib/imagePreview";
 
 function App() {
   const { folderPath, setFolderPath } = useWorkspace();
@@ -50,6 +54,7 @@ function App() {
     fileContentsRef,
     openTab, openTabAtLine, closeTab,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
+    openGitCommitTab, openGitDiffTab,
     handleSave, handleSaveAs, handleSaveAll,
   } = useTabs();
 
@@ -94,6 +99,7 @@ function App() {
   const [pinnedContext,  setPinnedContext]  = useState<EditorContext | null>(null);
   const [cursorPositions, setCursorPositions] = useState<Record<string, { line: number; col: number }>>({});
   const [gitBranch,      setGitBranch]     = useState<string | null>(null);
+  const [selectedCommit, setSelectedCommit] = useState<{ rootPath: string; hash: string } | null>(null);
   const [paletteOpen,    setPaletteOpen]   = useState(false);
   const [settingsOpen,   setSettingsOpen]  = useState(false);
   const [aboutOpen,      setAboutOpen]     = useState(false);
@@ -237,18 +243,30 @@ function App() {
   }
 
   async function handleOpenFolder() {
-    const result = await open({ directory: true, multiple: false });
-    if (!result) return;
-    const path = result as string;
-    const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
-    await pushRecentProject({ path, name });
-    setFolderPath(path);
+    try {
+      const result = await open({ directory: true, multiple: false });
+      if (!result) return;
+      const path = result as string;
+      const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+      try {
+        await pushRecentProject({ path, name });
+      } catch (error) {
+        showToast(`Could not save recent project: ${String(error)}`, 'error');
+      }
+      setFolderPath(path);
+    } catch (error) {
+      showToast(`Could not open folder: ${String(error)}`, 'error');
+    }
   }
 
   async function handleOpenFile() {
-    const result = await open({ multiple: false });
-    if (!result) return;
-    openTab(result as string);
+    try {
+      const result = await open({ multiple: false });
+      if (!result) return;
+      openTab(result as string);
+    } catch (error) {
+      showToast(`Could not open file: ${String(error)}`, 'error');
+    }
   }
 
   function handleApplyCode(code: string, filePath?: string, _ctx?: EditorContext) {
@@ -324,6 +342,49 @@ function App() {
 
   function handleAbout() { setAboutOpen(true); }
 
+  function handleOpenCommit(hash: string) {
+    if (!folderPath) return;
+    setSelectedCommit({ rootPath: folderPath, hash });
+    openGitCommitTab(folderPath, hash);
+  }
+
+  function handleOpenCommitFile(rootPath: string, file: GitChangedFile, details: GitCommitDetails) {
+    const oldFilePath = file.old_path ?? file.path;
+    openGitDiffTab({
+      rootPath,
+      key: `${details.hash}_${details.comparison_parent ?? 'root'}_${encodeURIComponent(oldFilePath)}_${encodeURIComponent(file.path)}`,
+      oldRevision: details.comparison_parent,
+      newRevision: details.hash,
+      oldFilePath,
+      newFilePath: file.path,
+      oldIsEmpty: file.status === 'added' || details.comparison_parent === null,
+      newIsEmpty: file.status === 'deleted',
+      newIsWorkingTree: false,
+      oldLabel: details.comparison_parent?.slice(0, 7) ?? 'empty',
+      newLabel: details.hash.slice(0, 7),
+    });
+  }
+
+  function handleOpenWorkingDiff(file: StatusFile) {
+    if (!folderPath) return;
+    const status = file.status.replace(/\s/g, '');
+    const oldIsEmpty = status === '??' || status.includes('A');
+    const newIsEmpty = status.includes('D');
+    openGitDiffTab({
+      rootPath: folderPath,
+      key: `working_${encodeURIComponent(file.path)}`,
+      oldRevision: oldIsEmpty ? null : 'HEAD',
+      newRevision: null,
+      oldFilePath: file.old_path ?? file.path,
+      newFilePath: file.path,
+      oldIsEmpty,
+      newIsEmpty,
+      newIsWorkingTree: !newIsEmpty,
+      oldLabel: oldIsEmpty ? 'empty' : 'HEAD',
+      newLabel: newIsEmpty ? 'deleted' : 'Working Tree',
+    });
+  }
+
   const commands = {
     sidebarOpen, onToggleSidebar: () => setSidebarOpen(v => !v),
     terminalOpen, onToggleTerminal: () => setTerminalOpen(v => !v),
@@ -376,7 +437,16 @@ function App() {
       ) : (
         <>
           <div className="flex flex-1 overflow-hidden">
-            {sidebarOpen && <Sidebar onFileOpen={openTab} onFileOpenAtLine={openTabAtLine} fileTreeKey={fileTreeVersion} />}
+            {sidebarOpen && (
+              <Sidebar
+                onFileOpen={openTab}
+                onFileOpenAtLine={openTabAtLine}
+                fileTreeKey={fileTreeVersion}
+                onOpenCommit={handleOpenCommit}
+                onOpenWorkingDiff={handleOpenWorkingDiff}
+                selectedCommitHash={selectedCommit?.rootPath === folderPath ? selectedCommit.hash : null}
+              />
+            )}
             <div className="flex flex-1 overflow-hidden">
               <div className="flex-1 flex flex-col overflow-hidden">
                 <TabBar
@@ -403,9 +473,11 @@ function App() {
                       onStop={debugCtx.stopSession}
                     />
                   )}
-                  {tabs.length === 0 ? (
+                  {!activeTab || !tabs.some(tab => tab.path === activeTab) ? (
                     <EditorEmptyState
-                      onFolderOpen={setFolderPath}
+                      folderPath={folderPath}
+                      onFolderOpen={handleOpenFolder}
+                      onRecentProjectOpen={setFolderPath}
                       onFileOpen={handleOpenFile}
                       onNewFile={handleNewFile}
                     />
@@ -415,8 +487,29 @@ function App() {
                       if (!diffTab) return null;
                       return <AiDiffPane tab={diffTab} onClose={() => closeTab(activeTab)} />;
                     })()
+                  ) : activeTab?.startsWith('__git_commit__') ? (
+                    (() => {
+                      const commitTab = tabs.find(t => t.path === activeTab);
+                      const rootPath = commitTab?.gitRootPath;
+                      if (!commitTab?.commitHash || !rootPath) return null;
+                      return (
+                        <GitCommitDetailsPane
+                          rootPath={rootPath}
+                          hash={commitTab.commitHash}
+                          onOpenDiff={(file, details) => handleOpenCommitFile(rootPath, file, details)}
+                        />
+                      );
+                    })()
+                  ) : activeTab?.startsWith('__git_diff__') ? (
+                    (() => {
+                      const gitDiffTab = tabs.find(t => t.path === activeTab);
+                      if (!gitDiffTab?.gitRootPath) return null;
+                      return <GitDiffPane rootPath={gitDiffTab.gitRootPath} tab={gitDiffTab} />;
+                    })()
                   ) : activeTab === '__preview__' ? (
                     <WebPreviewPane />
+                  ) : activeTab && isImageFile(activeTab) ? (
+                    <ImagePreview key={activeTab} path={activeTab} />
                   ) : activeTab && fileContents[activeTab] !== undefined ? (
                     <Editor
                       ref={editorRef}

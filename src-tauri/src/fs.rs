@@ -56,6 +56,14 @@ pub fn read_file(path: String, workspace_root: Option<String>) -> Result<String,
 }
 
 #[tauri::command]
+pub async fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
+    tokio::task::spawn_blocking(move || std::fs::read(path))
+        .await
+        .map_err(|error| format!("Image read task failed: {error}"))?
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn write_file(path: String, content: String, workspace_root: Option<String>) -> Result<(), String> {
     if let Some(root) = workspace_root {
         assert_in_workspace(&path, &root)?;

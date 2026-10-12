@@ -1,10 +1,10 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { GitBranch, GitCommitHorizontal, RefreshCw, ChevronRight } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from './ui/Toast';
 import {
-  getStatusFiles, getGitLogFull, gitCommit, gitCommitPush,
-  type StatusFile, type FullCommitEntry,
+  getStatusFiles, getGitHistory, gitCommit, gitCommitPush,
+  type StatusFile, type GitHistoryCommit,
 } from '../lib/git';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -32,53 +32,123 @@ function shortPath(p: string): string {
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
-// Timeline geometry — all three values must be consistent:
-//   padding-left of each row = ROW_PL
-//   dot width = DOT_W
-//   rail left  = ROW_PL + DOT_W / 2
-const ROW_PL  = 10;
-const DOT_W   = 8;
-const RAIL_L  = ROW_PL + DOT_W / 2; // = 14
+const HISTORY_PAGE_SIZE = 100;
+const GRAPH_COLORS = ['#4daafc', '#c586c0', '#89d185', '#e2c08d', '#f48771', '#d7ba7d'];
 
-export default function SourceTreePanel() {
+function localDay(timestamp: number): string {
+  const d = new Date(timestamp * 1000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function branchLabel(ref: string): string {
+  return ref.replace(/^origin\//, '');
+}
+
+interface GraphPosition { lane: number; }
+
+function graphPositions(commits: GitHistoryCommit[]): { positions: Map<string, GraphPosition>; laneCount: number } {
+  const lanes: string[] = [];
+  const positions = new Map<string, GraphPosition>();
+  commits.forEach(commit => {
+    let lane = lanes.indexOf(commit.hash);
+    if (lane < 0) {
+      lane = lanes.indexOf('');
+      if (lane < 0) lane = lanes.length;
+      lanes[lane] = commit.hash;
+    }
+    positions.set(commit.hash, { lane });
+    if (commit.parents.length) {
+      let firstParentLane = lanes.indexOf(commit.parents[0]);
+      if (firstParentLane < 0) {
+        lanes[lane] = commit.parents[0];
+        firstParentLane = lane;
+      } else {
+        lanes.splice(lane, 1);
+        if (firstParentLane > lane) firstParentLane -= 1;
+      }
+      for (const parent of commit.parents.slice(1)) {
+        if (!lanes.includes(parent)) lanes.splice(firstParentLane + 1, 0, parent);
+      }
+    } else {
+      lanes.splice(lane, 1);
+    }
+  });
+  return { positions, laneCount: Math.max(1, ...Array.from(positions.values(), point => point.lane + 1)) };
+}
+
+interface Props {
+  onOpenCommit: (hash: string) => void;
+  onOpenWorkingDiff: (file: StatusFile) => void;
+  selectedCommitHash: string | null;
+}
+
+export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
   const { folderPath } = useWorkspace();
-  const [files, setFiles]       = useState<StatusFile[]>([]);
-  const [history, setHistory]   = useState<FullCommitEntry[]>([]);
+  const [repositoryState, setRepositoryState] = useState<{
+    rootPath: string;
+    files: StatusFile[];
+    history: GitHistoryCommit[];
+    hasOlderHistory: boolean;
+    error: string | null;
+  } | null>(null);
   const [title, setTitle]       = useState('');
   const [desc, setDesc]         = useState('');
   const [busy, setBusy]         = useState(false);
   const { showToast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
-  const historyScrollRef        = useRef<HTMLDivElement>(null);
-  const [fadeTop, setFadeTop]   = useState(false);
-  const [fadeBot, setFadeBot]   = useState(false);
-
-  function updateFades() {
-    const el = historyScrollRef.current;
-    if (!el) return;
-    setFadeTop(el.scrollTop > 2);
-    setFadeBot(el.scrollTop + el.clientHeight < el.scrollHeight - 2);
-  }
-
-  useEffect(() => {
-    // Recheck fades after history renders into the DOM
-    const id = requestAnimationFrame(updateFades);
-    return () => cancelAnimationFrame(id);
-  }, [history]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const currentRepository = repositoryState?.rootPath === folderPath ? repositoryState : null;
+  const files = currentRepository?.files ?? [];
+  const history = currentRepository?.history ?? [];
+  const historyError = currentRepository?.error ?? null;
+  const hasOlderHistory = currentRepository?.hasOlderHistory ?? false;
+  const loadingHistory = !!folderPath && currentRepository === null;
 
   const load = useCallback(async () => {
-    if (!folderPath) return;
+    if (!folderPath) return { files: [], history: [] as GitHistoryCommit[] };
     const [f, h] = await Promise.all([
       getStatusFiles(folderPath),
-      getGitLogFull(folderPath),
+      getGitHistory(folderPath, 0, HISTORY_PAGE_SIZE),
     ]);
-    setFiles(f);
-    setHistory(h);
+    setRepositoryState({
+      rootPath: folderPath,
+      files: f,
+      history: h,
+      hasOlderHistory: h.length === HISTORY_PAGE_SIZE,
+      error: null,
+    });
+    setSelectedDate(date => date && h.some(commit => localDay(commit.author_time) === date) ? date : null);
     return { files: f, history: h };
   }, [folderPath]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- load() syncs external git state into React on mount/folder change
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let current = true;
+    if (!folderPath) return;
+    Promise.all([
+      getStatusFiles(folderPath),
+      getGitHistory(folderPath, 0, HISTORY_PAGE_SIZE),
+    ]).then(([f, h]) => {
+      if (!current) return;
+      setRepositoryState({
+        rootPath: folderPath,
+        files: f,
+        history: h,
+        hasOlderHistory: h.length === HISTORY_PAGE_SIZE,
+        error: null,
+      });
+      setSelectedDate(date => date && h.some(commit => localDay(commit.author_time) === date) ? date : null);
+    }).catch(reason => {
+      if (current) setRepositoryState({
+        rootPath: folderPath,
+        files: [],
+        history: [],
+        hasOlderHistory: false,
+        error: String(reason),
+      });
+    });
+    return () => { current = false; };
+  }, [folderPath]);
 
   async function refresh() {
     if (!folderPath || refreshing) return;
@@ -95,6 +165,28 @@ export default function SourceTreePanel() {
       showToast('Failed to refresh.', 'error');
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function loadOlder() {
+    if (!folderPath || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const older = await getGitHistory(folderPath, history.length, HISTORY_PAGE_SIZE);
+      const rootPath = folderPath;
+      setRepositoryState(current => {
+        if (!current || current.rootPath !== rootPath) return current;
+        const known = new Set(current.history.map(commit => commit.hash));
+        return {
+          ...current,
+          history: [...current.history, ...older.filter(commit => !known.has(commit.hash))],
+          hasOlderHistory: older.length === HISTORY_PAGE_SIZE,
+        };
+      });
+    } catch (e: unknown) {
+      showToast(`Failed to load Git history: ${String(e)}`, 'error');
+    } finally {
+      setLoadingOlder(false);
     }
   }
 
@@ -129,6 +221,56 @@ export default function SourceTreePanel() {
   }
 
   const canCommit = title.trim().length > 0 && !busy;
+  const filteredHistory = selectedDate
+    ? history.filter(commit => localDay(commit.author_time) === selectedDate)
+    : history;
+  const groupedHistory = Array.from(
+    filteredHistory.reduce((groups, commit) => {
+      const day = localDay(commit.author_time);
+      const group = groups.get(day) ?? [];
+      group.push(commit);
+      groups.set(day, group);
+      return groups;
+    }, new Map<string, GitHistoryCommit[]>()),
+  );
+  const graph = graphPositions(history);
+  const visibleCommitY = new Map<string, number>();
+  let graphHeight = 0;
+  for (const [, commits] of groupedHistory) {
+    graphHeight += 24;
+    for (const commit of commits) {
+      visibleCommitY.set(commit.hash, graphHeight + 24);
+      graphHeight += 48;
+    }
+  }
+  const laneStep = graph.laneCount > 1 ? Math.min(9, 68 / (graph.laneCount - 1)) : 0;
+  const graphWidth = 16 + Math.max(0, graph.laneCount - 1) * laneStep;
+  const graphSvg = (
+    <svg
+      aria-hidden="true"
+      width={graphWidth}
+      height={graphHeight}
+      style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+    >
+      {filteredHistory.flatMap(commit => {
+        const position = graph.positions.get(commit.hash);
+        const fromY = visibleCommitY.get(commit.hash);
+        if (!position || fromY === undefined) return [];
+        const fromX = 8 + position.lane * laneStep;
+        return [
+          ...commit.parents.flatMap((parent, index) => {
+            const parentPosition = graph.positions.get(parent);
+            const toY = visibleCommitY.get(parent);
+            if (!parentPosition || toY === undefined) return [];
+            const toX = 8 + parentPosition.lane * laneStep;
+            const midY = (fromY + toY) / 2;
+            return [<path key={`${commit.hash}:${parent}`} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`} fill="none" stroke={GRAPH_COLORS[(position.lane + index) % GRAPH_COLORS.length]} strokeWidth="1.5" />];
+          }),
+          <circle key={`${commit.hash}:node`} cx={fromX} cy={fromY} r={commit.is_head ? 4 : 3.2} fill={GRAPH_COLORS[position.lane % GRAPH_COLORS.length]} stroke="var(--r0-bg-sidebar)" strokeWidth="1.5" />,
+        ];
+      })}
+    </svg>
+  );
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}>
@@ -232,7 +374,14 @@ export default function SourceTreePanel() {
           </div>
         ) : (
           files.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 8px' }}>
+            <button
+              key={`${f.path}:${i}`}
+              onClick={() => onOpenWorkingDiff(f)}
+              title={`Open working-tree diff for ${f.path}`}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px', width: '100%', border: 0, textAlign: 'left', background: 'transparent', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--r0-bg-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
                 color: statusColor(f.status), flexShrink: 0, width: 12, textAlign: 'center',
@@ -240,96 +389,103 @@ export default function SourceTreePanel() {
                 {statusLabel(f.status)}
               </span>
               <span style={{
-                fontSize: 11, color: 'var(--r0-fg-default)',
+                fontSize: 11, color: 'var(--r0-fg-default)', flex: 1, minWidth: 0,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {shortPath(f.path)}
               </span>
-            </div>
+              <GitBranch size={11} style={{ color: 'var(--r0-fg-subtle)', flexShrink: 0 }} />
+            </button>
           ))
         )}
       </div>
       </div>{/* end top-half */}
 
-      {/* ── Git history timeline ─────────────────────────────────────────────── */}
+      {/* ── Commit graph and date navigation ─────────────────────────────────── */}
       <div style={{ borderTop: '1px solid var(--r0-border-default)', flex: '0 0 50%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-
-        {/* Title bar — static, never scrolls */}
-        <div style={{
-          flexShrink: 0, padding: '5px 8px 4px',
-          background: 'var(--r0-bg-sidebar)',
-          borderBottom: '1px solid var(--r0-border-default)',
-        }}>
-          <span style={{
-            fontSize: 10, fontWeight: 600, letterSpacing: '0.06em',
-            textTransform: 'uppercase', color: 'var(--r0-fg-subtle)',
-          }}>
-            History{history.length > 0 ? ` (${history.length})` : ''}
-          </span>
+        <div style={{ flexShrink: 0, padding: '5px 8px 4px', background: 'var(--r0-bg-sidebar)', borderBottom: '1px solid var(--r0-border-default)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <GitBranch size={11} color="var(--r0-fg-subtle)" />
+            <span style={{ flex: 1, fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--r0-fg-subtle)' }}>
+              History{history.length > 0 ? ` (${history.length})` : ''}
+            </span>
+            {selectedDate && (
+              <button onClick={() => setSelectedDate(null)} title="Clear date filter" style={{ padding: '2px 5px', fontSize: 9, color: 'var(--r0-accent-blue)', background: 'transparent', border: 0, cursor: 'pointer' }}>
+                All dates
+              </button>
+            )}
+            <button onClick={refresh} title="Refresh history and changes" disabled={refreshing} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--r0-fg-subtle)', display: 'flex' }}>
+              <RefreshCw size={10} style={{ animation: refreshing ? 'spin 0.7s linear infinite' : 'none' }} />
+            </button>
+          </div>
+          <p style={{ margin: '3px 0 0', fontSize: 9, color: 'var(--r0-fg-subtle)' }}>Dates shown in local time</p>
         </div>
 
-        {/* Scrollable content + fades */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-          {/* Top fade — only when scrolled down */}
-          {fadeTop && (
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 24,
-              background: 'linear-gradient(to bottom, var(--r0-bg-sidebar), transparent)',
-              pointerEvents: 'none', zIndex: 2,
-            }} />
-          )}
-          {/* Bottom fade — only when more content below */}
-          {fadeBot && (
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 24,
-              background: 'linear-gradient(to top, var(--r0-bg-sidebar), transparent)',
-              pointerEvents: 'none', zIndex: 2,
-            }} />
-          )}
-
-          {/* Scroll container */}
-          <div ref={historyScrollRef} onScroll={updateFades} style={{ height: '100%', overflowY: 'auto' }}>
-            {history.length === 0 ? (
-              <p style={{ margin: 0, padding: '5px 10px 8px', fontSize: 11, color: 'var(--r0-fg-subtle)' }}>
-                No commits yet
-              </p>
-            ) : (
-              <div style={{ position: 'relative', padding: '4px 0' }}>
-                {/* Vertical timeline rail — left = ROW_PL + DOT_W/2 = 14px */}
-                <div style={{
-                  position: 'absolute', left: RAIL_L, top: 10, bottom: 10, width: 1,
-                  background: 'var(--r0-border-default)', pointerEvents: 'none',
-                }} />
-                {history.map((c, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 8,
-                    padding: `5px 8px 5px ${ROW_PL}px`,
-                  }}>
-                    {/* Timeline dot — center aligns with rail at RAIL_L */}
-                    <div style={{
-                      flexShrink: 0, width: DOT_W, height: DOT_W,
-                      borderRadius: '50%', marginTop: 3,
-                      background: 'var(--r0-accent-blue)',
-                      outline: '2px solid var(--r0-bg-sidebar)',
-                      position: 'relative', zIndex: 1,
-                    }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 11, color: 'var(--r0-fg-default)', lineHeight: 1.4,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {c.subject}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          {loadingHistory && history.length === 0 ? (
+            <p style={{ padding: '8px 10px', fontSize: 11, color: 'var(--r0-fg-subtle)' }}>Loading Git history…</p>
+          ) : historyError && history.length === 0 ? (
+            <p style={{ padding: '8px 10px', fontSize: 11, color: 'var(--r0-semantic-error)', overflowWrap: 'anywhere' }}>{historyError}</p>
+          ) : history.length === 0 ? (
+            <p style={{ padding: '8px 10px', fontSize: 11, color: 'var(--r0-fg-subtle)' }}>No commits yet</p>
+          ) : filteredHistory.length === 0 ? (
+            <p style={{ padding: '8px 10px', fontSize: 11, color: 'var(--r0-fg-subtle)' }}>No commits on this date.</p>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              {graphSvg}
+              {groupedHistory.map(([day, commits]) => (
+                <div key={day}>
+                  <button
+                    onClick={() => setSelectedDate(current => current === day ? null : day)}
+                    title={`Show all commits from ${day} (local time)`}
+                    style={{ height: 24, width: '100%', display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px', position: 'relative', zIndex: 1, border: 0, borderBottom: '1px solid var(--r0-border-default)', background: selectedDate === day ? 'var(--r0-bg-active)' : 'var(--r0-bg-sidebar)', color: 'var(--r0-fg-muted)', textAlign: 'left', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    <ChevronRight size={11} />
+                    {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    <span style={{ marginLeft: 'auto', color: 'var(--r0-fg-subtle)', fontWeight: 400 }}>{commits.length}</span>
+                  </button>
+                  {commits.map(commit => (
+                    <button
+                      key={commit.hash}
+                      onClick={() => onOpenCommit(commit.hash)}
+                      title={`${commit.subject}\n${commit.hash}\n${commit.parents.length > 1 ? `${commit.parents.length} parents` : ''}`}
+                      style={{ height: 48, width: '100%', display: 'flex', alignItems: 'center', padding: `0 7px 0 ${graphWidth + 5}px`, position: 'relative', zIndex: 1, border: 0, borderBottom: '1px solid color-mix(in srgb, var(--r0-border-default) 45%, transparent)', background: selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}
+                      onMouseEnter={e => { if (selectedCommitHash !== commit.hash) e.currentTarget.style.background = 'var(--r0-bg-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent'; }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 11, lineHeight: 1.35, color: 'var(--r0-fg-default)' }}>
+                          {commit.is_head && <span style={{ color: 'var(--r0-accent-blue)', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>HEAD</span>}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{commit.subject || '(no subject)'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, marginTop: 2, fontSize: 9, color: 'var(--r0-fg-subtle)', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>{commit.hash.slice(0, 8)}</span>
+                          <span>·</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{commit.author}</span>
+                          <span>·</span><span>{new Date(commit.author_time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {commit.parents.length > 1 && <span title={`${commit.parents.length} parents`}>· merge</span>}
+                        </div>
+                        {commit.refs.length > 0 && (
+                          <div style={{ display: 'flex', gap: 3, overflow: 'hidden', marginTop: 2 }}>
+                            {commit.refs.slice(0, 2).map(ref => (
+                              <span key={ref} title={ref} style={{ maxWidth: 82, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 3px', borderRadius: 3, background: 'color-mix(in srgb, var(--r0-accent-blue) 12%, transparent)', color: 'var(--r0-accent-blue)', fontSize: 8 }}>
+                                {branchLabel(ref)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--r0-fg-subtle)', lineHeight: 1.5, marginTop: 1 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{c.hash}</span>
-                        {' · '}{c.author}{' · '}{c.date}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      {commit.parents.length > 1 && <GitCommitHorizontal size={11} style={{ marginLeft: 4, color: 'var(--r0-fg-subtle)', flexShrink: 0 }} />}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              {hasOlderHistory && !selectedDate && (
+                <button onClick={loadOlder} disabled={loadingOlder} style={{ width: '100%', padding: 8, border: 0, background: 'transparent', color: 'var(--r0-accent-blue)', fontSize: 10, cursor: loadingOlder ? 'wait' : 'pointer' }}>
+                  {loadingOlder ? 'Loading older commits…' : 'Load older commits'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
