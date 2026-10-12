@@ -64,7 +64,7 @@ export default memo(function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }
         <button onClick={() => setRetryCount(count => count + 1)} style={{ padding: '5px 10px', border: '1px solid var(--r0-border-default)', borderRadius: 4, background: 'var(--r0-bg-panel)', color: 'var(--r0-fg-default)', cursor: 'pointer', fontSize: 11 }}>Retry commit details</button>
       </div>
     );
-  });
+  }
   if (!details) return null;
 
   return (
@@ -155,4 +155,4 @@ export default memo(function GitCommitDetailsPane({ rootPath, hash, onOpenDiff }
       {(copyError || error) && <p style={{ color: 'var(--r0-semantic-error)', fontSize: 11 }}>{copyError ?? error}</p>}
     </div>
   );
-}
+});
