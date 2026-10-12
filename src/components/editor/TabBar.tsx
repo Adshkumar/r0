@@ -8,13 +8,26 @@ export interface Tab {
   name: string;
   isDirty: boolean;
   isUntitled?: boolean;
-  kind?: 'file' | 'ai-diff' | 'preview';
+  kind?: 'file' | 'ai-diff' | 'preview' | 'git-commit' | 'git-diff';
   // ai-diff only
   filePath?: string;
   originalContent?: string;
   proposedContent?: string;
   approve?: () => void;
   reject?: () => void;
+  commitHash?: string;
+  gitRootPath?: string;
+  gitDiff?: {
+    oldRevision: string | null;
+    newRevision: string | null;
+    oldFilePath: string;
+    newFilePath: string;
+    oldIsEmpty: boolean;
+    newIsEmpty: boolean;
+    newIsWorkingTree: boolean;
+    oldLabel: string;
+    newLabel: string;
+  };
 }
 
 interface Props {
@@ -63,8 +76,10 @@ function TabItem({ tab, active, onSelect, onClose }: { tab: Tab; active: boolean
       }}
     >
       {/* Icon: diff badge, preview globe, dirty dot, or file icon */}
-      {tab.kind === 'ai-diff'
+      {tab.kind === 'ai-diff' || tab.kind === 'git-diff'
         ? <GitCompare size={13} style={{ flexShrink: 0, color: 'rgba(46,160,67,0.9)' }} />
+        : tab.kind === 'git-commit'
+        ? <GitCompare size={13} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />
         : tab.kind === 'preview'
         ? <Globe size={13} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />
         : tab.isDirty

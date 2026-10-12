@@ -4,6 +4,7 @@ import FileTree from "./FileTree";
 import SearchPanel from "./SearchPanel";
 import SourceTreePanel from "./SourceTreePanel";
 import DebugPanel from "./DebugPanel";
+import type { StatusFile } from "../lib/git";
 
 const MIN_WIDTH = 180;
 const MAX_WIDTH = 500;
@@ -13,6 +14,9 @@ interface Props {
   onFileOpen: (path: string) => void;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
+  onOpenCommit: (hash: string) => void;
+  onOpenWorkingDiff: (file: StatusFile) => void;
+  selectedCommitHash: string | null;
 }
 
 function PanelPlaceholder({ label }: { label: string }) {
@@ -23,23 +27,26 @@ function PanelPlaceholder({ label }: { label: string }) {
   );
 }
 
-function ActivePanel({ id, onFileOpen, onFileOpenAtLine, fileTreeKey }: {
+function ActivePanel({ id, onFileOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
   id: string;
   onFileOpen: (path: string) => void;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
+  onOpenCommit: (hash: string) => void;
+  onOpenWorkingDiff: (file: StatusFile) => void;
+  selectedCommitHash: string | null;
 }) {
   switch (id) {
     case "explorer":   return <FileTree onFileOpen={onFileOpen} refreshKey={fileTreeKey} />;
     case "search":     return <SearchPanel onFileOpenAtLine={onFileOpenAtLine} />;
-    case "sourcetree": return <SourceTreePanel />;
+    case "sourcetree": return <SourceTreePanel onOpenCommit={onOpenCommit} onOpenWorkingDiff={onOpenWorkingDiff} selectedCommitHash={selectedCommitHash} />;
     case "debug":      return <DebugPanel onFileOpenAtLine={onFileOpenAtLine} />;
     case "extensions": return <PanelPlaceholder label="Extensions" />;
     default:           return null;
   }
 }
 
-export default function Sidebar({ onFileOpen, onFileOpenAtLine, fileTreeKey }: Props) {
+export default function Sidebar({ onFileOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [active, setActive] = useState("explorer");
   const isResizing = useRef(false);
@@ -78,6 +85,9 @@ export default function Sidebar({ onFileOpen, onFileOpenAtLine, fileTreeKey }: P
         onFileOpen={onFileOpen}
         onFileOpenAtLine={onFileOpenAtLine}
         fileTreeKey={fileTreeKey}
+        onOpenCommit={onOpenCommit}
+        onOpenWorkingDiff={onOpenWorkingDiff}
+        selectedCommitHash={selectedCommitHash}
       />
 
       {/* Resize handle */}

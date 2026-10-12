@@ -7,6 +7,7 @@ import {
 } from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
 import { undo as cmUndo, redo as cmRedo, selectAll as cmSelectAll, defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import {
   syntaxHighlighting, HighlightStyle,
   bracketMatching, indentOnInput,
@@ -15,6 +16,7 @@ import { openSearchPanel, search, searchKeymap } from '@codemirror/search';
 import { tags as t } from '@lezer/highlight';
 import { unifiedMergeView } from '@codemirror/merge';
 import { createHunkControls } from '../../lib/hunkControls';
+import { insertNewlineInEmptyPair } from '../../lib/editorCommands';
 import { getLanguageExtension, languageLabel } from './languageSupport';
 import { createLspExtension } from '../../lib/lspCm6';
 import { getLspLanguage } from '../../lib/lsp';
@@ -450,10 +452,21 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         drawSelection(),
         indentOnInput(),
         bracketMatching(),
+        closeBrackets(),
+        EditorState.languageData.of(() => [{
+          closeBrackets: { brackets: ['(', '[', '{', "'", '"', '`'] },
+        }]),
         history(),
         syntaxHighlighting(r0Highlight),
         search({ top: false }),
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab, ...searchKeymap]),
+        keymap.of([
+          ...closeBracketsKeymap,
+          { key: 'Enter', run: insertNewlineInEmptyPair },
+          ...defaultKeymap,
+          ...historyKeymap,
+          indentWithTab,
+          ...searchKeymap,
+        ]),
         getLanguageExtension(path),
         mergeCompartment.current.of([]),
         lspCompartment.current.of([]),

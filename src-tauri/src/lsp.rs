@@ -1,25 +1,38 @@
 use std::collections::HashMap;
 use std::sync::{
-    Arc, Mutex,
     atomic::{AtomicI64, Ordering},
+    Arc, Mutex,
 };
+use tauri::Emitter;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader as TokioBufReader};
 use tokio::sync::{mpsc, oneshot};
-use tauri::Emitter;
 
 struct LspServer {
-    msg_tx:      mpsc::UnboundedSender<serde_json::Value>,
+    msg_tx: mpsc::UnboundedSender<serde_json::Value>,
     req_counter: Arc<AtomicI64>,
-    pending:     Arc<Mutex<HashMap<i64, oneshot::Sender<serde_json::Value>>>>,
-    _child:      tokio::process::Child, // kill_on_drop kills on drop
+    pending: Arc<Mutex<HashMap<i64, oneshot::Sender<serde_json::Value>>>>,
+    _child: tokio::process::Child, // kill_on_drop kills on drop
 }
 
-pub struct LspState(Mutex<HashMap<String, LspServer>>);
+pub struct LspState(Mutex<HashMap<(String, String), LspServer>>);
 
 impl LspState {
     pub fn new() -> Self {
         LspState(Mutex::new(HashMap::new()))
     }
+}
+
+fn server_key(language: &str, root_path: &str) -> (String, String) {
+    (language.to_string(), root_path.to_string())
+}
+
+fn notification_event(language: &str, root_path: &str) -> String {
+    let root_key = root_path
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("lsp-notification-{language}-{root_key}")
 }
 
 /// Read one Content-Length-framed LSP message from an async buffered reader.
@@ -30,15 +43,21 @@ async fn read_lsp_msg(
     loop {
         let mut line = String::new();
         let n = reader.read_line(&mut line).await.ok()?;
-        if n == 0 { return None; }
+        if n == 0 {
+            return None;
+        }
         let trimmed = line.trim();
-        if trimmed.is_empty() { break; }
+        if trimmed.is_empty() {
+            break;
+        }
         let lower = trimmed.to_ascii_lowercase();
         if let Some(rest) = lower.strip_prefix("content-length: ") {
             content_length = rest.trim().parse().ok()?;
         }
     }
-    if content_length == 0 { return None; }
+    if content_length == 0 {
+        return None;
+    }
     let mut buf = vec![0u8; content_length];
     reader.read_exact(&mut buf).await.ok()?;
     serde_json::from_slice(&buf).ok()
@@ -76,7 +95,7 @@ fn make_lsp_process(exe: &str) -> tokio::process::Command {
 fn lsp_exe_and_args(language: &str) -> Option<(&'static str, &'static [&'static str])> {
     match language {
         "typescript" | "javascript" => Some(("typescript-language-server", &["--stdio"])),
-        "rust"   => Some(("rust-analyzer", &[])),
+        "rust" => Some(("rust-analyzer", &[])),
         "python" => Some(("pylsp", &[])),
         _ => None,
     }
@@ -89,7 +108,8 @@ pub async fn lsp_start(
     app: tauri::AppHandle,
     state: tauri::State<'_, LspState>,
 ) -> Result<(), String> {
-    if state.0.lock().unwrap().contains_key(&language) {
+    let key = server_key(&language, &root_path);
+    if state.0.lock().unwrap().contains_key(&key) {
         return Ok(());
     }
 
@@ -97,14 +117,16 @@ pub async fn lsp_start(
         .ok_or_else(|| format!("No LSP server configured for '{}'", language))?;
 
     let mut cmd = make_lsp_process(exe);
-    for arg in args { cmd.arg(arg); }
+    for arg in args {
+        cmd.arg(arg);
+    }
     cmd.current_dir(&root_path);
 
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn {} ({}): {}", exe, language, e))?;
 
-    let stdin  = child.stdin.take().ok_or("stdin unavailable")?;
+    let stdin = child.stdin.take().ok_or("stdin unavailable")?;
     let stdout = child.stdout.take().ok_or("stdout unavailable")?;
 
     let (msg_tx, mut msg_rx) = mpsc::unbounded_channel::<serde_json::Value>();
@@ -117,24 +139,33 @@ pub async fn lsp_start(
         let mut stdin = stdin;
         while let Some(msg) = msg_rx.recv().await {
             let bytes = encode_lsp_msg(&msg);
-            if stdin.write_all(&bytes).await.is_err() { break; }
+            if stdin.write_all(&bytes).await.is_err() {
+                break;
+            }
             let _ = stdin.flush().await;
         }
     });
 
     // Reader task: stdout → pending responses | frontend notifications.
     // msg_tx_r is used to auto-reply to server→client requests (see below).
-    let pending_r  = pending.clone();
-    let app_r      = app.clone();
-    let lang_r     = language.clone();
-    let msg_tx_r   = msg_tx.clone();
+    let pending_r = pending.clone();
+    let app_r = app.clone();
+    let lang_r = language.clone();
+    let root_r = root_path.clone();
+    let msg_tx_r = msg_tx.clone();
     tokio::spawn(async move {
         let mut reader = TokioBufReader::new(stdout);
         loop {
-            let Some(msg) = read_lsp_msg(&mut reader).await else { break };
-            let method_str = msg.get("method").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let Some(msg) = read_lsp_msg(&mut reader).await else {
+                break;
+            };
+            let method_str = msg
+                .get("method")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let has_method = !method_str.is_empty();
-            let id_opt     = msg.get("id").and_then(|v| v.as_i64());
+            let id_opt = msg.get("id").and_then(|v| v.as_i64());
 
             match (has_method, id_opt) {
                 // Response to a client request (id present, no method)
@@ -155,19 +186,26 @@ pub async fn lsp_start(
                 }
                 // Pure server notification (method, no id) — forward normally
                 (true, None) => {
-                    let _ = app_r.emit(&format!("lsp-notification-{}", lang_r), &msg);
+                    let _ = app_r.emit(&notification_event(&lang_r, &root_r), &msg);
                 }
                 _ => {}
             }
         }
     });
 
-    state.0.lock().unwrap().insert(language, LspServer {
-        msg_tx,
-        req_counter,
-        pending,
-        _child: child,
-    });
+    let mut servers = state.0.lock().unwrap();
+    if servers.contains_key(&key) {
+        return Ok(());
+    }
+    servers.insert(
+        key,
+        LspServer {
+            msg_tx,
+            req_counter,
+            pending,
+            _child: child,
+        },
+    );
 
     Ok(())
 }
@@ -175,6 +213,7 @@ pub async fn lsp_start(
 #[tauri::command]
 pub async fn lsp_request(
     language: String,
+    root_path: String,
     method: String,
     params: serde_json::Value,
     state: tauri::State<'_, LspState>,
@@ -183,8 +222,8 @@ pub async fn lsp_request(
     let (id, msg_tx) = {
         let guard = state.0.lock().unwrap();
         let srv = guard
-            .get(&language)
-            .ok_or_else(|| format!("LSP not running for '{}'", language))?;
+            .get(&server_key(&language, &root_path))
+            .ok_or_else(|| format!("LSP not running for '{}' in '{}'", language, root_path))?;
         let id = srv.req_counter.fetch_add(1, Ordering::Relaxed);
         srv.pending.lock().unwrap().insert(id, tx);
         (id, srv.msg_tx.clone())
@@ -206,6 +245,7 @@ pub async fn lsp_request(
 #[tauri::command]
 pub async fn lsp_notify(
     language: String,
+    root_path: String,
     method: String,
     params: serde_json::Value,
     state: tauri::State<'_, LspState>,
@@ -213,8 +253,8 @@ pub async fn lsp_notify(
     let msg_tx = {
         let guard = state.0.lock().unwrap();
         let srv = guard
-            .get(&language)
-            .ok_or_else(|| format!("LSP not running for '{}'", language))?;
+            .get(&server_key(&language, &root_path))
+            .ok_or_else(|| format!("LSP not running for '{}' in '{}'", language, root_path))?;
         srv.msg_tx.clone()
     };
     msg_tx
@@ -229,8 +269,50 @@ pub async fn lsp_notify(
 #[tauri::command]
 pub async fn lsp_stop(
     language: String,
+    root_path: String,
     state: tauri::State<'_, LspState>,
 ) -> Result<(), String> {
-    state.0.lock().unwrap().remove(&language);
+    state
+        .0
+        .lock()
+        .unwrap()
+        .remove(&server_key(&language, &root_path));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{notification_event, server_key};
+
+    #[test]
+    fn lsp_servers_are_scoped_to_language_and_workspace() {
+        assert_ne!(
+            server_key("typescript", r"C:\work\one"),
+            server_key("typescript", r"C:\work\two")
+        );
+        assert_ne!(
+            server_key("typescript", r"C:\work\one"),
+            server_key("rust", r"C:\work\one")
+        );
+        assert_eq!(
+            server_key("typescript", r"C:\work\one"),
+            server_key("typescript", r"C:\work\one")
+        );
+    }
+
+    #[test]
+    fn lsp_notifications_are_scoped_to_workspace() {
+        assert_eq!(
+            notification_event("typescript", r"C:\work\rø"),
+            "lsp-notification-typescript-433a5c776f726b5c72c3b8"
+        );
+        assert_ne!(
+            notification_event("typescript", r"C:\work\one"),
+            notification_event("typescript", r"C:\work\two")
+        );
+        assert_eq!(
+            notification_event("typescript", r"C:\work\one"),
+            notification_event("typescript", r"C:\work\one")
+        );
+    }
 }

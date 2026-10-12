@@ -44,6 +44,13 @@ export function pathToUri(filePath: string): string {
   return `file:///${normalized}`;
 }
 
+export function lspNotificationEventName(language: LspLanguage, rootPath: string): string {
+  const rootKey = Array.from(new TextEncoder().encode(rootPath), byte =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+  return `lsp-notification-${language}-${rootKey}`;
+}
+
 // ── Singleton state ───────────────────────────────────────────────────────────
 
 // Tracks which (language + rootPath) pairs are fully initialized
@@ -65,20 +72,21 @@ export async function ensureLspServer(
 ): Promise<void> {
   const key = initKey(language, rootPath);
   if (initializedKeys.has(key)) return;
-  if (initInProgress.has(language)) return initInProgress.get(language)!;
+  if (initInProgress.has(key)) return initInProgress.get(key)!;
 
   const promise = (async () => {
     await invoke('lsp_start', { language, rootPath });
     await invoke('lsp_request', {
       language,
+      rootPath,
       method: 'initialize',
       params: buildInitializeParams(rootPath),
     });
-    await invoke('lsp_notify', { language, method: 'initialized', params: {} });
+    await invoke('lsp_notify', { language, rootPath, method: 'initialized', params: {} });
     initializedKeys.add(key);
-  })().finally(() => initInProgress.delete(language));
+  })().finally(() => initInProgress.delete(key));
 
-  initInProgress.set(language, promise);
+  initInProgress.set(key, promise);
   return promise;
 }
 
@@ -116,14 +124,17 @@ function buildInitializeParams(rootPath: string) {
 
 export async function lspDidOpen(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
   text: string,
 ): Promise<void> {
   const uri = pathToUri(filePath);
-  if (openDocuments.has(uri)) return;
-  openDocuments.set(uri, 1);
+  const documentKey = `${initKey(language, rootPath)}::${uri}`;
+  if (openDocuments.has(documentKey)) return;
+  openDocuments.set(documentKey, 1);
   await invoke('lsp_notify', {
     language,
+    rootPath,
     method: 'textDocument/didOpen',
     params: {
       textDocument: { uri, languageId: getLspLanguageId(filePath), version: 1, text },
@@ -133,14 +144,17 @@ export async function lspDidOpen(
 
 export async function lspDidChange(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
   text: string,
 ): Promise<void> {
   const uri = pathToUri(filePath);
-  const version = (openDocuments.get(uri) ?? 0) + 1;
-  openDocuments.set(uri, version);
+  const documentKey = `${initKey(language, rootPath)}::${uri}`;
+  const version = (openDocuments.get(documentKey) ?? 0) + 1;
+  openDocuments.set(documentKey, version);
   await invoke('lsp_notify', {
     language,
+    rootPath,
     method: 'textDocument/didChange',
     params: {
       textDocument: { uri, version },
@@ -151,12 +165,14 @@ export async function lspDidChange(
 
 export async function lspDidClose(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
 ): Promise<void> {
   const uri = pathToUri(filePath);
-  openDocuments.delete(uri);
+  openDocuments.delete(`${initKey(language, rootPath)}::${uri}`);
   await invoke('lsp_notify', {
     language,
+    rootPath,
     method: 'textDocument/didClose',
     params: { textDocument: { uri } },
   }).catch(() => {});
@@ -166,12 +182,14 @@ export async function lspDidClose(
 
 export async function lspCompletion(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
   line: number,
   character: number,
 ): Promise<any> {
   return invoke('lsp_request', {
     language,
+    rootPath,
     method: 'textDocument/completion',
     params: {
       textDocument: { uri: pathToUri(filePath) },
@@ -183,12 +201,14 @@ export async function lspCompletion(
 
 export async function lspHoverRequest(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
   line: number,
   character: number,
 ): Promise<any> {
   return invoke('lsp_request', {
     language,
+    rootPath,
     method: 'textDocument/hover',
     params: {
       textDocument: { uri: pathToUri(filePath) },
@@ -199,12 +219,14 @@ export async function lspHoverRequest(
 
 export async function lspDefinition(
   language: LspLanguage,
+  rootPath: string,
   filePath: string,
   line: number,
   character: number,
 ): Promise<any> {
   return invoke('lsp_request', {
     language,
+    rootPath,
     method: 'textDocument/definition',
     params: {
       textDocument: { uri: pathToUri(filePath) },
@@ -217,7 +239,8 @@ export async function lspDefinition(
 
 export function onLspNotification(
   language: LspLanguage,
+  rootPath: string,
   handler: (msg: any) => void,
 ): Promise<UnlistenFn> {
-  return listen(`lsp-notification-${language}`, (event) => handler(event.payload));
+  return listen(lspNotificationEventName(language, rootPath), (event) => handler(event.payload));
 }
