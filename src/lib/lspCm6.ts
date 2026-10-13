@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- LSP JSON-RPC payloads are protocol-defined, untyped JSON */
-import { linter, lintGutter } from '@codemirror/lint';
 import { keymap } from '@codemirror/view';
 import type { Extension } from '@codemirror/state';
 import { autocompletion } from '@codemirror/autocomplete';
@@ -24,11 +23,17 @@ class TauriLspTransport implements Transport {
   private messageCallbacks: ((msg: string) => void)[] = [];
   private closeCallbacks: (() => void)[] = [];
   private errorCallbacks: ((err: Error) => void)[] = [];
+  private documentVersions = new Map<string, number>();
   private unlisten: UnlistenFn | null = null;
 
   constructor(private language: LspLanguage, private rootPath: string) {
     listen(lspNotificationEventName(language, rootPath), (event) => {
       const payload = event.payload as any;
+      if (payload.method === 'textDocument/publishDiagnostics') {
+        const { uri, version } = payload.params ?? {};
+        const latestVersion = this.documentVersions.get(uri);
+        if (typeof version === 'number' && latestVersion !== undefined && version < latestVersion) return;
+      }
       const msg = JSON.stringify(payload);
       this.messageCallbacks.forEach(cb => cb(msg));
     }).then(fn => { this.unlisten = fn; });
@@ -46,7 +51,7 @@ class TauriLspTransport implements Transport {
           ...parsed.params.capabilities.textDocument,
           publishDiagnostics: {
             relatedInformation: true,
-            versionSupport: false,
+            versionSupport: true,
             tagSupport: { valueSet: [1, 2] },
           },
         };
@@ -75,6 +80,17 @@ class TauriLspTransport implements Transport {
         this.messageCallbacks.forEach(cb => cb(errResp));
       });
     } else if (parsed.method) {
+      const textDocument = parsed.params?.textDocument;
+      if (typeof textDocument?.uri === 'string') {
+        if (
+          (parsed.method === 'textDocument/didOpen' || parsed.method === 'textDocument/didChange') &&
+          typeof textDocument.version === 'number'
+        ) {
+          this.documentVersions.set(textDocument.uri, textDocument.version);
+        } else if (parsed.method === 'textDocument/didClose') {
+          this.documentVersions.delete(textDocument.uri);
+        }
+      }
       // JSON-RPC notification: fire and forget
       invoke('lsp_notify', {
         language: this.language,
@@ -332,10 +348,6 @@ export async function createLspExtension(opts: LspExtensionOptions): Promise<Ext
   });
 
   return [
-    // lintState must be in the view for codemirror-languageserver's setDiagnostics
-    // dispatch to take effect — the package does not install it automatically.
-    linter(() => [], { delay: Infinity }),
-    lintGutter(),
     definitionKeymap,
     ...lspExtensions,
     autocompletion({

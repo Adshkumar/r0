@@ -13,11 +13,14 @@ import {
   syntaxHighlighting, HighlightStyle,
   bracketMatching, indentOnInput,
 } from '@codemirror/language';
+import { linter, lintGutter } from '@codemirror/lint';
 import { openSearchPanel, search, searchKeymap } from '@codemirror/search';
 import { tags as t } from '@lezer/highlight';
 import { unifiedMergeView } from '@codemirror/merge';
 import { createHunkControls } from '../../lib/hunkControls';
 import { insertNewlineInEmptyPair } from '../../lib/editorCommands';
+import { getParserDiagnostics } from '../../lib/editorDiagnostics';
+import { indentationGuides } from '../../lib/indentationGuides';
 import { getLanguageExtension, languageLabel } from './languageSupport';
 import { createLspExtension } from '../../lib/lspCm6';
 import { getLspLanguage } from '../../lib/lsp';
@@ -41,31 +44,42 @@ export const r0Highlight = HighlightStyle.define([
   { tag: t.comment,                                    color: 'var(--r0-syntax-comment)', fontStyle: 'italic' },
   { tag: t.lineComment,                                color: 'var(--r0-syntax-comment)', fontStyle: 'italic' },
   { tag: t.blockComment,                               color: 'var(--r0-syntax-comment)', fontStyle: 'italic' },
+  { tag: t.docComment,                                 color: 'var(--r0-syntax-comment)', fontStyle: 'italic' },
   { tag: t.keyword,                                    color: 'var(--r0-syntax-keyword)' },
   { tag: t.controlKeyword,                             color: 'var(--r0-syntax-keyword)' },
   { tag: t.definitionKeyword,                          color: 'var(--r0-syntax-keyword)' },
   { tag: t.moduleKeyword,                              color: 'var(--r0-syntax-keyword)' },
+  { tag: t.operatorKeyword,                            color: 'var(--r0-syntax-keyword)' },
   { tag: [t.string, t.special(t.string)],              color: 'var(--r0-syntax-string)' },
+  { tag: t.docString,                                  color: 'var(--r0-syntax-string)' },
   { tag: [t.regexp, t.escape],                         color: 'var(--r0-syntax-string)' },
   { tag: [t.function(t.variableName), t.function(t.propertyName)], color: 'var(--r0-syntax-function)' },
   { tag: t.definition(t.function(t.variableName)),     color: 'var(--r0-syntax-function)' },
+  { tag: t.definition(t.function(t.propertyName)),      color: 'var(--r0-syntax-function)' },
+  { tag: t.definition(t.variableName),                 color: 'var(--r0-syntax-variable)' },
+  { tag: t.local(t.variableName),                      color: 'var(--r0-syntax-variable)' },
+  { tag: t.special(t.variableName),                    color: 'var(--r0-syntax-constant)' },
   { tag: t.variableName,                               color: 'var(--r0-syntax-variable)' },
-  { tag: t.propertyName,                               color: 'var(--r0-syntax-variable)' },
-  { tag: t.standard(t.tagName),                        color: 'var(--r0-syntax-type)' },
+  { tag: t.propertyName,                               color: 'var(--r0-syntax-property)' },
+  { tag: t.standard(t.propertyName),                    color: 'var(--r0-syntax-function)' },
+  { tag: t.namespace,                                  color: 'var(--r0-syntax-module)' },
+  { tag: t.standard(t.tagName),                        color: 'var(--r0-syntax-tag)' },
   { tag: t.standard(t.variableName),                   color: 'var(--r0-syntax-constant)' },
-  { tag: [t.number, t.integer, t.float],               color: 'var(--r0-syntax-constant)' },
+  { tag: [t.literal, t.number, t.integer, t.float],    color: 'var(--r0-syntax-constant)' },
   { tag: t.constant(t.variableName),                   color: 'var(--r0-syntax-constant)' },
   { tag: t.bool,                                       color: 'var(--r0-syntax-constant)' },
   { tag: t.null,                                       color: 'var(--r0-syntax-constant)' },
-  { tag: [t.typeName, t.className, t.namespace, t.macroName], color: 'var(--r0-syntax-type)' },
+  { tag: [t.typeName, t.className, t.macroName],       color: 'var(--r0-syntax-type)' },
   { tag: t.typeOperator,                               color: 'var(--r0-syntax-type)' },
-  { tag: [t.operator, t.punctuation],                  color: 'var(--r0-syntax-operator)' },
-  { tag: t.special(t.punctuation),                     color: 'var(--r0-syntax-operator)' },
+  { tag: t.operator,                                   color: 'var(--r0-syntax-operator)' },
+  { tag: t.punctuation,                                color: 'var(--r0-syntax-punctuation)' },
+  { tag: t.bracket,                                    color: 'var(--r0-syntax-bracket)' },
   { tag: t.attributeName,                              color: 'var(--r0-syntax-attribute)' },
   { tag: t.attributeValue,                             color: 'var(--r0-syntax-string)' },
-  { tag: t.tagName,                                    color: 'var(--r0-syntax-keyword)' },
+  { tag: t.tagName,                                    color: 'var(--r0-syntax-tag)' },
   { tag: t.self,                                       color: 'var(--r0-syntax-keyword)' },
   { tag: [t.meta, t.documentMeta],                     color: 'var(--r0-syntax-comment)' },
+  { tag: t.invalid,                                    color: 'var(--r0-semantic-error)', textDecoration: 'underline wavy' },
   { tag: t.strong,                                     fontWeight: 'bold' },
   { tag: t.emphasis,                                   fontStyle: 'italic' },
   { tag: t.strikethrough,                              textDecoration: 'line-through' },
@@ -91,6 +105,7 @@ export const r0BaseTheme = EditorView.theme({
   '.cm-content': {
     padding: '8px 0',
     caretColor: 'var(--r0-editor-cursor, var(--r0-accent-blue))',
+    tabSize: 4,
   },
   '.cm-gutters': {
     backgroundColor: 'transparent',
@@ -111,14 +126,59 @@ export const r0BaseTheme = EditorView.theme({
     backgroundColor: 'var(--r0-bg-hover)',
     color: 'var(--r0-fg-muted)',
   },
+  '.cm-searchMatch': {
+    backgroundColor: 'color-mix(in srgb, var(--r0-accent-yellow) 24%, transparent)',
+    outline: '1px solid color-mix(in srgb, var(--r0-accent-yellow) 38%, transparent)',
+  },
+  '.cm-searchMatch-selected': {
+    backgroundColor: 'color-mix(in srgb, var(--r0-accent-blue) 32%, transparent)',
+    outline: '1px solid color-mix(in srgb, var(--r0-accent-blue) 62%, transparent)',
+  },
   '.cm-cursor, .cm-dropCursor': {
     borderLeftColor: 'var(--r0-editor-cursor, var(--r0-accent-blue))',
     borderLeftWidth: '2px',
   },
   '&.cm-focused .cm-matchingBracket': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-accent-blue) 15%, transparent)',
-    outline: '1px solid color-mix(in srgb, var(--r0-accent-blue) 40%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--r0-syntax-bracket) 18%, transparent)',
+    outline: '1px solid color-mix(in srgb, var(--r0-syntax-bracket) 48%, transparent)',
     borderRadius: '2px',
+  },
+  '.cm-nonmatchingBracket': {
+    color: 'var(--r0-semantic-error)',
+    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-error) 12%, transparent)',
+    outline: '1px solid color-mix(in srgb, var(--r0-semantic-error) 45%, transparent)',
+    borderRadius: '2px',
+  },
+  '.cm-indent-guide': {
+    backgroundImage: 'linear-gradient(to right, transparent calc(var(--r0-indent-guide-step) - 1px), color-mix(in srgb, var(--r0-fg-subtle) 28%, transparent) calc(var(--r0-indent-guide-step) - 1px), color-mix(in srgb, var(--r0-fg-subtle) 28%, transparent) var(--r0-indent-guide-step))',
+    backgroundSize: 'var(--r0-indent-guide-step) 100%',
+    backgroundRepeat: 'repeat-x',
+  },
+  '.cm-lintRange-error': {
+    textDecoration: 'underline wavy var(--r0-semantic-error)',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-lintRange-warning': {
+    textDecoration: 'underline wavy var(--r0-semantic-warning)',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-lintRange-info, .cm-lintRange-hint': {
+    textDecoration: 'underline dotted var(--r0-semantic-info)',
+    textUnderlineOffset: '3px',
+  },
+  '.cm-lintPoint-error::after': {
+    borderBottomColor: 'var(--r0-semantic-error)',
+  },
+  '.cm-lintPoint-warning::after': {
+    borderBottomColor: 'var(--r0-semantic-warning)',
+  },
+  '.cm-lintPoint-info::after, .cm-lintPoint-hint::after': {
+    borderBottomColor: 'var(--r0-semantic-info)',
+  },
+  '.cm-tooltip-lint': {
+    backgroundColor: 'var(--r0-bg-base)',
+    border: '1px solid var(--r0-border-default)',
+    color: 'var(--r0-fg-default)',
   },
   '.cm-tooltip': {
     backgroundColor: 'var(--r0-bg-base)',
@@ -545,6 +605,9 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         }]),
         history(),
         syntaxHighlighting(r0Highlight),
+        linter(view => getParserDiagnostics(view.state), { delay: 500 }),
+        lintGutter(),
+        indentationGuides,
         search({ top: false }),
         keymap.of([
           ...closeBracketsKeymap,
