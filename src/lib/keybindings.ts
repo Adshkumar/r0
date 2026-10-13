@@ -34,6 +34,7 @@ export const COMMANDS: CommandDef[] = [
   { id: "r0.editorCopy",     label: "Copy",                 category: "Edit",    defaultKey: "ctrl+c" },
   { id: "r0.editorPaste",    label: "Paste",                category: "Edit",    defaultKey: "ctrl+v" },
   { id: "r0.editorSelectAll",label: "Select All",           category: "Edit",    defaultKey: "ctrl+a" },
+  { id: "r0.formatDocument", label: "Format Document",      category: "Edit",    defaultKey: "shift+alt+f" },
   // View
   { id: "r0.togglePalette",  label: "Command Palette",      category: "View",    defaultKey: "ctrl+p" },
   { id: "r0.toggleSidebar",  label: "Toggle Sidebar",       category: "View",    defaultKey: "ctrl+b" },

@@ -158,8 +158,8 @@ export function useTabs() {
     setActiveTab(path);
   }, []);
 
-  async function handleSave(path: string) {
-    const content = fileContentsRef.current[path];
+  async function handleSave(path: string, contentOverride?: string) {
+    const content = contentOverride ?? fileContentsRef.current[path];
     if (content === undefined) return;
     const tab = tabs.find(t => t.path === path);
     if (tab?.isUntitled) {
@@ -172,14 +172,17 @@ export function useTabs() {
       setFileContents(prev => { const next = { ...prev, [dest]: content }; delete next[path]; return next; });
     } else {
       await writeFile(path, content);
+      if (contentOverride !== undefined) {
+        setFileContents(prev => ({ ...prev, [path]: content }));
+      }
       setTabs(prev => prev.map(t => t.path === path ? { ...t, isDirty: false } : t));
     }
   }
 
-  async function handleSaveAs() {
+  async function handleSaveAs(contentOverride?: string) {
     const path = activeTabRef.current;
     if (!path) return;
-    const content = fileContentsRef.current[path];
+    const content = contentOverride ?? fileContentsRef.current[path];
     if (content === undefined) return;
     const tab  = tabs.find(t => t.path === path);
     const dest = await save({ defaultPath: tab?.name });
@@ -191,9 +194,9 @@ export function useTabs() {
     setFileContents(prev => { const next = { ...prev, [dest]: content }; if (dest !== path) delete next[path]; return next; });
   }
 
-  async function handleSaveAll() {
+  async function handleSaveAll(formattedContents: Record<string, string> = {}) {
     const dirty = tabs.filter(t => t.isDirty && !t.isUntitled);
-    for (const tab of dirty) await handleSave(tab.path);
+    for (const tab of dirty) await handleSave(tab.path, formattedContents[tab.path]);
   }
 
   return {

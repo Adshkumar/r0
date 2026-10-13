@@ -191,3 +191,9 @@ html, body, #root {
 .r0-git-diff-view .cm-editor .cm-scroller::-webkit-scrollbar-thumb {
   background-color: var(--r0-border-subtle);
 }
+.cm-editor.r0-hide-completion-docs .cm-tooltip.cm-completionInfo {
+  display: none;
+}
+.cm-editor .cm-tooltip-autocomplete {
+  max-height: min(18rem, 45vh);
+}

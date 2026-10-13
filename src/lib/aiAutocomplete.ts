@@ -12,6 +12,10 @@ export type AiCompletionFn = (
   signal: AbortSignal,
 ) => AsyncIterable<string>;
 
+export interface AiAutocompleteOptions {
+  acceptWithTab?: boolean;
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 const setSuggestion = StateEffect.define<{ text: string; pos: number } | null>();
@@ -67,13 +71,13 @@ const ghostDecoField = StateField.define<DecorationSet>({
 
 // ── Keymap — Prec.highest so Tab beats indentWithTab unconditionally ──────────
 
-const ghostKeymap = Prec.highest(keymap.of([
+const ghostKeymap = (options: AiAutocompleteOptions) => Prec.highest(keymap.of([
   {
     key: 'Tab',
     run(view) {
       const { text, pos } = view.state.field(suggestionField);
       // Return false when no suggestion so indentWithTab still fires normally.
-      if (!text || view.state.selection.main.head !== pos) return false;
+      if (!text || view.state.selection.main.head !== pos || options.acceptWithTab === false) return false;
       view.dispatch({
         changes: { from: pos, insert: text },
         selection: { anchor: pos + text.length },
@@ -236,6 +240,13 @@ const ghostTheme = EditorView.baseTheme({
  */
 export function createAiAutocompleteExtension(
   ref: { current: AiCompletionFn | undefined },
+  options: AiAutocompleteOptions = {},
 ): Extension {
-  return [ghostTheme, suggestionField, ghostDecoField, ghostKeymap, createTriggerPlugin(ref)];
+  return [
+    ghostTheme,
+    suggestionField,
+    ghostDecoField,
+    ghostKeymap(options),
+    createTriggerPlugin(ref),
+  ];
 }

@@ -1,4 +1,4 @@
-﻿use std::collections::HashMap;
+use std::collections::HashMap;
 
 const PROXY_ALLOW_HOSTS: &[&str] = &[
     "api.anthropic.com",
@@ -12,8 +12,8 @@ const PROXY_ALLOW_HOSTS: &[&str] = &[
 
 #[derive(serde::Serialize)]
 pub struct BashResult {
-    stdout:    String,
-    stderr:    String,
+    stdout: String,
+    stderr: String,
     exit_code: i32,
 }
 
@@ -50,8 +50,8 @@ pub async fn agent_bash_run(command: String, cwd: String) -> Result<BashResult, 
     .map_err(|e| e.to_string())?;
 
     Ok(BashResult {
-        stdout:    String::from_utf8_lossy(&out.stdout).into_owned(),
-        stderr:    String::from_utf8_lossy(&out.stderr).into_owned(),
+        stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
+        stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
         exit_code: out.status.code().unwrap_or(-1),
     })
 }
@@ -59,10 +59,17 @@ pub async fn agent_bash_run(command: String, cwd: String) -> Result<BashResult, 
 #[derive(serde::Serialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ProxyEvent {
-    Status  { code: u16, headers: Vec<(String, String)> },
-    Chunk   { bytes: Vec<u8> },
+    Status {
+        code: u16,
+        headers: Vec<(String, String)>,
+    },
+    Chunk {
+        bytes: Vec<u8>,
+    },
     Done,
-    Error   { message: String },
+    Error {
+        message: String,
+    },
 }
 
 #[tauri::command]
@@ -85,8 +92,7 @@ pub async fn ai_stream_proxy(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let method_val = reqwest::Method::from_bytes(method.as_bytes())
-        .map_err(|e| e.to_string())?;
+    let method_val = reqwest::Method::from_bytes(method.as_bytes()).map_err(|e| e.to_string())?;
 
     let mut req = client.request(method_val, &url);
     for (k, v) in &headers {
@@ -99,21 +105,43 @@ pub async fn ai_stream_proxy(
     tokio::spawn(async move {
         let resp = match req.send().await {
             Ok(r) => r,
-            Err(e) => { let _ = channel.send(ProxyEvent::Error { message: e.to_string() }); return; }
+            Err(e) => {
+                let _ = channel.send(ProxyEvent::Error {
+                    message: e.to_string(),
+                });
+                return;
+            }
         };
 
         let code = resp.status().as_u16();
-        let resp_headers: Vec<(String, String)> = resp.headers().iter()
+        let resp_headers: Vec<(String, String)> = resp
+            .headers()
+            .iter()
             .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
             .collect();
-        let _ = channel.send(ProxyEvent::Status { code, headers: resp_headers });
+        let _ = channel.send(ProxyEvent::Status {
+            code,
+            headers: resp_headers,
+        });
 
         let mut stream = resp;
         loop {
             match stream.chunk().await {
-                Ok(Some(chunk)) => { let _ = channel.send(ProxyEvent::Chunk { bytes: chunk.to_vec() }); }
-                Ok(None)        => { let _ = channel.send(ProxyEvent::Done); break; }
-                Err(e)          => { let _ = channel.send(ProxyEvent::Error { message: e.to_string() }); break; }
+                Ok(Some(chunk)) => {
+                    let _ = channel.send(ProxyEvent::Chunk {
+                        bytes: chunk.to_vec(),
+                    });
+                }
+                Ok(None) => {
+                    let _ = channel.send(ProxyEvent::Done);
+                    break;
+                }
+                Err(e) => {
+                    let _ = channel.send(ProxyEvent::Error {
+                        message: e.to_string(),
+                    });
+                    break;
+                }
             }
         }
     });

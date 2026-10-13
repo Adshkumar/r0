@@ -1,6 +1,7 @@
 ﻿/* eslint-disable react-refresh/only-export-components -- this module exports helper hooks/utilities alongside the editor component */
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
+import { canFormat } from '../../lib/formatting';
 import {
   EditorView, keymap, lineNumbers,
   highlightActiveLineGutter, highlightActiveLine, drawSelection,
@@ -22,6 +23,11 @@ import { createLspExtension } from '../../lib/lspCm6';
 import { getLspLanguage } from '../../lib/lsp';
 import { useToast } from '../ui/Toast';
 import { createAiAutocompleteExtension, type AiCompletionFn } from '../../lib/aiAutocomplete';
+import { createLocalCompletions, getSuggestionLanguage } from '../../lib/localCompletions';
+import { formatSource } from '../../lib/formatting';
+import { formatWithLanguageServer, supportsLspFormatting } from '../../lib/lspCm6';
+import { getEffectiveKey } from '../../lib/keybindings';
+import { useEditorSuggestionSettings, useEditorSuggestionSettingsLoaded } from '../../lib/editorSuggestions';
 import {
   createDapExtension,
   addBreakpointEffect,
@@ -40,17 +46,18 @@ export const r0Highlight = HighlightStyle.define([
   { tag: t.definitionKeyword,                          color: 'var(--r0-syntax-keyword)' },
   { tag: t.moduleKeyword,                              color: 'var(--r0-syntax-keyword)' },
   { tag: [t.string, t.special(t.string)],              color: 'var(--r0-syntax-string)' },
-  { tag: t.regexp,                                     color: 'var(--r0-syntax-string)' },
+  { tag: [t.regexp, t.escape],                         color: 'var(--r0-syntax-string)' },
   { tag: [t.function(t.variableName), t.function(t.propertyName)], color: 'var(--r0-syntax-function)' },
-  { tag: t.definition(t.variableName),                 color: 'var(--r0-syntax-function)' },
   { tag: t.definition(t.function(t.variableName)),     color: 'var(--r0-syntax-function)' },
   { tag: t.variableName,                               color: 'var(--r0-syntax-variable)' },
   { tag: t.propertyName,                               color: 'var(--r0-syntax-variable)' },
+  { tag: t.standard(t.tagName),                        color: 'var(--r0-syntax-type)' },
+  { tag: t.standard(t.variableName),                   color: 'var(--r0-syntax-constant)' },
   { tag: [t.number, t.integer, t.float],               color: 'var(--r0-syntax-constant)' },
   { tag: t.constant(t.variableName),                   color: 'var(--r0-syntax-constant)' },
   { tag: t.bool,                                       color: 'var(--r0-syntax-constant)' },
   { tag: t.null,                                       color: 'var(--r0-syntax-constant)' },
-  { tag: [t.typeName, t.className, t.namespace],       color: 'var(--r0-syntax-type)' },
+  { tag: [t.typeName, t.className, t.namespace, t.macroName], color: 'var(--r0-syntax-type)' },
   { tag: t.typeOperator,                               color: 'var(--r0-syntax-type)' },
   { tag: [t.operator, t.punctuation],                  color: 'var(--r0-syntax-operator)' },
   { tag: t.special(t.punctuation),                     color: 'var(--r0-syntax-operator)' },
@@ -220,6 +227,8 @@ export interface EditorHandle {
   paste: () => void;
   selectAll: () => void;
   openFind: () => void;
+  formatDocument: () => Promise<string | null>;
+  formatSelection: () => Promise<void>;
   /**
    * Push debug breakpoint + paused-line state into the editor in one atomic
    * transaction. Called by App.tsx whenever DebugContext session changes.
@@ -265,6 +274,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   const lspCompartment = useRef(new Compartment());
   // AI autocomplete compartment — first in extensions so its keymap beats indentWithTab
   const autocompleteCompartment = useRef(new Compartment());
+  const localCompletionCompartment = useRef(new Compartment());
   // DAP breakpoint gutter + paused-line highlight compartment
   const dapCompartment = useRef(new Compartment());
   // Stable ref — trigger plugin reads .current so it always calls the latest function
@@ -279,6 +289,15 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   onMissingServerRef.current = onMissingServer;
 
   const { showToast } = useToast();
+  const suggestionSettings = useEditorSuggestionSettings();
+  const suggestionSettingsLoaded = useEditorSuggestionSettingsLoaded();
+  const suggestionLanguage = getSuggestionLanguage(path);
+  const languageSuggestionsEnabled = suggestionSettings.languageEnabled[suggestionLanguage]
+    ?? suggestionSettings.languageEnabled.other;
+  const aiSuggestionsEnabled = suggestionSettingsLoaded
+    && suggestionSettings.inlineSuggestions
+    && suggestionSettings.aiInlineCompletions
+    && suggestionSettings.showGhostText;
 
   // Keep onAcceptDiff prop current so the hunk plugin callback never goes stale.
   const onAcceptDiffRef = useRef(onAcceptDiff);
@@ -291,11 +310,14 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   const [diffPending, setDiffPending] = useState(false);
   const diffOriginalRef = useRef<string>('');
 
-  type CtxMenu = { x: number; y: number; ctx: EditorContext };
+  type CtxMenu = { x: number; y: number; ctx: EditorContext | null; hasSelection: boolean };
   const [contextMenu, setContextMenu] = useState<CtxMenu | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const formatRevisionRef = useRef(0);
 
   useEffect(() => {
     if (!contextMenu) return;
+    contextMenuRef.current?.focus();
     function onDown() { setContextMenu(null); }
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setContextMenu(null); }
     document.addEventListener('mousedown', onDown);
@@ -367,6 +389,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     redo() { if (viewRef.current) cmRedo(viewRef.current); },
     selectAll() { if (viewRef.current) cmSelectAll(viewRef.current); },
     openFind() { if (viewRef.current) openSearchPanel(viewRef.current); },
+    formatDocument() { return formatCurrentDocument(false); },
+    async formatSelection() { await formatCurrentDocument(true); },
 
     cut() {
       const view = viewRef.current;
@@ -410,6 +434,64 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     },
   }));
 
+  async function formatCurrentDocument(selectionOnly: boolean): Promise<string | null> {
+    const view = viewRef.current;
+    if (!view) return null;
+    const source = view.state.doc.toString();
+    const selection = view.state.selection.main;
+    if (selectionOnly && selection.empty) {
+      showToast('Select code before formatting the selection', 'info');
+      return null;
+    }
+    const revision = ++formatRevisionRef.current;
+    try {
+      let result: Awaited<ReturnType<typeof formatSource>>;
+      try {
+        result = await formatSource(
+          source,
+          path,
+          selectionOnly ? { from: selection.from, to: selection.to } : undefined,
+          selection.head,
+          rootPath,
+        );
+      } catch (error) {
+        if (!rootPath || !supportsLspFormatting(path)) throw error;
+        if (selectionOnly) {
+          showToast('The configured language server only supports formatting the full document', 'info');
+          return null;
+        }
+        const languageServerResult = await formatWithLanguageServer(
+          path,
+          rootPath,
+          source,
+          selection.head,
+        );
+        if (!languageServerResult) throw error;
+        result = { ...languageServerResult, repairedHtmlHeadings: false };
+      }
+      if (
+        revision !== formatRevisionRef.current ||
+        viewRef.current !== view ||
+        view.state.doc.toString() !== source
+      ) return null;
+      if (result.repairedHtmlHeadings) {
+        showToast('Corrected mismatched HTML heading tags and formatted the document', 'info');
+      }
+      if (result.text !== source) {
+        view.dispatch({
+          changes: { from: 0, to: source.length, insert: result.text },
+          selection: { anchor: result.cursorOffset },
+          scrollIntoView: true,
+        });
+      }
+      return result.text;
+    } catch (error) {
+      if (revision !== formatRevisionRef.current || viewRef.current !== view) return null;
+      showToast(error instanceof Error ? error.message : String(error), 'error');
+      return null;
+    }
+  }
+
   function handleAcceptDiff() {
     // Remove merge view, keep the current (modified) document.
     viewRef.current?.dispatch({
@@ -444,7 +526,12 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
       extensions: [
         // Must be first so ghostKeymap wins the Tab key race over indentWithTab.
         autocompleteCompartment.current.of(
-          getAiCompletion ? createAiAutocompleteExtension(getAiCompletionRef) : []
+          getAiCompletion && aiSuggestionsEnabled
+            ? createAiAutocompleteExtension(getAiCompletionRef, { acceptWithTab: suggestionSettings.acceptWithTab })
+            : []
+        ),
+        localCompletionCompartment.current.of(
+          suggestionSettingsLoaded ? createLocalCompletions(path, suggestionSettings) : []
         ),
         lineNumbers(),
         highlightActiveLineGutter(),
@@ -526,13 +613,20 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
 
   // LSP session — install extensions when a supported file is open in a workspace
   useEffect(() => {
-    if (!rootPath || path.startsWith('__')) return;
+    if (!suggestionSettingsLoaded || !suggestionSettings.semanticIntelliSense || !rootPath || path.startsWith('__')) return;
     if (!getLspLanguage(path)) return;
 
     let cancelled = false;
+    const activateOnTyping = suggestionSettings.enabled
+      && suggestionSettings.showWhileTyping
+      && languageSuggestionsEnabled;
     createLspExtension({
       filePath: path,
       rootPath,
+      activateOnTyping,
+      activateOnTypingDelay: suggestionSettings.debounceMs,
+      maxRenderedOptions: suggestionSettings.maxItems,
+      showDetails: suggestionSettings.showDetails,
       onDefinitionJump: (fp, ln, col) => onDefinitionJumpRef.current?.(fp, ln, col),
       onMissingServer: (lang, cmd) => onMissingServerRef.current?.(lang, cmd),
     }).then(exts => {
@@ -547,7 +641,18 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
       // eslint-disable-next-line react-hooks/exhaustive-deps -- lspCompartment is a stable ref, never reassigned
       if (v) v.dispatch({ effects: lspCompartment.current.reconfigure([]) });
     };
-  }, [path, rootPath]);
+  }, [
+    path,
+    rootPath,
+    suggestionSettingsLoaded,
+    suggestionSettings.semanticIntelliSense,
+    suggestionSettings.enabled,
+    suggestionSettings.showWhileTyping,
+    languageSuggestionsEnabled,
+    suggestionSettings.debounceMs,
+    suggestionSettings.maxItems,
+    suggestionSettings.showDetails,
+  ]);
 
   // DAP breakpoint gutter — install/teardown per file path
   useEffect(() => {
@@ -569,30 +674,78 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    view.dom.classList.toggle('r0-hide-completion-docs', !suggestionSettings.showDocumentation);
     view.dispatch({
       effects: autocompleteCompartment.current.reconfigure(
-        getAiCompletion ? createAiAutocompleteExtension(getAiCompletionRef) : []
+        getAiCompletion && aiSuggestionsEnabled
+          ? createAiAutocompleteExtension(getAiCompletionRef, { acceptWithTab: suggestionSettings.acceptWithTab })
+          : []
       ),
     });
+    view.dispatch({
+      effects: localCompletionCompartment.current.reconfigure(createLocalCompletions(path, suggestionSettings)),
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!getAiCompletion]);
+  }, [!!getAiCompletion, aiSuggestionsEnabled, suggestionSettingsLoaded, suggestionSettings, path]);
 
   function handleContextMenu(e: React.MouseEvent) {
-    if (!onAddToAiContext) return;
     const view = viewRef.current;
     if (!view) return;
-    const { state } = view;
-    const sel = state.selection.main;
-    if (sel.from === sel.to) return;
     e.preventDefault();
-    const filename  = path.startsWith('__untitled__') ? 'Untitled' : (path.split(/[/\\]/).pop() ?? path);
-    const startLine = state.doc.lineAt(sel.from).number;
-    const endLine   = state.doc.lineAt(sel.to).number;
+    const initialSelection = view.state.selection.main;
+    const pointerPos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+    if (
+      pointerPos !== null &&
+      (initialSelection.empty || pointerPos < initialSelection.from || pointerPos > initialSelection.to)
+    ) {
+      view.dispatch({ selection: { anchor: pointerPos } });
+    }
+    view.focus();
+    const selection = view.state.selection.main;
+    let ctx: EditorContext | null = null;
+    if (selection.from !== selection.to && onAddToAiContext) {
+      const filename = path.startsWith('__untitled__') ? 'Untitled' : (path.split(/[/\\]/).pop() ?? path);
+      const startLine = view.state.doc.lineAt(selection.from).number;
+      const endLine = view.state.doc.lineAt(selection.to).number;
+      ctx = {
+        filename,
+        language: languageLabel(path),
+        code: view.state.sliceDoc(selection.from, selection.to),
+        type: 'selection',
+        startLine,
+        endLine,
+      };
+    }
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      ctx: { filename, language: languageLabel(path), code: state.sliceDoc(sel.from, sel.to), type: 'selection', startLine, endLine },
+      x: Math.max(8, Math.min(e.clientX, window.innerWidth - 240)),
+      y: Math.max(8, Math.min(e.clientY, window.innerHeight - 320)),
+      ctx,
+      hasSelection: selection.from !== selection.to,
     });
+  }
+
+  function runContextAction(action: () => void) {
+    setContextMenu(null);
+    action();
+  }
+
+  function contextMenuItem(label: string, shortcut: string | undefined, action: () => void, disabled = false) {
+    return (
+      <button
+        key={label}
+        role="menuitem"
+        disabled={disabled}
+        onClick={() => runContextAction(action)}
+        style={{ ...menuItemStyle, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+        onMouseEnter={event => {
+          if (!disabled) event.currentTarget.style.background = 'var(--r0-bg-hover)';
+        }}
+        onMouseLeave={event => { event.currentTarget.style.background = 'transparent'; }}
+      >
+        <span>{label}</span>
+        {shortcut && <span style={{ color: 'var(--r0-fg-subtle)', fontSize: 10 }}>{shortcut}</span>}
+      </button>
+    );
   }
 
   return (
@@ -675,55 +828,121 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
 
       {contextMenu && createPortal(
         <div
+          ref={contextMenuRef}
+          role="menu"
+          aria-label="Editor actions"
+          tabIndex={-1}
           onMouseDown={e => e.stopPropagation()}
           style={{
             position: 'fixed',
             top: contextMenu.y,
             left: contextMenu.x,
             minWidth: '200px',
-            background: 'color-mix(in srgb, var(--r0-bg-base) 85%, transparent)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            background: 'var(--r0-bg-base)',
             border: '1px solid var(--r0-border-default)',
             borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
             padding: '4px',
             zIndex: 9999,
           }}
         >
-          <button
-            onClick={() => {
-              onAddToAiContext?.(contextMenu.ctx);
-              setContextMenu(null);
-            }}
-            style={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              padding: '7px 10px',
-              borderRadius: '5px',
-              border: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-              textAlign: 'left',
-              gap: '2px',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--r0-bg-hover)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-          >
-            <span style={{ fontSize: '13px', color: 'var(--r0-fg-default)' }}>
-              Ask AI about this
-            </span>
-            <span style={{ fontSize: '11px', color: 'var(--r0-fg-subtle)' }}>
-              L{contextMenu.ctx.startLine}–{contextMenu.ctx.endLine} · {contextMenu.ctx.filename}
-            </span>
-          </button>
+          {contextMenuItem('Undo', shortcutLabel('r0.editorUndo'), () => { if (viewRef.current) cmUndo(viewRef.current); })}
+          {contextMenuItem('Redo', shortcutLabel('r0.editorRedo'), () => { if (viewRef.current) cmRedo(viewRef.current); })}
+          <div style={menuSeparatorStyle} />
+          {contextMenuItem('Cut', shortcutLabel('r0.editorCut'), () => {
+            const view = viewRef.current;
+            if (!view) return;
+            const selection = view.state.selection.main;
+            navigator.clipboard.writeText(view.state.sliceDoc(selection.from, selection.to))
+              .then(() => {
+                if (viewRef.current === view) view.dispatch(view.state.replaceSelection(''));
+              })
+              .catch(() => showToast('Clipboard write failed', 'error'));
+          }, !contextMenu.hasSelection)}
+          {contextMenuItem('Copy', shortcutLabel('r0.editorCopy'), () => {
+            const view = viewRef.current;
+            if (view) {
+              const selection = view.state.selection.main;
+              navigator.clipboard.writeText(view.state.sliceDoc(selection.from, selection.to))
+                .catch(() => showToast('Clipboard write failed', 'error'));
+            }
+          }, !contextMenu.hasSelection)}
+          {contextMenuItem('Paste', shortcutLabel('r0.editorPaste'), () => {
+            const view = viewRef.current;
+            if (view) {
+              navigator.clipboard.readText()
+                .then(text => {
+                  if (viewRef.current === view) view.dispatch(view.state.replaceSelection(text));
+                })
+                .catch(() => showToast('Clipboard read failed', 'error'));
+            }
+          })}
+          {contextMenuItem('Select All', shortcutLabel('r0.editorSelectAll'), () => { if (viewRef.current) cmSelectAll(viewRef.current); })}
+          {canFormat(path) && (
+            <>
+              <div style={menuSeparatorStyle} />
+              {contextMenuItem('Format Document', shortcutLabel('r0.formatDocument'), () => { void formatCurrentDocument(false); })}
+              {contextMenu.hasSelection && contextMenuItem('Format Selection', undefined, () => { void formatCurrentDocument(true); })}
+            </>
+          )}
+          {contextMenu.ctx && (
+            <>
+              <div style={menuSeparatorStyle} />
+              <button
+                role="menuitem"
+                onClick={() => {
+                  onAddToAiContext?.(contextMenu.ctx!);
+                  setContextMenu(null);
+                }}
+                style={{ ...menuItemStyle, alignItems: 'flex-start', flexDirection: 'column', gap: 2 }}
+                onMouseEnter={event => { event.currentTarget.style.background = 'var(--r0-bg-hover)'; }}
+                onMouseLeave={event => { event.currentTarget.style.background = 'transparent'; }}
+              >
+                <span>Ask AI about this</span>
+                <span style={{ fontSize: 10, color: 'var(--r0-fg-subtle)' }}>
+                  L{contextMenu.ctx.startLine}-{contextMenu.ctx.endLine} · {contextMenu.ctx.filename}
+                </span>
+              </button>
+            </>
+          )}
         </div>,
         document.body,
       )}
     </>
   );
 });
+
+const menuItemStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '6px 9px',
+  borderRadius: 4,
+  border: 0,
+  color: 'var(--r0-fg-default)',
+  background: 'transparent',
+  cursor: 'pointer',
+  fontSize: 12,
+  textAlign: 'left',
+};
+
+const menuSeparatorStyle: React.CSSProperties = {
+  height: 1,
+  margin: '4px 5px',
+  background: 'var(--r0-border-default)',
+};
+
+function shortcutLabel(commandId: string): string | undefined {
+  const key = getEffectiveKey(commandId);
+  if (!key) return undefined;
+  return key.split('+').map(part => {
+    if (part === 'ctrl' || part === 'cmd') return 'Ctrl';
+    if (part === 'alt') return 'Alt';
+    if (part === 'shift') return 'Shift';
+    if (part === 'space') return 'Space';
+    return part.length === 1 ? part.toUpperCase() : part[0].toUpperCase() + part.slice(1);
+  }).join('+');
+}
 
 export default Editor;

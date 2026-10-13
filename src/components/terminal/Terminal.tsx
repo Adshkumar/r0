@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
@@ -12,6 +13,7 @@ import {
   onTerminalExit,
 } from "../../lib/terminal";
 import { useTheme } from "../../themes/ThemeContext";
+import { handleTerminalClipboardShortcut } from "../../lib/terminalClipboard";
 
 interface Props {
   cwd: string;
@@ -61,10 +63,48 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
   const fitAddonRef     = useRef<FitAddon | null>(null);
   const onCwdChangeRef  = useRef(onCwdChange);
   const onShellStateRef = useRef(onShellState);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; hasSelection: boolean } | null>(null);
   // eslint-disable-next-line react-hooks/refs
   onCwdChangeRef.current  = onCwdChange;
   // eslint-disable-next-line react-hooks/refs
   onShellStateRef.current = onShellState;
+
+  function copySelectedText() {
+    const xterm = xtermRef.current;
+    const selection = xterm?.getSelection();
+    if (!xterm || !selection) return;
+    navigator.clipboard.writeText(selection).catch(error => {
+      xterm.write(`\r\n\x1b[31mClipboard copy failed: ${String(error)}\x1b[0m\r\n`);
+    });
+  }
+
+  function pasteClipboard() {
+    const xterm = xtermRef.current;
+    if (!xterm) return;
+    navigator.clipboard.readText().then(text => {
+      if (text) xterm.paste(text);
+    }).catch(error => {
+      xterm.write(`\r\n\x1b[31mClipboard paste failed: ${String(error)}\x1b[0m\r\n`);
+    });
+  }
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    function dismiss(event: MouseEvent) {
+      if (!(event.target instanceof Element) || !event.target.closest('.r0-terminal-context-menu')) {
+        setContextMenu(null);
+      }
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setContextMenu(null);
+    }
+    document.addEventListener('mousedown', dismiss);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', dismiss);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [contextMenu]);
 
   useEffect(() => {
     if (!clearKey) return;
@@ -105,27 +145,11 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
 
     fitAddon.fit();
 
-    // Ctrl+Shift+C → copy selection; Ctrl+Shift+V → paste from clipboard.
-    // Both keys must be fully intercepted (return false) so they never reach the PTY.
     xterm.attachCustomKeyEventHandler((e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-        if (e.type === 'keydown') {
-          const sel = xterm.getSelection();
-          if (sel) navigator.clipboard.writeText(sel).catch(() => {});
-        }
-        return false;
-      }
-      if (e.ctrlKey && e.shiftKey && e.key === 'V') {
-        if (e.type === 'keydown') {
-          navigator.clipboard.readText().then(text => {
-            if (text && termIdRef.current !== null) {
-              terminalWrite(termIdRef.current, text).catch(() => {});
-            }
-          }).catch(() => {});
-        }
-        return false;
-      }
-      return true;
+      return handleTerminalClipboardShortcut(e, xterm.hasSelection(), {
+        copy: copySelectedText,
+        paste: pasteClipboard,
+      });
     });
 
     // OSC 7 — shell reports current working directory
@@ -239,5 +263,72 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
     });
   }, [active]);
 
-  return <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden" }} />;
+  return (
+    <>
+      <div
+        ref={containerRef}
+        onContextMenu={event => {
+          event.preventDefault();
+          setContextMenu({
+            x: event.clientX,
+            y: event.clientY,
+            hasSelection: xtermRef.current?.hasSelection() ?? false,
+          });
+        }}
+        style={{ width: "100%", height: "100%", overflow: "hidden" }}
+      />
+      {contextMenu && createPortal(
+        <div
+          className="r0-terminal-context-menu"
+          role="menu"
+          style={{
+            position: "fixed",
+            zIndex: 20000,
+            left: Math.max(4, Math.min(contextMenu.x, window.innerWidth - 150)),
+            top: Math.max(4, Math.min(contextMenu.y, window.innerHeight - 82)),
+            minWidth: 142,
+            padding: 4,
+            border: "1px solid var(--r0-border-default)",
+            borderRadius: 6,
+            background: "var(--r0-bg-panel)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+          }}
+          onMouseDown={event => event.stopPropagation()}
+        >
+          <button
+            role="menuitem"
+            disabled={!contextMenu.hasSelection}
+            onClick={() => { copySelectedText(); setContextMenu(null); }}
+            style={terminalMenuButtonStyle(!contextMenu.hasSelection)}
+          >
+            Copy
+          </button>
+          <button
+            role="menuitem"
+            onClick={() => { pasteClipboard(); setContextMenu(null); }}
+            style={terminalMenuButtonStyle(false)}
+          >
+            Paste
+          </button>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+function terminalMenuButtonStyle(disabled: boolean): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    padding: "6px 9px",
+    border: 0,
+    borderRadius: 4,
+    background: "transparent",
+    color: disabled ? "var(--r0-fg-subtle)" : "var(--r0-fg-default)",
+    cursor: disabled ? "default" : "pointer",
+    textAlign: "left",
+    fontSize: 12,
+    opacity: disabled ? 0.55 : 1,
+  };
 }

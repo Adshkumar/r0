@@ -2,33 +2,55 @@ use crate::search::SEARCH_IGNORE;
 
 #[derive(serde::Serialize)]
 pub struct FileTreeNode {
-    name:     String,
-    path:     String,
-    size:     u64,
-    is_dir:   bool,
+    name: String,
+    path: String,
+    size: u64,
+    is_dir: bool,
     children: Vec<FileTreeNode>,
 }
 
 fn build_file_tree(dir: &std::path::Path, depth: usize) -> FileTreeNode {
-    let name = dir.file_name()
+    let name = dir
+        .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| dir.to_string_lossy().to_string());
     if depth > 7 {
-        return FileTreeNode { name, path: dir.to_string_lossy().into_owned(), size: 0, is_dir: true, children: vec![] };
+        return FileTreeNode {
+            name,
+            path: dir.to_string_lossy().into_owned(),
+            size: 0,
+            is_dir: true,
+            children: vec![],
+        };
     }
     let Ok(rd) = std::fs::read_dir(dir) else {
-        return FileTreeNode { name, path: dir.to_string_lossy().into_owned(), size: 0, is_dir: true, children: vec![] };
+        return FileTreeNode {
+            name,
+            path: dir.to_string_lossy().into_owned(),
+            size: 0,
+            is_dir: true,
+            children: vec![],
+        };
     };
-    let mut children: Vec<FileTreeNode> = rd.flatten()
+    let mut children: Vec<FileTreeNode> = rd
+        .flatten()
         .filter_map(|e| {
             let p = e.path();
             let n = e.file_name().to_string_lossy().to_string();
-            if SEARCH_IGNORE.iter().any(|&s| s == n.as_str()) { return None; }
+            if SEARCH_IGNORE.iter().any(|&s| s == n.as_str()) {
+                return None;
+            }
             if p.is_dir() {
                 Some(build_file_tree(&p, depth + 1))
             } else {
                 let size = p.metadata().map(|m| m.len()).unwrap_or(0);
-                Some(FileTreeNode { name: n, path: p.to_string_lossy().into_owned(), size, is_dir: false, children: vec![] })
+                Some(FileTreeNode {
+                    name: n,
+                    path: p.to_string_lossy().into_owned(),
+                    size,
+                    is_dir: false,
+                    children: vec![],
+                })
             }
         })
         .collect();
@@ -37,19 +59,26 @@ fn build_file_tree(dir: &std::path::Path, depth: usize) -> FileTreeNode {
         (false, true) => std::cmp::Ordering::Greater,
         _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
-    FileTreeNode { name, path: dir.to_string_lossy().into_owned(), size: 0, is_dir: true, children }
+    FileTreeNode {
+        name,
+        path: dir.to_string_lossy().into_owned(),
+        size: 0,
+        is_dir: true,
+        children,
+    }
 }
 
 #[tauri::command]
 pub async fn get_file_tree(folder: String) -> Result<FileTreeNode, String> {
     tokio::task::spawn_blocking(move || Ok(build_file_tree(std::path::Path::new(&folder), 0)))
-        .await.map_err(|e| e.to_string())?
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[derive(serde::Serialize)]
 pub struct ImportEdge {
     from: String,
-    to:   String,
+    to: String,
 }
 
 fn parse_imports(text: &str) -> Vec<String> {
@@ -74,34 +103,58 @@ fn parse_imports(text: &str) -> Vec<String> {
 fn resolve_import(from: &std::path::Path, import: &str) -> Option<String> {
     let base = from.parent()?;
     let raw = base.join(import);
-    if raw.is_file() { return Some(raw.to_string_lossy().into_owned()); }
+    if raw.is_file() {
+        return Some(raw.to_string_lossy().into_owned());
+    }
     for ext in &["ts", "tsx", "js", "jsx"] {
         let c = std::path::PathBuf::from(format!("{}.{}", raw.to_string_lossy(), ext));
-        if c.is_file() { return Some(c.to_string_lossy().into_owned()); }
+        if c.is_file() {
+            return Some(c.to_string_lossy().into_owned());
+        }
     }
     for ext in &["ts", "tsx", "js", "jsx"] {
         let c = raw.join(format!("index.{}", ext));
-        if c.is_file() { return Some(c.to_string_lossy().into_owned()); }
+        if c.is_file() {
+            return Some(c.to_string_lossy().into_owned());
+        }
     }
     None
 }
 
 fn collect_edges(dir: &std::path::Path, out: &mut Vec<ImportEdge>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     for entry in rd.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        if SEARCH_IGNORE.iter().any(|&s| s == name.as_str()) { continue }
-        if path.is_dir() { collect_edges(&path, out); continue }
+        if SEARCH_IGNORE.iter().any(|&s| s == name.as_str()) {
+            continue;
+        }
+        if path.is_dir() {
+            collect_edges(&path, out);
+            continue;
+        }
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if !matches!(ext, "ts" | "tsx" | "js" | "jsx") { continue }
-        let Ok(bytes) = std::fs::read(&path) else { continue };
-        if bytes.contains(&0u8) { continue }
-        let Ok(text) = std::str::from_utf8(&bytes) else { continue };
+        if !matches!(ext, "ts" | "tsx" | "js" | "jsx") {
+            continue;
+        }
+        let Ok(bytes) = std::fs::read(&path) else {
+            continue;
+        };
+        if bytes.contains(&0u8) {
+            continue;
+        }
+        let Ok(text) = std::str::from_utf8(&bytes) else {
+            continue;
+        };
         let from_str = path.to_string_lossy().into_owned();
         for imp in parse_imports(text) {
             if let Some(to) = resolve_import(&path, &imp) {
-                out.push(ImportEdge { from: from_str.clone(), to });
+                out.push(ImportEdge {
+                    from: from_str.clone(),
+                    to,
+                });
             }
         }
     }
@@ -113,5 +166,7 @@ pub async fn get_import_edges(folder: String) -> Result<Vec<ImportEdge>, String>
         let mut edges = vec![];
         collect_edges(std::path::Path::new(&folder), &mut edges);
         Ok(edges)
-    }).await.map_err(|e| e.to_string())?
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

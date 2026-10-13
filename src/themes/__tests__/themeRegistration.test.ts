@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { builtinThemes } from "../ThemeContext";
 
 describe("built-in themes", () => {
-  it("registers Light, Dark, Dracula, and Cobalt2 in selector order", () => {
+  it("registers the five built-in themes in selector order", () => {
     expect(builtinThemes.map(theme => theme.name)).toEqual([
-      "r0 Light",
-      "r0 Dark",
-      "r0 Dracula",
-      "Cobalt2",
+      "Dark Modern",
+      "Dracula",
+      "One Dark Pro",
+      "GitHub Dark",
+      "Light Modern",
     ]);
   });
 
@@ -20,7 +21,7 @@ describe("built-in themes", () => {
   });
 
   it("uses the Dracula palette while retaining dark-theme behavior", () => {
-    const dracula = builtinThemes.find(theme => theme.name === "r0 Dracula");
+    const dracula = builtinThemes.find(theme => theme.name === "Dracula");
 
     expect(dracula).toBeDefined();
     expect(dracula?.type).toBe("dark");
@@ -31,16 +32,25 @@ describe("built-in themes", () => {
     expect(dracula?.colors["terminal.green"]).toBe("#50FA7B");
   });
 
-  it("uses the Cobalt2 palette while retaining dark-theme behavior", () => {
-    const cobalt2 = builtinThemes.find(theme => theme.name === "Cobalt2");
+  it("uses the One Dark Pro palette while retaining dark-theme behavior", () => {
+    const oneDark = builtinThemes.find(theme => theme.name === "One Dark Pro");
 
-    expect(cobalt2).toBeDefined();
-    expect(cobalt2?.type).toBe("dark");
-    expect(cobalt2?.colors["bg.editor"]).toBe("#193549");
-    expect(cobalt2?.colors["bg.sidebar"]).toBe("#15232D");
-    expect(cobalt2?.colors["bg.selection"]).toBe("#0050A4");
-    expect(cobalt2?.colors["editor.cursor"]).toBe("#FFC600");
-    expect(cobalt2?.colors["syntax.keyword"]).toBe("#FF628C");
-    expect(cobalt2?.colors["terminal.green"]).toBe("#3AD900");
+    expect(oneDark).toBeDefined();
+    expect(oneDark?.type).toBe("dark");
+    expect(oneDark?.colors["bg.editor"]).toBe("#282c34");
+    expect(oneDark?.colors["bg.sidebar"]).toBe("#21252b");
+    expect(oneDark?.colors["bg.selection"]).toBe("#3e4451");
+    expect(oneDark?.colors["editor.cursor"]).toBe("#528bff");
+    expect(oneDark?.colors["syntax.keyword"]).toBe("#c678dd");
+    expect(oneDark?.colors["terminal.green"]).toBe("#98c379");
+  });
+
+  it("uses a dark GitHub-inspired palette", () => {
+    const githubDark = builtinThemes.find(theme => theme.name === "GitHub Dark");
+
+    expect(githubDark?.type).toBe("dark");
+    expect(githubDark?.colors["bg.editor"]).toBe("#0d1117");
+    expect(githubDark?.colors["bg.selection"]).toBe("#264f78");
+    expect(githubDark?.colors["syntax.keyword"]).toBe("#ff7b72");
   });
 });

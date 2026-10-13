@@ -1,18 +1,24 @@
 ﻿import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, Eye, EyeOff, Bot, Palette, Check, MessageSquareDot, SlidersHorizontal, Terminal, Copy, Keyboard } from "lucide-react";
+import { X, Eye, EyeOff, Bot, Palette, Check, MessageSquareDot, SlidersHorizontal, Terminal, Copy, Keyboard, Code2 } from "lucide-react";
 import KeybindingsSection from "./KeybindingsSection";
 import { PROVIDERS } from "../ai/providers";
 import { loadApiKey, saveApiKey, deleteApiKey } from "../../lib/secrets";
 import { useTheme } from "../../themes/ThemeContext";
 import { DEFAULT_SYSTEM_PROMPT, DEFAULT_ASK_PROMPT, DEFAULT_PLAN_PROMPT } from "../../lib/ai";
+import {
+  restoreEditorSuggestionDefaults,
+  updateEditorSuggestionSettings,
+  useEditorSuggestionSettings,
+} from "../../lib/editorSuggestions";
+import { getSetting, setSetting } from "../../lib/settings";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const LOCAL_IDS = new Set(["ollama", "lmstudio", "vllm"]);
 const API_PROVIDERS = PROVIDERS.filter(p => !LOCAL_IDS.has(p.id));
 
-type Section = "general" | "ai" | "prompts" | "appearance" | "terminal" | "keybindings";
+type Section = "general" | "ai" | "prompts" | "appearance" | "terminal" | "keybindings" | "suggestions";
 
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
@@ -502,7 +508,6 @@ function PromptsSection() {
 
 const AUTOCOMPLETE_DELAY_KEY = 'r0-editor-autocomplete-delay';
 const AUTOCOMPLETE_DELAY_UNIT_KEY = 'r0-editor-autocomplete-delay-unit';
-const AUTOCOMPLETE_DELAY_DEFAULT_MS = 350;
 
 type DelayUnit = 'ms' | 's';
 
@@ -517,40 +522,53 @@ function displayToMs(raw: string, unit: DelayUnit): number | null {
 }
 
 function GeneralSection() {
+  const suggestionSettings = useEditorSuggestionSettings();
   const [unit, setUnit] = useState<DelayUnit>(
     () => (localStorage.getItem(AUTOCOMPLETE_DELAY_UNIT_KEY) as DelayUnit | null) ?? 'ms'
   );
-  const [delayMs, setDelayMs] = useState(
-    () => parseInt(localStorage.getItem(AUTOCOMPLETE_DELAY_KEY) ?? String(AUTOCOMPLETE_DELAY_DEFAULT_MS), 10)
-  );
-  const [inputVal, setInputVal] = useState(() =>
-    msToDisplay(parseInt(localStorage.getItem(AUTOCOMPLETE_DELAY_KEY) ?? String(AUTOCOMPLETE_DELAY_DEFAULT_MS), 10), (localStorage.getItem(AUTOCOMPLETE_DELAY_UNIT_KEY) as DelayUnit | null) ?? 'ms')
-  );
-  const [completionsEnabled, setCompletionsEnabled] = useState(
-    () => localStorage.getItem('r0-editor-ai-autocomplete') !== 'false'
-  );
+  const [inputVal, setInputVal] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [formatOnSave, setFormatOnSave] = useState(false);
+  const completionsEnabled = suggestionSettings.aiInlineCompletions;
+
+  useEffect(() => {
+    getSetting('editor.formatOnSave')
+      .then(setFormatOnSave)
+      .catch(error => setSettingsError(`Could not load format-on-save setting: ${String(error)}`));
+  }, []);
 
   function commitInput(raw: string) {
     const ms = displayToMs(raw, unit);
     if (ms !== null) {
-      setDelayMs(ms);
-      setInputVal(msToDisplay(ms, unit));
+      setInputVal(null);
       localStorage.setItem(AUTOCOMPLETE_DELAY_KEY, String(ms));
+      void updateEditorSuggestionSettings({ debounceMs: ms })
+        .catch(error => setSettingsError(`Could not save suggestion delay: ${String(error)}`));
     } else {
-      setInputVal(msToDisplay(delayMs, unit));
+      setInputVal(null);
     }
   }
 
   function switchUnit(next: DelayUnit) {
     setUnit(next);
-    setInputVal(msToDisplay(delayMs, next));
+    setInputVal(null);
     localStorage.setItem(AUTOCOMPLETE_DELAY_UNIT_KEY, next);
   }
 
   function toggleCompletions() {
     const next = !completionsEnabled;
-    localStorage.setItem('r0-editor-ai-autocomplete', next ? 'true' : 'false');
-    setCompletionsEnabled(next);
+    void updateEditorSuggestionSettings({ aiInlineCompletions: next })
+      .catch(error => setSettingsError(`Could not save AI completion setting: ${String(error)}`));
+  }
+
+  function toggleFormatOnSave() {
+    const next = !formatOnSave;
+    setFormatOnSave(next);
+    void setSetting('editor.formatOnSave', next)
+      .catch(error => {
+        setFormatOnSave(!next);
+        setSettingsError(`Could not save format-on-save setting: ${String(error)}`);
+      });
   }
 
   const inputStyle: React.CSSProperties = {
@@ -572,7 +590,7 @@ function GeneralSection() {
         fontSize: "12px", fontWeight: 600, color: "var(--r0-fg-muted)",
         textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px",
       }}>
-        AI Autocomplete
+        AI Inline Suggestions
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {/* Inline completions toggle */}
@@ -583,7 +601,7 @@ function GeneralSection() {
           backgroundColor: "var(--r0-bg-base)",
         }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "13px", color: "var(--r0-fg-default)" }}>Inline completions</div>
+            <div style={{ fontSize: "13px", color: "var(--r0-fg-default)" }}>Enable AI inline completions</div>
             <div style={{ fontSize: "11px", color: "var(--r0-fg-muted)", marginTop: "2px" }}>
               Ghost text as you type — Tab to accept, Escape to dismiss.
             </div>
@@ -599,6 +617,32 @@ function GeneralSection() {
             }}
           >
             {completionsEnabled ? "On" : "Off"}
+          </button>
+        </div>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "12px",
+          padding: "10px 12px", borderRadius: "8px",
+          border: "1px solid var(--r0-border-default)",
+          backgroundColor: "var(--r0-bg-base)",
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "13px", color: "var(--r0-fg-default)" }}>Format active documents on save</div>
+            <div style={{ fontSize: "11px", color: "var(--r0-fg-muted)", marginTop: "2px" }}>
+              Uses the built-in Prettier formatter where supported and honors JSON project configuration.
+            </div>
+          </div>
+          <button
+            onClick={toggleFormatOnSave}
+            aria-pressed={formatOnSave}
+            style={{
+              padding: "4px 12px", borderRadius: "6px", fontSize: "12px",
+              border: "1px solid var(--r0-border-default)",
+              backgroundColor: formatOnSave ? "var(--r0-fg-default)" : "transparent",
+              color: formatOnSave ? "var(--r0-bg-base)" : "var(--r0-fg-muted)",
+              cursor: "pointer", fontWeight: 500,
+            }}
+          >
+            {formatOnSave ? "On" : "Off"}
           </button>
         </div>
         {/* Ghost text delay */}
@@ -619,7 +663,7 @@ function GeneralSection() {
               type="number"
               min={unit === 's' ? 0.1 : 100}
               step={unit === 's' ? 0.1 : 50}
-              value={inputVal}
+              value={inputVal ?? msToDisplay(suggestionSettings.debounceMs, unit)}
               onChange={e => setInputVal(e.target.value)}
               onBlur={e => { e.currentTarget.style.borderColor = "var(--r0-border-default)"; commitInput(e.target.value); }}
               onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
@@ -650,6 +694,7 @@ function GeneralSection() {
           </div>
         </div>
       </div>
+      {settingsError && <p role="alert" style={{ color: "var(--r0-semantic-error)", fontSize: 11 }}>{settingsError}</p>}
     </div>
   );
 }
@@ -767,6 +812,183 @@ function TerminalSection() {
   );
 }
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  python: "Python",
+  rust: "Rust",
+  html: "HTML",
+  css: "CSS",
+  json: "JSON",
+  other: "Other supported languages",
+};
+
+function EditorSuggestionsSection() {
+  const settings = useEditorSuggestionSettings();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [debounceDraft, setDebounceDraft] = useState<string | null>(null);
+  const [maxItemsDraft, setMaxItemsDraft] = useState<string | null>(null);
+
+  async function update(patch: Parameters<typeof updateEditorSuggestionSettings>[0]) {
+    setSaveError(null);
+    try {
+      await updateEditorSuggestionSettings(patch);
+    } catch (error) {
+      setSaveError(`Could not save suggestion settings: ${String(error)}`);
+    }
+  }
+
+  function toggleRow(
+    key: keyof typeof settings,
+    title: string,
+    description: string,
+  ) {
+    const value = settings[key];
+    if (typeof value !== "boolean") return null;
+    return (
+      <label key={key} style={suggestionRowStyle}>
+        <span style={{ flex: 1 }}>
+          <span style={{ display: "block", fontSize: 12, color: "var(--r0-fg-default)" }}>{title}</span>
+          <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "var(--r0-fg-muted)" }}>{description}</span>
+        </span>
+        <input
+          type="checkbox"
+          checked={value}
+          onChange={event => void update({ [key]: event.target.checked })}
+          aria-label={title}
+          style={{ accentColor: "var(--r0-accent-blue)", width: 15, height: 15 }}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, paddingBottom: 18 }}>
+      <p style={{ margin: 0, color: "var(--r0-fg-muted)", fontSize: 12, lineHeight: 1.55 }}>
+        Autocomplete provides local symbols and language built-ins. Semantic IntelliSense uses an installed language server. Inline suggestions are separate AI-generated ghost text.
+      </p>
+      <section>
+        <SuggestionHeading>Autocomplete</SuggestionHeading>
+        {toggleRow("enabled", "Enable Autocomplete", "Enable completion suggestions in the editor.")}
+        {toggleRow("showWhileTyping", "Show Suggestions While Typing", "Trigger local and semantic completions as you type.")}
+        {toggleRow("manualSuggestions", "Enable Manual Suggestions", "Allow Ctrl+Space to request suggestions when automatic suggestions are off.")}
+        {toggleRow("showDocumentation", "Show Completion Documentation", "Show documentation when a completion provider supplies it.")}
+        {toggleRow("showDetails", "Show Completion Details and Icons", "Show completion kind and detail labels in the suggestion list.")}
+        {toggleRow("semanticIntelliSense", "Enable Semantic IntelliSense", "Use a configured language server for project-aware completions and language features.")}
+      </section>
+      <section>
+        <SuggestionHeading>AI Inline Suggestions</SuggestionHeading>
+        {toggleRow("inlineSuggestions", "Enable Inline Suggestions", "Enable inline ghost text independently of the completion popup.")}
+        {toggleRow("aiInlineCompletions", "Enable AI Inline Completions", "Allow the configured AI provider to generate inline code suggestions.")}
+        {toggleRow("showGhostText", "Show Inline Ghost Text", "Display AI suggestions inline without changing the document.")}
+        {toggleRow("acceptWithTab", "Accept Inline Suggestion with Tab", "When enabled, Tab accepts visible ghost text; otherwise it inserts normal indentation.")}
+      </section>
+      <section>
+        <SuggestionHeading>Language and Performance</SuggestionHeading>
+        {Object.entries(LANGUAGE_LABELS).map(([language, label]) => (
+          <label key={language} style={suggestionRowStyle}>
+            <span style={{ flex: 1, fontSize: 12, color: "var(--r0-fg-default)" }}>{label}</span>
+            <input
+              type="checkbox"
+              checked={settings.languageEnabled[language] ?? true}
+              onChange={event => void update({ language, languageEnabledValue: event.target.checked })}
+              aria-label={`Enable automatic suggestions for ${label}`}
+              style={{ accentColor: "var(--r0-accent-blue)", width: 15, height: 15 }}
+            />
+          </label>
+        ))}
+        <div style={suggestionRowStyle}>
+          <label htmlFor="suggestion-debounce" style={{ flex: 1 }}>
+            <span style={{ display: "block", fontSize: 12, color: "var(--r0-fg-default)" }}>Suggestion debounce</span>
+            <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "var(--r0-fg-muted)" }}>Delay before opening automatic completion, in milliseconds.</span>
+          </label>
+          <input
+            id="suggestion-debounce"
+            type="number"
+            min={100}
+            max={2000}
+            step={50}
+            value={debounceDraft ?? String(settings.debounceMs)}
+            onChange={event => {
+              setDebounceDraft(event.target.value);
+            }}
+            onBlur={() => {
+              if (debounceDraft === null) return;
+              const value = Number(debounceDraft);
+              setDebounceDraft(null);
+              if (Number.isFinite(value)) void update({ debounceMs: Math.max(100, Math.min(2000, value)) });
+              else setSaveError("Enter a valid suggestion delay.");
+            }}
+            onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+            style={suggestionInputStyle}
+          />
+        </div>
+        <div style={suggestionRowStyle}>
+          <label htmlFor="suggestion-max-items" style={{ flex: 1 }}>
+            <span style={{ display: "block", fontSize: 12, color: "var(--r0-fg-default)" }}>Maximum completion items</span>
+            <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "var(--r0-fg-muted)" }}>Limits the number of local suggestions rendered.</span>
+          </label>
+          <input
+            id="suggestion-max-items"
+            type="number"
+            min={5}
+            max={100}
+            step={5}
+            value={maxItemsDraft ?? String(settings.maxItems)}
+            onChange={event => {
+              setMaxItemsDraft(event.target.value);
+            }}
+            onBlur={() => {
+              if (maxItemsDraft === null) return;
+              const value = Number(maxItemsDraft);
+              setMaxItemsDraft(null);
+              if (Number.isFinite(value)) void update({ maxItems: Math.max(5, Math.min(100, value)) });
+              else setSaveError("Enter a valid maximum completion count.");
+            }}
+            onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+            style={suggestionInputStyle}
+          />
+        </div>
+      </section>
+      {saveError && <p role="alert" style={{ margin: 0, color: "var(--r0-semantic-error)", fontSize: 11 }}>{saveError}</p>}
+      <button
+        onClick={() => {
+          setSaveError(null);
+          void restoreEditorSuggestionDefaults().catch(error => setSaveError(`Could not restore defaults: ${String(error)}`));
+        }}
+        style={{ alignSelf: "flex-start", padding: "6px 10px", borderRadius: 5, border: "1px solid var(--r0-border-default)", background: "var(--r0-bg-base)", color: "var(--r0-fg-default)", cursor: "pointer", fontSize: 11 }}
+      >
+        Restore Defaults
+      </button>
+    </div>
+  );
+}
+
+const suggestionRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "9px 10px",
+  border: "1px solid var(--r0-border-default)",
+  borderRadius: 7,
+  background: "var(--r0-bg-base)",
+};
+
+function SuggestionHeading({ children }: { children: React.ReactNode }) {
+  return <h3 style={{ margin: "0 0 7px", color: "var(--r0-fg-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>{children}</h3>;
+}
+
+const suggestionInputStyle: React.CSSProperties = {
+  width: 74,
+  padding: "5px 7px",
+  borderRadius: 5,
+  border: "1px solid var(--r0-border-default)",
+  background: "var(--r0-bg-sidebar)",
+  color: "var(--r0-fg-default)",
+  fontSize: 12,
+  fontFamily: "var(--font-mono)",
+};
+
 // ── Settings Panel ───────────────────────────────────────────────────────────
 
 interface SettingsPanelProps {
@@ -865,6 +1087,12 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
               onClick={() => setSection("general")}
             />
             <NavItem
+              active={section === "suggestions"}
+              icon={<Code2 size={14} />}
+              label="Editor: Suggestions"
+              onClick={() => setSection("suggestions")}
+            />
+            <NavItem
               active={section === "ai"}
               icon={<Bot size={14} />}
               label="AI Providers"
@@ -903,9 +1131,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
               color: "var(--r0-fg-default)",
               marginBottom: "14px",
             }}>
-              {section === "general" ? "General" : section === "ai" ? "AI Providers" : section === "prompts" ? "System Prompts" : section === "appearance" ? "Appearance" : section === "keybindings" ? "Keyboard Shortcuts" : "Terminal"}
+              {section === "general" ? "General" : section === "suggestions" ? "Editor · Suggestions" : section === "ai" ? "AI Providers" : section === "prompts" ? "System Prompts" : section === "appearance" ? "Appearance" : section === "keybindings" ? "Keyboard Shortcuts" : "Terminal"}
             </div>
             {section === "general"    && <GeneralSection />}
+            {section === "suggestions" && <EditorSuggestionsSection />}
             {section === "ai"         && <AIProvidersSection />}
             {section === "prompts"    && <PromptsSection />}
             {section === "appearance" && <AppearanceSection />}

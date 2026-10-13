@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 use std::sync::{
-    Arc, Mutex,
     atomic::{AtomicI64, Ordering},
+    Arc, Mutex,
 };
+use tauri::Emitter;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader as TokioBufReader};
 use tokio::sync::{mpsc, oneshot};
-use tauri::Emitter;
 
 struct DapSession {
-    msg_tx:      mpsc::UnboundedSender<serde_json::Value>,
+    msg_tx: mpsc::UnboundedSender<serde_json::Value>,
     seq_counter: Arc<AtomicI64>,
-    pending:     Arc<Mutex<HashMap<i64, oneshot::Sender<serde_json::Value>>>>,
-    _child:      tokio::process::Child, // kill_on_drop kills the adapter on drop
+    pending: Arc<Mutex<HashMap<i64, oneshot::Sender<serde_json::Value>>>>,
+    _child: tokio::process::Child, // kill_on_drop kills the adapter on drop
 }
 
 pub struct DapState(Mutex<HashMap<String, DapSession>>);
@@ -30,15 +30,21 @@ async fn read_dap_msg(
     loop {
         let mut line = String::new();
         let n = reader.read_line(&mut line).await.ok()?;
-        if n == 0 { return None; }
+        if n == 0 {
+            return None;
+        }
         let trimmed = line.trim();
-        if trimmed.is_empty() { break; }
+        if trimmed.is_empty() {
+            break;
+        }
         let lower = trimmed.to_ascii_lowercase();
         if let Some(rest) = lower.strip_prefix("content-length: ") {
             content_length = rest.trim().parse().ok()?;
         }
     }
-    if content_length == 0 { return None; }
+    if content_length == 0 {
+        return None;
+    }
     let mut buf = vec![0u8; content_length];
     reader.read_exact(&mut buf).await.ok()?;
     serde_json::from_slice(&buf).ok()
@@ -77,12 +83,16 @@ fn make_dap_process(adapter: &str, exe: &str, args: &[String]) -> tokio::process
     let mut cmd = if adapter == "debugpy" {
         let mut c = tokio::process::Command::new("cmd");
         c.arg("/C").arg(exe);
-        for a in args { c.arg(a); }
+        for a in args {
+            c.arg(a);
+        }
         c.creation_flags(0x08000000); // CREATE_NO_WINDOW
         c
     } else {
         let mut c = tokio::process::Command::new(exe);
-        for a in args { c.arg(a); }
+        for a in args {
+            c.arg(a);
+        }
         c.creation_flags(0x08000000);
         c
     };
@@ -90,7 +100,9 @@ fn make_dap_process(adapter: &str, exe: &str, args: &[String]) -> tokio::process
     #[cfg(not(target_os = "windows"))]
     let mut cmd = {
         let mut c = tokio::process::Command::new(exe);
-        for a in args { c.arg(a); }
+        for a in args {
+            c.arg(a);
+        }
         c
     };
 
@@ -122,7 +134,7 @@ pub async fn dap_start(
         .spawn()
         .map_err(|e| format!("Failed to spawn {} ({}): {}", exe, adapter, e))?;
 
-    let stdin  = child.stdin.take().ok_or("stdin unavailable")?;
+    let stdin = child.stdin.take().ok_or("stdin unavailable")?;
     let stdout = child.stdout.take().ok_or("stdout unavailable")?;
 
     let (msg_tx, mut msg_rx) = mpsc::unbounded_channel::<serde_json::Value>();
@@ -135,21 +147,29 @@ pub async fn dap_start(
         let mut stdin = stdin;
         while let Some(msg) = msg_rx.recv().await {
             let bytes = encode_dap_msg(&msg);
-            if stdin.write_all(&bytes).await.is_err() { break; }
+            if stdin.write_all(&bytes).await.is_err() {
+                break;
+            }
             let _ = stdin.flush().await;
         }
     });
 
     // Reader task: adapter stdout → pending responses | frontend events
     let pending_r = pending.clone();
-    let app_r     = app.clone();
-    let sid_r     = session_id.clone();
-    let msg_tx_r  = msg_tx.clone();
+    let app_r = app.clone();
+    let sid_r = session_id.clone();
+    let msg_tx_r = msg_tx.clone();
     tokio::spawn(async move {
         let mut reader = TokioBufReader::new(stdout);
         loop {
-            let Some(msg) = read_dap_msg(&mut reader).await else { break };
-            let msg_type = msg.get("type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let Some(msg) = read_dap_msg(&mut reader).await else {
+                break;
+            };
+            let msg_type = msg
+                .get("type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
 
             match msg_type.as_str() {
                 "response" => {
@@ -168,7 +188,8 @@ pub async fn dap_start(
                     // Adapter → client request (e.g. runInTerminal). Forward and auto-reply null.
                     let _ = app_r.emit(&format!("dap-server-request-{}", sid_r), &msg);
                     if let Some(seq) = msg.get("seq").and_then(|v| v.as_i64()) {
-                        let cmd_name = msg.get("command")
+                        let cmd_name = msg
+                            .get("command")
                             .and_then(|v| v.as_str())
                             .unwrap_or("")
                             .to_string();
@@ -187,12 +208,15 @@ pub async fn dap_start(
         }
     });
 
-    state.0.lock().unwrap().insert(session_id, DapSession {
-        msg_tx,
-        seq_counter,
-        pending,
-        _child: child,
-    });
+    state.0.lock().unwrap().insert(
+        session_id,
+        DapSession {
+            msg_tx,
+            seq_counter,
+            pending,
+            _child: child,
+        },
+    );
 
     Ok(())
 }
@@ -231,10 +255,7 @@ pub async fn dap_request(
 }
 
 #[tauri::command]
-pub async fn dap_stop(
-    session_id: String,
-    state: tauri::State<'_, DapState>,
-) -> Result<(), String> {
+pub async fn dap_stop(session_id: String, state: tauri::State<'_, DapState>) -> Result<(), String> {
     state.0.lock().unwrap().remove(&session_id);
     Ok(())
 }

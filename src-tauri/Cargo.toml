@@ -31,6 +31,8 @@ portable-pty = "0.8"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "process", "io-util", "time"] }
 sysinfo = "0.30"
 reqwest = { version = "0.12", features = ["json"] }
+sha2 = "0.10"
+zip = { version = "4.6.1", default-features = false, features = ["deflate"] }
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-updater = "2.13.3"
 tauri-plugin-process = "2.4.0"
@@ -41,6 +43,5 @@ lto         = "thin"   # cross-crate dead-code elimination
 codegen-units = 1      # single codegen unit lets LLVM optimise across more code
 strip       = true     # strip debug symbols from the binary
 panic       = "abort"  # removes unwinding machinery (~200 KB)
-
 
 

@@ -19,6 +19,22 @@ export interface DebugLastConfig {
   stopOnEntry: boolean;
 }
 
+export interface EditorSuggestionSettings {
+  enabled: boolean;
+  showWhileTyping: boolean;
+  manualSuggestions: boolean;
+  showDocumentation: boolean;
+  showDetails: boolean;
+  semanticIntelliSense: boolean;
+  inlineSuggestions: boolean;
+  aiInlineCompletions: boolean;
+  showGhostText: boolean;
+  acceptWithTab: boolean;
+  languageEnabled: Record<string, boolean>;
+  debounceMs: number;
+  maxItems: number;
+}
+
 export interface IDESettings {
   'sidebar.open': boolean;
   'sidebar.width': number;
@@ -33,7 +49,34 @@ export interface IDESettings {
   'terminal.tabs': SavedTermTab[];
   'terminal.activeIndex': number;
   'debug.lastLaunchConfig': DebugLastConfig | null;
+  'editor.suggestions': EditorSuggestionSettings;
+  'editor.formatOnSave': boolean;
 }
+
+export const DEFAULT_EDITOR_SUGGESTION_SETTINGS: EditorSuggestionSettings = {
+  enabled: true,
+  showWhileTyping: true,
+  manualSuggestions: true,
+  showDocumentation: true,
+  showDetails: true,
+  semanticIntelliSense: true,
+  inlineSuggestions: true,
+  aiInlineCompletions: true,
+  showGhostText: true,
+  acceptWithTab: true,
+  languageEnabled: {
+    javascript: true,
+    typescript: true,
+    python: true,
+    rust: true,
+    html: true,
+    css: true,
+    json: true,
+    other: true,
+  },
+  debounceMs: 350,
+  maxItems: 30,
+};
 
 const DEFAULTS: IDESettings = {
   'sidebar.open': true,
@@ -49,6 +92,8 @@ const DEFAULTS: IDESettings = {
   'terminal.tabs': [],
   'terminal.activeIndex': 0,
   'debug.lastLaunchConfig': null,
+  'editor.suggestions': DEFAULT_EDITOR_SUGGESTION_SETTINGS,
+  'editor.formatOnSave': false,
 };
 
 let _store: Store | null = null;
@@ -67,6 +112,11 @@ export async function getSetting<K extends keyof IDESettings>(key: K): Promise<I
 export async function setSetting<K extends keyof IDESettings>(key: K, value: IDESettings[K]): Promise<void> {
   const store = await getStore();
   await store.set(key, value);
+}
+
+export async function hasSetting<K extends keyof IDESettings>(key: K): Promise<boolean> {
+  const store = await getStore();
+  return store.has(key);
 }
 
 export async function pushRecentProject(project: RecentProject): Promise<void> {

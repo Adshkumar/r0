@@ -22,6 +22,7 @@ export interface GlobalHandlers {
   stepInto?:         () => void;
   stepOut?:          () => void;
   toggleBreakpoint?: () => void;
+  formatDocument?:   () => void;
 }
 
 export function useGlobalKeybindings(handlers: GlobalHandlers) {
@@ -57,6 +58,7 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (e.defaultPrevented) return;
       // Read the live keymap on every event so custom bindings apply immediately
       // without a page reload (localStorage is synchronous).
       const km = getCommandKeyMap();
@@ -81,6 +83,7 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
         "r0.stepInto":         () => h.current.stepInto?.(),
         "r0.stepOut":          () => h.current.stepOut?.(),
         "r0.toggleBreakpoint": () => h.current.toggleBreakpoint?.(),
+        "r0.formatDocument":   () => h.current.formatDocument?.(),
       };
 
       for (const [cmdId, keyStr] of Object.entries(km)) {
@@ -88,6 +91,10 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
         const handler = dispatch[cmdId];
         if (!handler) continue;
         if (matchesEvent(e, keyStr)) {
+          if (
+            cmdId === "r0.formatDocument" &&
+            !(e.target instanceof HTMLElement && e.target.closest(".cm-editor"))
+          ) continue;
           e.preventDefault();
           handler();
           return;
