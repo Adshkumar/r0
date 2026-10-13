@@ -20,6 +20,22 @@ describe("built-in themes", () => {
     }
   });
 
+  it("defines editor token colors and brackets for every theme", () => {
+    for (const theme of builtinThemes) {
+      for (const token of [
+        "syntax.parameter",
+        "syntax.property",
+        "syntax.module",
+        "syntax.tag",
+        "syntax.punctuation",
+        "syntax.bracket",
+      ]) {
+        expect(theme.colors[token], `${theme.name} is missing ${token}`).toBeTruthy();
+      }
+    }
+    expect(new Set(builtinThemes.map(theme => theme.colors["syntax.bracket"])).size).toBe(5);
+  });
+
   it("uses the Dracula palette while retaining dark-theme behavior", () => {
     const dracula = builtinThemes.find(theme => theme.name === "Dracula");
 

@@ -38,6 +38,12 @@
     "syntax.type":      "#62a6ff",
     "syntax.operator":  "#f05b8d",
     "syntax.attribute": "#b675f1",
+    "syntax.parameter": "#9cdcfe",
+    "syntax.property":  "#9cdcfe",
+    "syntax.module":    "#c586c0",
+    "syntax.tag":       "#569cd6",
+    "syntax.punctuation": "#d4d4d4",
+    "syntax.bracket":   "#ffd700",
 
     "git.added":     "#58c760",
     "git.modified":  "#f99902",
