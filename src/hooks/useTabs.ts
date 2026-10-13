@@ -68,6 +68,66 @@ export function useTabs() {
     });
   }
 
+  function handlePathRenamed(from: string, to: string) {
+    const source = from.replace(/[/\\]+$/, '');
+    const normalizedSource = source.replace(/\//g, '\\').toLowerCase();
+    const rebase = (path: string) => {
+      const normalizedPath = path.replace(/\//g, '\\').toLowerCase();
+      if (normalizedPath === normalizedSource) return to;
+      if (normalizedPath.startsWith(`${normalizedSource}\\`)) return `${to}${path.slice(source.length)}`;
+      return path;
+    };
+    const basename = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+
+    setTabs(current => current.map(tab => {
+      const path = tab.path.startsWith('__') ? tab.path : rebase(tab.path);
+      const filePath = tab.filePath ? rebase(tab.filePath) : undefined;
+      const gitDiff = tab.gitDiff
+        ? {
+            ...tab.gitDiff,
+            oldFilePath: rebase(tab.gitDiff.oldFilePath),
+            newFilePath: rebase(tab.gitDiff.newFilePath),
+          }
+        : undefined;
+      const name = filePath && filePath !== tab.filePath
+        ? `${basename(filePath)} (diff)`
+        : path !== tab.path
+          ? basename(path)
+          : tab.name;
+      return {
+        ...tab,
+        path,
+        name,
+        ...(filePath !== undefined ? { filePath } : {}),
+        ...(gitDiff ? { gitDiff } : {}),
+      };
+    }));
+    setActiveTab(current => current && !current.startsWith('__') ? rebase(current) : current);
+    setFileContents(current => {
+      const next = { ...current };
+      for (const [path, content] of Object.entries(current)) {
+        const renamedPath = rebase(path);
+        if (renamedPath !== path) {
+          delete next[path];
+          next[renamedPath] = content;
+        }
+      }
+      return next;
+    });
+    setFileErrors(current => {
+      const next = { ...current };
+      for (const [path, error] of Object.entries(current)) {
+        const renamedPath = rebase(path);
+        if (renamedPath !== path) {
+          delete next[path];
+          next[renamedPath] = error;
+        }
+      }
+      return next;
+    });
+    setJumpRequest(current => current ? { ...current, path: rebase(current.path) } : current);
+  }
+
   function handleNewFile() {
     untitledCount.current += 1;
     const id = `__untitled__${untitledCount.current}`;
@@ -209,6 +269,7 @@ export function useTabs() {
     activeTabRef,
     fileContentsRef,
     openTab, openTabAtLine, closeTab,
+    handlePathRenamed,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
     openGitCommitTab, openGitDiffTab,
     handleSave, handleSaveAs, handleSaveAll,

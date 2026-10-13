@@ -1,10 +1,11 @@
 ﻿import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import {
-  ChevronRight, ChevronDown, Folder, FolderOpen, File,
+  ChevronRight, ChevronDown, File,
   FilePlus, FolderPlus, Pencil, Trash2, Copy, ExternalLink,
 } from "lucide-react";
 import { readDir, writeFile, renamePath, deletePath, createDirCmd, revealInExplorer, type FsEntry } from "../lib/fs";
-import { fileColor } from "../lib/fileColors";
+import { resolveFileIcon } from "../lib/fileIcons";
+import { useFileIconTheme } from "../lib/fileIconTheme";
 import { useWorkspace } from "../context/WorkspaceContext";
 import ContextMenu, { type MenuEntry } from "./ContextMenu";
 
@@ -24,6 +25,9 @@ interface TreeCtx {
   openContextMenu: (x: number, y: number, entry: FsEntry | null) => void;
   nodeRefreshKey: Record<string, number>;
   refreshAt: (parentPath: string) => void;
+  fileIconTheme: ReturnType<typeof useFileIconTheme>;
+  onPathRenamed: (from: string, to: string) => void;
+  selectedFilePath: string | null;
 }
 
 const TreeCtx = createContext<TreeCtx>({
@@ -34,6 +38,9 @@ const TreeCtx = createContext<TreeCtx>({
   openContextMenu: () => {},
   nodeRefreshKey: {},
   refreshAt: () => {},
+  fileIconTheme: 'r0',
+  onPathRenamed: () => {},
+  selectedFilePath: null,
 });
 
 // ── Path utils ────────────────────────────────────────────────────────────────
@@ -46,7 +53,7 @@ function join(dir: string, name: string) { return `${dir.replace(/[/\\]+$/, '')}
 
 function RenameInput({ entry, onDone }: { entry: FsEntry; onDone: () => void }) {
   const [name, setName] = useState(entry.name);
-  const { refreshAt } = useContext(TreeCtx);
+  const { refreshAt, onPathRenamed } = useContext(TreeCtx);
   const inputRef = useRef<HTMLInputElement>(null);
   const committed = useRef(false);
 
@@ -58,7 +65,9 @@ function RenameInput({ entry, onDone }: { entry: FsEntry; onDone: () => void }) 
     const trimmed = name.trim();
     if (trimmed && trimmed !== entry.name) {
       try {
-        await renamePath(entry.path, join(parentOf(entry.path), trimmed));
+        const newPath = join(parentOf(entry.path), trimmed);
+        await renamePath(entry.path, newPath);
+        onPathRenamed(entry.path, newPath);
         refreshAt(parentOf(entry.path));
       } catch (e) { alert(String(e)); }
     }
@@ -136,13 +145,14 @@ function CreateInput({ parentPath, kind, depth, onDone }: {
 // ── Tree node ─────────────────────────────────────────────────────────────────
 
 function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
-  const { onFileOpen, renamingPath, setRenamingPath, pendingCreate, setPendingCreate, openContextMenu, nodeRefreshKey } = useContext(TreeCtx);
+  const { onFileOpen, renamingPath, setRenamingPath, pendingCreate, setPendingCreate, openContextMenu, nodeRefreshKey, fileIconTheme, selectedFilePath } = useContext(TreeCtx);
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<FsEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
 
   const isRenaming = renamingPath === entry.path;
+  const isSelected = selectedFilePath === entry.path;
   const createHere = entry.is_dir && pendingCreate?.parentPath === entry.path;
 
   // Auto-expand folder when a create is pending inside it
@@ -151,7 +161,10 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
     if (!loaded) {
       readDir(entry.path)
         .then(c => { setChildren(c); setLoaded(true); setExpanded(true); })
-        .catch(() => { setLoaded(true); setExpanded(true); });
+        .catch(error => {
+          console.error(`Could not read folder ${entry.path}:`, error);
+          setExpanded(true);
+        });
     } else {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- expand node when a child-create is requested
       setExpanded(true);
@@ -162,7 +175,9 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
   // Refresh children when parent requests it
   useEffect(() => {
     if (!loaded || !nodeRefreshKey[entry.path]) return;
-    readDir(entry.path).then(setChildren).catch(() => setChildren([]));
+    readDir(entry.path).then(setChildren).catch(error => {
+      console.error(`Could not refresh folder ${entry.path}:`, error);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeRefreshKey[entry.path]]);
 
@@ -170,7 +185,12 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
     if (isRenaming) return;
     if (entry.is_dir) {
       if (!loaded) {
-        try { setChildren(await readDir(entry.path)); } catch { setChildren([]); }
+        try {
+          setChildren(await readDir(entry.path));
+        } catch (error) {
+          console.error(`Could not read folder ${entry.path}:`, error);
+          return;
+        }
         setLoaded(true);
       }
       setExpanded(v => !v);
@@ -180,6 +200,8 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
   }
 
   const indent = depth * 12 + 6;
+  const resolvedIcon = resolveFileIcon(entry.name, entry.is_dir, expanded, fileIconTheme);
+  const EntryIcon = resolvedIcon.icon;
 
   return (
     <>
@@ -188,10 +210,11 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
         onContextMenu={e => { e.preventDefault(); e.stopPropagation(); openContextMenu(e.clientX, e.clientY, entry); }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        aria-current={isSelected ? 'page' : undefined}
         style={{
           width: '100%', display: 'flex', alignItems: 'center',
           gap: 4, padding: `3px 8px 3px ${indent}px`,
-          border: 'none', background: hovered ? 'var(--r0-bg-hover)' : 'transparent',
+          border: 'none', background: isSelected ? 'var(--r0-bg-active)' : hovered ? 'var(--r0-bg-hover)' : 'transparent',
           cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'background 0.1s',
         }}
       >
@@ -199,12 +222,7 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
           {entry.is_dir ? (expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />) : null}
         </span>
 
-        {entry.is_dir
-          ? expanded
-            ? <FolderOpen size={14} style={{ flexShrink: 0, color: '#eab308' }} />
-            : <Folder    size={14} style={{ flexShrink: 0, color: '#eab308' }} />
-          : <File size={14} style={{ flexShrink: 0, color: fileColor(entry.name) }} />
-        }
+        <EntryIcon size={14} aria-hidden="true" style={{ flexShrink: 0, color: resolvedIcon.color }} />
 
         {isRenaming
           ? <RenameInput entry={entry} onDone={() => setRenamingPath(null)} />
@@ -214,7 +232,7 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               opacity: entry.name.startsWith('.') ? 0.5 : 1,
             }}>
-              {entry.name}
+              <span title={entry.name}>{entry.name}</span>
             </span>
           )
         }
@@ -244,11 +262,14 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
 interface Props {
   onFileOpen: (path: string) => void;
   onPreviewOpen: (path: string) => void;
+  onPathRenamed: (from: string, to: string) => void;
+  selectedFilePath: string | null;
   refreshKey?: number;
 }
 
-export default function FileTree({ onFileOpen, onPreviewOpen, refreshKey }: Props) {
+export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, refreshKey }: Props) {
   const { folderPath } = useWorkspace();
+  const fileIconTheme = useFileIconTheme();
   const [rootEntries, setRootEntries] = useState<FsEntry[]>([]);
   const rootName = folderPath?.split(/[\\/]/).filter(Boolean).pop() ?? '';
 
@@ -259,7 +280,9 @@ export default function FileTree({ onFileOpen, onPreviewOpen, refreshKey }: Prop
 
   const refreshRoot = useCallback(() => {
     if (!folderPath) return;
-    readDir(folderPath).then(setRootEntries).catch(() => setRootEntries([]));
+    readDir(folderPath).then(setRootEntries).catch(error => {
+      console.error(`Could not refresh folder ${folderPath}:`, error);
+    });
   }, [folderPath]);
 
   const refreshAt = useCallback((parentPath: string) => {
@@ -275,7 +298,13 @@ export default function FileTree({ onFileOpen, onPreviewOpen, refreshKey }: Prop
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset when no folder is open
     if (!folderPath) { setRootEntries([]); return; }
-    readDir(folderPath).then(setRootEntries).catch(() => setRootEntries([]));
+    let current = true;
+    readDir(folderPath)
+      .then(entries => { if (current) setRootEntries(entries); })
+      .catch(error => {
+        if (current) console.error(`Could not read folder ${folderPath}:`, error);
+      });
+    return () => { current = false; };
   }, [folderPath, refreshKey]);
 
   function openContextMenu(x: number, y: number, entry: FsEntry | null) {
@@ -353,6 +382,9 @@ export default function FileTree({ onFileOpen, onPreviewOpen, refreshKey }: Prop
       openContextMenu,
       nodeRefreshKey,
       refreshAt,
+      fileIconTheme,
+      onPathRenamed,
+      selectedFilePath,
     }}>
       <div
         className="flex-1 flex flex-col overflow-y-auto"

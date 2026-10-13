@@ -54,7 +54,7 @@ function App() {
     fileTreeVersion,
     activeTabRef,
     fileContentsRef,
-    openTab, openTabAtLine, closeTab,
+    openTab, openTabAtLine, closeTab, handlePathRenamed,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
     openGitCommitTab, openGitDiffTab,
     handleSave, handleSaveAs, handleSaveAll,
@@ -512,6 +512,8 @@ function App() {
               <Sidebar
                 onFileOpen={openTab}
                 onPreviewOpen={handleOpenHtmlPreview}
+                onPathRenamed={handlePathRenamed}
+                selectedFilePath={activeTab && !activeTab.startsWith('__') ? activeTab : null}
                 onFileOpenAtLine={openTabAtLine}
                 fileTreeKey={fileTreeVersion}
                 onOpenCommit={handleOpenCommit}

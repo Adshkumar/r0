@@ -14,6 +14,8 @@ const DEFAULT_WIDTH = 240;
 interface Props {
   onFileOpen: (path: string) => void;
   onPreviewOpen: (path: string) => void;
+  onPathRenamed: (from: string, to: string) => void;
+  selectedFilePath: string | null;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
   onOpenCommit: (hash: string) => void;
@@ -21,10 +23,12 @@ interface Props {
   selectedCommitHash: string | null;
 }
 
-function ActivePanel({ id, onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
+function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
   id: string;
   onFileOpen: (path: string) => void;
   onPreviewOpen: (path: string) => void;
+  onPathRenamed: (from: string, to: string) => void;
+  selectedFilePath: string | null;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
   onOpenCommit: (hash: string) => void;
@@ -32,7 +36,7 @@ function ActivePanel({ id, onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTree
   selectedCommitHash: string | null;
 }) {
   switch (id) {
-    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} refreshKey={fileTreeKey} />;
+    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} />;
     case "search":     return <SearchPanel onFileOpenAtLine={onFileOpenAtLine} />;
     case "sourcetree": return <SourceTreePanel onOpenCommit={onOpenCommit} onOpenWorkingDiff={onOpenWorkingDiff} selectedCommitHash={selectedCommitHash} />;
     case "debug":      return <DebugPanel onFileOpenAtLine={onFileOpenAtLine} />;
@@ -41,7 +45,7 @@ function ActivePanel({ id, onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTree
   }
 }
 
-export default function Sidebar({ onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
+export default function Sidebar({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [active, setActive] = useState("explorer");
   const isResizing = useRef(false);
@@ -79,6 +83,8 @@ export default function Sidebar({ onFileOpen, onPreviewOpen, onFileOpenAtLine, f
         id={active}
         onFileOpen={onFileOpen}
         onPreviewOpen={onPreviewOpen}
+        onPathRenamed={onPathRenamed}
+        selectedFilePath={selectedFilePath}
         onFileOpenAtLine={onFileOpenAtLine}
         fileTreeKey={fileTreeKey}
         onOpenCommit={onOpenCommit}
