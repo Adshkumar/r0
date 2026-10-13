@@ -1,4 +1,4 @@
-﻿import { Sun, Moon, GitBranch, Settings } from 'lucide-react';
+import { Sun, Moon, GitBranch, Settings, Globe } from 'lucide-react';
 import { useTheme } from '../themes/ThemeContext';
 
 interface Props {
@@ -7,6 +7,9 @@ interface Props {
   col: number;
   branch: string | null;
   onOpenSettings?: () => void;
+  activeFilePath?: string | null;
+  livePreviewActive?: boolean;
+  onGoLive?: () => void;
   debugStatus?: 'paused' | 'running' | null;
 }
 
@@ -15,6 +18,14 @@ function StatusItem({ children, onClick, title }: { children: React.ReactNode; o
     <div
       onClick={onClick}
       title={title}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={event => {
+        if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       style={{
         display: 'flex', alignItems: 'center', gap: '5px',
         padding: '0 8px', height: '100%',
@@ -35,9 +46,20 @@ function StatusItem({ children, onClick, title }: { children: React.ReactNode; o
   );
 }
 
-export default function StatusBar({ language, line, col, branch, onOpenSettings, debugStatus }: Props) {
+export default function StatusBar({
+  language,
+  line,
+  col,
+  branch,
+  onOpenSettings,
+  activeFilePath,
+  livePreviewActive = false,
+  onGoLive,
+  debugStatus,
+}: Props) {
   const { theme, themes, setTheme } = useTheme();
   const isDark = theme.type === 'dark';
+  const canGoLive = !!activeFilePath && /\.html?$/i.test(activeFilePath);
 
   function toggleTheme() {
     const currentIndex = themes.findIndex(t => t.name === theme.name);
@@ -87,6 +109,15 @@ export default function StatusBar({ language, line, col, branch, onOpenSettings,
 
       {/* Right */}
       <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        {canGoLive && (
+          <StatusItem
+            onClick={onGoLive}
+            title={livePreviewActive ? 'Stop Live Preview' : 'Open active HTML in Live Preview'}
+          >
+            <Globe size={12} />
+            <span>{livePreviewActive ? 'Stop Live' : 'Go Live'}</span>
+          </StatusItem>
+        )}
         <StatusItem>
           <span>{language}</span>
         </StatusItem>

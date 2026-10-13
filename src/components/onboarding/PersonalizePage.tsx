@@ -87,21 +87,23 @@ export default function PersonalizePage({ onBack, onComplete, onSkip }: Props) {
   const { setTheme, themes } = useTheme();
   const [selectedTheme,  setSelectedTheme]  = useState<string>(() => {
     const savedTheme = localStorage.getItem('r0-theme');
-    if (savedTheme === 'r0 Light') return 'light';
-    if (savedTheme === 'r0 Dracula') return 'dracula';
-    if (savedTheme === 'Cobalt2') return 'cobalt2';
+    if (savedTheme === 'r0 Light' || savedTheme === 'Light Modern') return 'light';
+    if (savedTheme === 'r0 Dracula' || savedTheme === 'Dracula') return 'dracula';
+    if (savedTheme === 'Cobalt2' || savedTheme === 'One Dark Pro') return 'cobalt2';
+    if (savedTheme === 'GitHub Dark') return 'github-dark';
     return 'dark';
   });
   const [selectedKeymap, setSelectedKeymap] = useState<string>('vscode');
   const [selectedImport, setSelectedImport] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
-  function handleThemeSelect(id: 'dark' | 'light' | 'dracula' | 'cobalt2') {
+  function handleThemeSelect(id: 'dark' | 'light' | 'dracula' | 'cobalt2' | 'github-dark') {
     setSelectedTheme(id);
-    const name = id === 'dark' ? 'r0 Dark'
-      : id === 'light' ? 'r0 Light'
-      : id === 'dracula' ? 'r0 Dracula'
-      : 'Cobalt2';
+    const name = id === 'dark' ? 'Dark Modern'
+      : id === 'light' ? 'Light Modern'
+      : id === 'dracula' ? 'Dracula'
+      : id === 'github-dark' ? 'GitHub Dark'
+      : 'One Dark Pro';
     const t = themes.find(t => t.name === name);
     if (t) setTheme(t);
   }
@@ -142,7 +144,7 @@ export default function PersonalizePage({ onBack, onComplete, onSkip }: Props) {
           <div>
             <div style={sectionLabel}>Theme</div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              {[...THEMES].sort((a, b) => ['light', 'dark', 'dracula', 'cobalt2'].indexOf(a.id) - ['light', 'dark', 'dracula', 'cobalt2'].indexOf(b.id)).map(t => <SelectCard key={t.id} label={t.label} selected={selectedTheme === t.id} onClick={() => handleThemeSelect(t.id)}><ThemePreview t={t} /></SelectCard>)}
+              {[...THEMES].sort((a, b) => ['dark', 'dracula', 'cobalt2', 'github-dark', 'light'].indexOf(a.id) - ['dark', 'dracula', 'cobalt2', 'github-dark', 'light'].indexOf(b.id)).map(t => <SelectCard key={t.id} label={t.label} selected={selectedTheme === t.id} onClick={() => handleThemeSelect(t.id)}><ThemePreview t={t} /></SelectCard>)}
             </div>
           </div>
 

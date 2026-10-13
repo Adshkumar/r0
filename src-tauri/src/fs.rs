@@ -56,6 +56,102 @@ pub fn read_file(path: String, workspace_root: Option<String>) -> Result<String,
 }
 
 #[tauri::command]
+pub fn read_prettier_config(
+    file_path: String,
+    workspace_root: String,
+) -> Result<Option<String>, String> {
+    let root = std::path::PathBuf::from(workspace_root)
+        .canonicalize()
+        .map_err(|error| format!("Could not resolve workspace for formatter config: {error}"))?;
+    let file = std::path::PathBuf::from(file_path)
+        .canonicalize()
+        .map_err(|error| format!("Could not resolve file for formatter config: {error}"))?;
+    if !file.starts_with(&root) || !file.is_file() {
+        return Err("Formatter config lookup is limited to files inside the workspace".to_string());
+    }
+
+    let mut directory = file.parent();
+    while let Some(current) = directory {
+        if !current.starts_with(&root) {
+            break;
+        }
+        for config_name in [".prettierrc", ".prettierrc.json", "prettier.config.json"] {
+            let config = current.join(config_name);
+            if config.is_file() {
+                let config = config
+                    .canonicalize()
+                    .map_err(|error| format!("Could not resolve Prettier config: {error}"))?;
+                if !config.starts_with(&root) {
+                    return Err("Prettier config must be inside the workspace".to_string());
+                }
+                if config
+                    .metadata()
+                    .map_err(|error| format!("Could not inspect Prettier config: {error}"))?
+                    .len()
+                    > 1024 * 1024
+                {
+                    return Err("Prettier config exceeds the 1 MiB limit".to_string());
+                }
+                return std::fs::read_to_string(config)
+                    .map(Some)
+                    .map_err(|error| format!("Could not read Prettier config: {error}"));
+            }
+        }
+
+        for config_name in [
+            ".prettierrc.js",
+            ".prettierrc.cjs",
+            ".prettierrc.mjs",
+            "prettier.config.js",
+            "prettier.config.cjs",
+            "prettier.config.mjs",
+            ".prettierrc.yaml",
+            ".prettierrc.yml",
+        ] {
+            if current.join(config_name).is_file() {
+                return Err(format!(
+                    "{config_name} is not supported by the built-in safe formatter. Use JSON-formatted .prettierrc instead."
+                ));
+            }
+        }
+
+        let package_json = current.join("package.json");
+        if package_json.is_file() {
+            let package_json = package_json
+                .canonicalize()
+                .map_err(|error| format!("Could not resolve package.json: {error}"))?;
+            if !package_json.starts_with(&root) {
+                return Err("package.json must be inside the workspace".to_string());
+            }
+            if package_json
+                .metadata()
+                .map_err(|error| format!("Could not inspect package.json: {error}"))?
+                .len()
+                > 1024 * 1024
+            {
+                return Err("package.json exceeds the 1 MiB limit".to_string());
+            }
+            let content = std::fs::read_to_string(package_json).map_err(|error| {
+                format!("Could not read package.json for Prettier config: {error}")
+            })?;
+            let package: serde_json::Value = serde_json::from_str(&content)
+                .map_err(|error| format!("package.json contains invalid JSON: {error}"))?;
+            if let Some(config) = package.get("prettier") {
+                return serde_json::to_string(config)
+                    .map(Some)
+                    .map_err(|error| format!("Could not decode Prettier config: {error}"));
+            }
+        }
+
+        if current == root {
+            break;
+        }
+        directory = current.parent();
+    }
+    Ok(None)
+}
+
+#[tauri::command]
 pub async fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
     tokio::task::spawn_blocking(move || std::fs::read(path))
         .await
@@ -188,4 +284,62 @@ pub fn reveal_in_explorer(path: String) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_prettier_config;
+    use std::{fs, time::SystemTime};
+
+    #[test]
+    fn finds_workspace_prettier_config_for_nested_files() {
+        let root = std::env::temp_dir().join(format!(
+            "r0-prettier-config-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("system time")
+                .as_nanos()
+        ));
+        let nested = root.join("src").join("nested");
+        fs::create_dir_all(&nested).expect("create workspace");
+        fs::write(root.join(".prettierrc.json"), r#"{"singleQuote":true}"#)
+            .expect("write formatter config");
+        let file = nested.join("app.js");
+        fs::write(&file, "const value=1;").expect("write source file");
+
+        let result = read_prettier_config(
+            file.to_string_lossy().into_owned(),
+            root.to_string_lossy().into_owned(),
+        )
+        .expect("find config");
+        assert_eq!(result.as_deref(), Some(r#"{"singleQuote":true}"#));
+
+        fs::remove_dir_all(root).expect("remove test workspace");
+    }
+
+    #[test]
+    fn refuses_formatter_config_lookup_outside_workspace() {
+        let base = std::env::temp_dir().join(format!(
+            "r0-prettier-root-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("system time")
+                .as_nanos()
+        ));
+        let root = base.join("workspace");
+        fs::create_dir_all(&root).expect("create workspace");
+        let file = base.join("outside.js");
+        fs::create_dir_all(&base).expect("create test directory");
+        fs::write(&file, "const value=1;").expect("write outside source");
+
+        assert!(read_prettier_config(
+            file.to_string_lossy().into_owned(),
+            root.to_string_lossy().into_owned(),
+        )
+        .is_err());
+
+        fs::remove_dir_all(base).expect("remove test directory");
+    }
 }

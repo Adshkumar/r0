@@ -35,7 +35,7 @@ export const PROVIDERS: Provider[] = [
 ];
 
 export interface ThemeOption {
-  id: 'dark' | 'light' | 'dracula' | 'cobalt2';
+  id: 'dark' | 'light' | 'dracula' | 'cobalt2' | 'github-dark';
   label: string;
   previewBg: string;
   lines: Array<{ color: string; width: string }>;
@@ -44,7 +44,7 @@ export interface ThemeOption {
 export const THEMES: ThemeOption[] = [
   {
     id: 'dark',
-    label: 'r0 Dark',
+    label: 'Dark Modern',
     previewBg: '#0a0a0a',
     lines: [
       { color: '#62a6ff', width: '85%' },
@@ -55,7 +55,7 @@ export const THEMES: ThemeOption[] = [
   },
   {
     id: 'light',
-    label: 'r0 Light',
+    label: 'Light Modern',
     previewBg: '#f5f5f5',
     lines: [
       { color: '#005ee9', width: '85%' },
@@ -66,7 +66,7 @@ export const THEMES: ThemeOption[] = [
   },
   {
     id: 'dracula',
-    label: 'r0 Dracula',
+    label: 'Dracula',
     previewBg: '#282A36',
     lines: [
       { color: '#8BE9FD', width: '85%' },
@@ -77,13 +77,24 @@ export const THEMES: ThemeOption[] = [
   },
   {
     id: 'cobalt2',
-    label: 'Cobalt2',
-    previewBg: '#193549',
+    label: 'One Dark Pro',
+    previewBg: '#282c34',
     lines: [
-      { color: '#80FCFF', width: '85%' },
-      { color: '#2A5366', width: '60%' },
-      { color: '#FF628C', width: '45%' },
-      { color: '#3AD900', width: '75%' },
+      { color: '#61afef', width: '85%' },
+      { color: '#3e4451', width: '60%' },
+      { color: '#c678dd', width: '45%' },
+      { color: '#98c379', width: '75%' },
+    ],
+  },
+  {
+    id: 'github-dark',
+    label: 'GitHub Dark',
+    previewBg: '#0d1117',
+    lines: [
+      { color: '#58a6ff', width: '85%' },
+      { color: '#30363d', width: '60%' },
+      { color: '#ff7b72', width: '45%' },
+      { color: '#3fb950', width: '75%' },
     ],
   },
 ];

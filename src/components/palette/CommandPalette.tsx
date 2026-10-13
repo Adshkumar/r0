@@ -2,13 +2,14 @@
 import { createPortal } from 'react-dom';
 import {
   Search, File, Terminal, FolderOpen, FilePlus, PanelLeft,
-  FileInput, GripHorizontal, Sun, Moon, Settings, Loader, AlignLeft,
+  FileInput, GripHorizontal, Sun, Moon, Settings, Loader, AlignLeft, Globe,
 } from 'lucide-react';
 import { readDir, type FsEntry } from '../../lib/fs';
 import { fileColor } from '../../lib/fileColors';
 import { searchInFiles, type SearchMatch } from '../../lib/search';
 import { useTheme } from '../../themes/ThemeContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { canFormat } from '../../lib/formatting';
 import type { Tab } from '../editor/TabBar';
 
 // ── workspace walker ─────────────────────────────────────────────────────────
@@ -97,6 +98,9 @@ export interface CommandPaletteProps {
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
   onOpenSettings: () => void;
+  activeFilePath: string | null;
+  onOpenHtmlPreview: (path: string) => void;
+  onFormatDocument: () => void;
   terminalOpen: boolean;
   sidebarOpen: boolean;
 }
@@ -109,6 +113,7 @@ export default function CommandPalette({
   tabs, onFileOpen, onFileOpenAtLine, onClose,
   onNewFile, onOpenFolder, onOpenFile,
   onToggleSidebar, onToggleTerminal, onOpenSettings,
+  activeFilePath, onOpenHtmlPreview, onFormatDocument,
   terminalOpen, sidebarOpen,
 }: CommandPaletteProps) {
   const { folderPath } = useWorkspace();
@@ -277,6 +282,12 @@ export default function CommandPalette({
       { label: 'New File',            tokens: 'new create untitled',        detail: 'Create a new untitled file',          icon: <FilePlus  size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+N',   action: () => { onNewFile();       onClose(); } },
       { label: 'Open Folder…',        tokens: 'open folder workspace',       detail: 'Open a project folder',               icon: <FolderOpen size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+K O', action: () => { onOpenFolder();    onClose(); } },
       { label: 'Open File…',          tokens: 'open file browse disk',       detail: 'Open a file from disk',               icon: <FileInput  size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+O',   action: () => { onOpenFile();      onClose(); } },
+      ...(activeFilePath && /\.html?$/i.test(activeFilePath)
+        ? [{ label: 'Open Active HTML in Live Preview', tokens: 'html browser preview web', detail: 'Open a local HTML preview at the bottom', icon: <Globe size={14} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />, shortcut: undefined as string | undefined, action: () => { onOpenHtmlPreview(activeFilePath); onClose(); } }]
+        : []),
+      ...(activeFilePath && canFormat(activeFilePath)
+        ? [{ label: 'Format Document', tokens: 'format prettier code document', detail: 'Format the active document', icon: <AlignLeft size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Shift+Alt+F', action: () => { onFormatDocument(); onClose(); } }]
+        : []),
       { label: 'Open Settings',       tokens: 'settings preferences config', detail: 'Manage API keys, themes and more',    icon: <Settings   size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+,',   action: () => { onOpenSettings();  onClose(); } },
       { label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', tokens: 'terminal toggle panel', detail: terminalOpen ? 'Close the terminal panel' : 'Open the terminal panel', icon: <Terminal size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+`', action: () => { onToggleTerminal(); onClose(); } },
       { label: sidebarOpen  ? 'Hide Sidebar'  : 'Show Sidebar',  tokens: 'sidebar toggle explorer', detail: sidebarOpen ? 'Close the file explorer' : 'Open the file explorer', icon: <PanelLeft size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: undefined, action: () => { onToggleSidebar(); onClose(); } },
@@ -300,7 +311,7 @@ export default function CommandPalette({
     result.sort((a, b) => a.score - b.score);
     return result.slice(0, 60);
   }, [isTextMode, isFileMode, q, tabs, wsFiles, folderPath, terminalOpen, sidebarOpen, theme, themes, setTheme,
-      onFileOpen, onClose, onNewFile, onOpenFolder, onOpenFile, onToggleSidebar, onToggleTerminal, onOpenSettings]);
+      onFileOpen, onClose, onNewFile, onOpenFolder, onOpenFile, onToggleSidebar, onToggleTerminal, onOpenSettings, activeFilePath, onOpenHtmlPreview, onFormatDocument]);
 
   const textItems = useMemo<PaletteItem[]>(() =>
     textResults.map(r => {

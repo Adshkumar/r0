@@ -8,10 +8,15 @@ import { fileColor } from "../lib/fileColors";
 import { useWorkspace } from "../context/WorkspaceContext";
 import ContextMenu, { type MenuEntry } from "./ContextMenu";
 
+function isHtmlFile(path: string) {
+  return /\.html?$/i.test(path);
+}
+
 // ── Shared context ─────────────────────────────────────────────────────────────
 
 interface TreeCtx {
   onFileOpen: (path: string) => void;
+  onPreviewOpen: (path: string) => void;
   renamingPath: string | null;
   setRenamingPath: (p: string | null) => void;
   pendingCreate: { parentPath: string; kind: 'file' | 'folder' } | null;
@@ -23,6 +28,7 @@ interface TreeCtx {
 
 const TreeCtx = createContext<TreeCtx>({
   onFileOpen: () => {},
+  onPreviewOpen: () => {},
   renamingPath: null, setRenamingPath: () => {},
   pendingCreate: null, setPendingCreate: () => {},
   openContextMenu: () => {},
@@ -237,10 +243,11 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
 
 interface Props {
   onFileOpen: (path: string) => void;
+  onPreviewOpen: (path: string) => void;
   refreshKey?: number;
 }
 
-export default function FileTree({ onFileOpen, refreshKey }: Props) {
+export default function FileTree({ onFileOpen, onPreviewOpen, refreshKey }: Props) {
   const { folderPath } = useWorkspace();
   const [rootEntries, setRootEntries] = useState<FsEntry[]>([]);
   const rootName = folderPath?.split(/[\\/]/).filter(Boolean).pop() ?? '';
@@ -309,6 +316,9 @@ export default function FileTree({ onFileOpen, refreshKey }: Props) {
 
     return [
       { label: 'Open in Editor', icon: <File size={13} />, action: () => onFileOpen(entry.path) },
+      ...(isHtmlFile(entry.path)
+        ? [{ label: 'Open with Live Preview', icon: <ExternalLink size={13} />, action: () => onPreviewOpen(entry.path) }]
+        : []),
       { separator: true },
       { label: 'Rename',      icon: <Pencil size={13} />,       action: () => setRenamingPath(entry.path) },
       { label: 'Delete File', icon: <Trash2 size={13} />, danger: true,
@@ -337,6 +347,7 @@ export default function FileTree({ onFileOpen, refreshKey }: Props) {
   return (
     <TreeCtx.Provider value={{
       onFileOpen,
+      onPreviewOpen,
       renamingPath, setRenamingPath,
       pendingCreate, setPendingCreate,
       openContextMenu,

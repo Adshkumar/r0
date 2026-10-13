@@ -4,6 +4,7 @@ import FileTree from "./FileTree";
 import SearchPanel from "./SearchPanel";
 import SourceTreePanel from "./SourceTreePanel";
 import DebugPanel from "./DebugPanel";
+import ExtensionsPanel from "./extensions/ExtensionsPanel";
 import type { StatusFile } from "../lib/git";
 
 const MIN_WIDTH = 180;
@@ -12,6 +13,7 @@ const DEFAULT_WIDTH = 240;
 
 interface Props {
   onFileOpen: (path: string) => void;
+  onPreviewOpen: (path: string) => void;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
   onOpenCommit: (hash: string) => void;
@@ -19,17 +21,10 @@ interface Props {
   selectedCommitHash: string | null;
 }
 
-function PanelPlaceholder({ label }: { label: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center">
-      <p className="text-xs" style={{ color: "var(--r0-fg-subtle)" }}>{label}</p>
-    </div>
-  );
-}
-
-function ActivePanel({ id, onFileOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
+function ActivePanel({ id, onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
   id: string;
   onFileOpen: (path: string) => void;
+  onPreviewOpen: (path: string) => void;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
   onOpenCommit: (hash: string) => void;
@@ -37,16 +32,16 @@ function ActivePanel({ id, onFileOpen, onFileOpenAtLine, fileTreeKey, onOpenComm
   selectedCommitHash: string | null;
 }) {
   switch (id) {
-    case "explorer":   return <FileTree onFileOpen={onFileOpen} refreshKey={fileTreeKey} />;
+    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} refreshKey={fileTreeKey} />;
     case "search":     return <SearchPanel onFileOpenAtLine={onFileOpenAtLine} />;
     case "sourcetree": return <SourceTreePanel onOpenCommit={onOpenCommit} onOpenWorkingDiff={onOpenWorkingDiff} selectedCommitHash={selectedCommitHash} />;
     case "debug":      return <DebugPanel onFileOpenAtLine={onFileOpenAtLine} />;
-    case "extensions": return <PanelPlaceholder label="Extensions" />;
+    case "extensions": return <ExtensionsPanel />;
     default:           return null;
   }
 }
 
-export default function Sidebar({ onFileOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
+export default function Sidebar({ onFileOpen, onPreviewOpen, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [active, setActive] = useState("explorer");
   const isResizing = useRef(false);
@@ -83,6 +78,7 @@ export default function Sidebar({ onFileOpen, onFileOpenAtLine, fileTreeKey, onO
       <ActivePanel
         id={active}
         onFileOpen={onFileOpen}
+        onPreviewOpen={onPreviewOpen}
         onFileOpenAtLine={onFileOpenAtLine}
         fileTreeKey={fileTreeKey}
         onOpenCommit={onOpenCommit}

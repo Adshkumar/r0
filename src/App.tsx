@@ -13,13 +13,14 @@ import AiDiffPane, { type AiDiffTabData } from "./components/editor/AiDiffPane";
 import GitCommitDetailsPane from "./components/editor/GitCommitDetailsPane";
 import GitDiffPane from "./components/editor/GitDiffPane";
 import WebPreviewPane from "./components/editor/WebPreviewPane";
+import HtmlLivePreviewPanel from "./components/editor/HtmlLivePreviewPanel";
 import StatusBar from "./components/StatusBar";
 import TerminalPanel, { type TerminalPanelHandle } from "./components/terminal/TerminalPanel";
 import CommandPalette from "./components/palette/CommandPalette";
 import AiPanel from "./components/ai/AiPanel";
 import SettingsPanel from "./components/settings/SettingsPanel";
 import DebugToolbar from "./components/DebugToolbar";
-import { setSetting, pushRecentProject } from "./lib/settings";
+import { getSetting, setSetting, pushRecentProject } from "./lib/settings";
 import { useToast } from "./components/ui/Toast";
 import { streamText } from "ai";
 import { buildLanguageModel } from "./lib/agent/providers";
@@ -36,6 +37,7 @@ import { useTabs } from "./hooks/useTabs";
 import { useWorkspacePersistence } from "./hooks/useWorkspacePersistence";
 import { useGlobalKeybindings } from "./hooks/useGlobalKeybindings";
 import { isImageFile } from "./lib/imagePreview";
+import { canFormat, canFormatOffline, formatSource } from "./lib/formatting";
 
 function App() {
   const { folderPath, setFolderPath } = useWorkspace();
@@ -103,6 +105,74 @@ function App() {
   const [paletteOpen,    setPaletteOpen]   = useState(false);
   const [settingsOpen,   setSettingsOpen]  = useState(false);
   const [aboutOpen,      setAboutOpen]     = useState(false);
+  const [htmlPreviewTarget, setHtmlPreviewTarget] = useState<{ path: string; rootPath: string | null } | null>(null);
+  const [htmlPreviewRefresh, setHtmlPreviewRefresh] = useState(0);
+
+  function handleOpenHtmlPreview(path: string) {
+    openTab(path);
+    setHtmlPreviewTarget({ path, rootPath: folderPath });
+  }
+
+  function handleGoLive() {
+    if (!activeTab || !folderPath) return;
+    if (htmlPreviewTarget?.path === activeTab && htmlPreviewTarget.rootPath === folderPath) {
+      setHtmlPreviewTarget(null);
+      return;
+    }
+    setHtmlPreviewTarget({ path: activeTab, rootPath: folderPath });
+  }
+
+  async function isFormatOnSaveEnabled(): Promise<boolean> {
+    try {
+      return await getSetting('editor.formatOnSave');
+    } catch (error) {
+      showToast(`Could not load format-on-save setting: ${String(error)}`, 'error');
+      return false;
+    }
+  }
+
+  async function getFormattedContent(path: string, enabled: boolean): Promise<string | undefined> {
+    if (!enabled || !canFormat(path)) return undefined;
+    if (activeTab === path && editorRef.current) {
+      return (await editorRef.current.formatDocument()) ?? undefined;
+    }
+    if (!canFormatOffline(path)) return undefined;
+    const content = fileContentsRef.current[path];
+    if (content === undefined) return undefined;
+    try {
+      return (await formatSource(content, path, undefined, content.length, folderPath)).text;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), 'error');
+      return undefined;
+    }
+  }
+
+  async function saveAndRefreshPreview(path: string) {
+    const enabled = await isFormatOnSaveEnabled();
+    await handleSave(path, await getFormattedContent(path, enabled));
+    if (htmlPreviewTarget?.rootPath === folderPath) setHtmlPreviewRefresh(value => value + 1);
+  }
+
+  async function saveAsAndRefreshPreview() {
+    const path = activeTabRef.current;
+    if (!path) return;
+    const enabled = await isFormatOnSaveEnabled();
+    await handleSaveAs(await getFormattedContent(path, enabled));
+    if (htmlPreviewTarget?.rootPath === folderPath) setHtmlPreviewRefresh(value => value + 1);
+  }
+
+  async function saveAllAndRefreshPreview() {
+    const formatted: Record<string, string> = {};
+    if (await isFormatOnSaveEnabled()) {
+      for (const tab of tabs) {
+        if (!tab.isDirty || tab.isUntitled || !canFormatOffline(tab.path)) continue;
+        const content = await getFormattedContent(tab.path, true);
+        if (content !== undefined) formatted[tab.path] = content;
+      }
+    }
+    await handleSaveAll(formatted);
+    if (htmlPreviewTarget?.rootPath === folderPath) setHtmlPreviewRefresh(value => value + 1);
+  }
 
   // Stable async-generator callback for AI inline autocomplete.
   // Reads localStorage at call time so model/provider/enabled changes take effect immediately.
@@ -218,7 +288,7 @@ function App() {
   }, [activeTab, debugCtx.session.breakpoints, debugCtx.session.stackFrames]);
 
   const { isFullscreen, toggleFullscreen } = useGlobalKeybindings({
-    saveActive:        () => { if (activeTab) handleSave(activeTab); },
+    saveActive:        () => { if (activeTab) void saveAndRefreshPreview(activeTab); },
     toggleTerminal:    () => setTerminalOpen(v => !v),
     togglePalette:     () => setPaletteOpen(v => !v),
     toggleSettings:    () => setSettingsOpen(v => !v),
@@ -234,6 +304,7 @@ function App() {
     stepOver:          () => debugCtx.stepOver?.(),
     stepInto:          () => debugCtx.stepIn?.(),
     stepOut:           () => debugCtx.stepOut?.(),
+    formatDocument:    () => { void editorRef.current?.formatDocument(); },
   });
 
   async function completeOnboarding() {
@@ -399,9 +470,9 @@ function App() {
     dirtyCount: tabs.filter(t => t.isDirty).length,
     hasActiveTab: !!activeTab && !activeTab.startsWith('__diff__'),
     hasFolderOpen: !!folderPath,
-    onSave: () => { if (activeTab) handleSave(activeTab); },
-    onSaveAs: handleSaveAs,
-    onSaveAll: handleSaveAll,
+    onSave: () => { if (activeTab) void saveAndRefreshPreview(activeTab); },
+    onSaveAs: saveAsAndRefreshPreview,
+    onSaveAll: saveAllAndRefreshPreview,
     onCloseEditor: () => { if (activeTab) closeTab(activeTab); },
     onCloseFolder: () => setFolderPath(null),
     onEditorUndo: () => editorRef.current?.undo(),
@@ -440,6 +511,7 @@ function App() {
             {sidebarOpen && (
               <Sidebar
                 onFileOpen={openTab}
+                onPreviewOpen={handleOpenHtmlPreview}
                 onFileOpenAtLine={openTabAtLine}
                 fileTreeKey={fileTreeVersion}
                 onOpenCommit={handleOpenCommit}
@@ -522,7 +594,7 @@ function App() {
                       initialCursor={cursorPositions[activeTab]}
                       jumpTo={jumpRequest?.path === activeTab ? jumpRequest : undefined}
                       onAddToAiContext={ctx => { setPinnedContext(ctx); setAiPanelOpen(true); }}
-                      onAcceptDiff={() => handleSave(activeTab)}
+                      onAcceptDiff={() => saveAndRefreshPreview(activeTab)}
                       rootPath={folderPath}
                       onDefinitionJump={(fp, line, col) => openTabAtLine(fp, line, col)}
                       onMissingServer={handleMissingServer}
@@ -556,6 +628,17 @@ function App() {
                     />
                   )}
                 </main>
+                {htmlPreviewTarget && htmlPreviewTarget.rootPath === folderPath && (
+                  <div style={{ height: 280, flexShrink: 0 }}>
+                    <HtmlLivePreviewPanel
+                      rootPath={folderPath}
+                      htmlPath={htmlPreviewTarget.path}
+                      htmlContent={fileContents[htmlPreviewTarget.path] ?? ''}
+                      refreshToken={htmlPreviewRefresh}
+                      onClose={() => setHtmlPreviewTarget(null)}
+                    />
+                  </div>
+                )}
                 {terminalMounted && (
                   <TerminalPanel
                     ref={terminalRef}
@@ -587,6 +670,13 @@ function App() {
             col={cursorPositions[activeTab ?? '']?.col ?? 1}
             branch={gitBranch}
             onOpenSettings={() => setSettingsOpen(true)}
+            activeFilePath={folderPath ? activeTab : null}
+            livePreviewActive={
+              !!htmlPreviewTarget &&
+              htmlPreviewTarget.path === activeTab &&
+              htmlPreviewTarget.rootPath === folderPath
+            }
+            onGoLive={handleGoLive}
             debugStatus={
               debugCtx.session.status === 'paused' ? 'paused' :
               debugCtx.session.status === 'running' ? 'running' : null
@@ -606,6 +696,9 @@ function App() {
           onToggleSidebar={() => { setPaletteOpen(false); setSidebarOpen(v => !v); }}
           onToggleTerminal={() => { setPaletteOpen(false); setTerminalOpen(v => !v); }}
           onOpenSettings={() => { setPaletteOpen(false); setSettingsOpen(true); }}
+          activeFilePath={activeTab}
+          onOpenHtmlPreview={handleOpenHtmlPreview}
+          onFormatDocument={() => { void editorRef.current?.formatDocument(); }}
           terminalOpen={terminalOpen}
           sidebarOpen={sidebarOpen}
         />

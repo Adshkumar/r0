@@ -2,6 +2,7 @@
 import { linter, lintGutter } from '@codemirror/lint';
 import { keymap } from '@codemirror/view';
 import type { Extension } from '@codemirror/state';
+import { autocompletion } from '@codemirror/autocomplete';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
@@ -160,6 +161,85 @@ async function getOrCreateClient(language: LspLanguage, rootPath: string): Promi
   return promise;
 }
 
+function formattingLanguage(filePath: string): LspLanguage | null {
+  const ext = filePath.split(/[\\/]/).pop()?.split('.').pop()?.toLowerCase();
+  if (['js', 'jsx', 'ts', 'tsx'].includes(ext ?? '')) return 'typescript';
+  if (ext === 'rs') return 'rust';
+  if (ext === 'py' || ext === 'pyi') return 'python';
+  return null;
+}
+
+function offsetAtPosition(source: string, position: { line: number; character: number }): number {
+  const lines = source.split('\n');
+  if (position.line < 0 || position.line >= lines.length) {
+    throw new Error('Language server returned an invalid formatting range');
+  }
+  const line = lines[position.line];
+  if (position.character < 0 || position.character > line.length) {
+    throw new Error('Language server returned an invalid formatting range');
+  }
+  let offset = position.character;
+  for (let index = 0; index < position.line; index++) offset += lines[index].length + 1;
+  return offset;
+}
+
+export function supportsLspFormatting(filePath: string): boolean {
+  return formattingLanguage(filePath) !== null;
+}
+
+export async function formatWithLanguageServer(
+  filePath: string,
+  rootPath: string,
+  source: string,
+  cursorOffset = source.length,
+): Promise<{ text: string; cursorOffset: number } | null> {
+  const language = formattingLanguage(filePath);
+  if (!language) return null;
+
+  const entry = await getOrCreateClient(language, rootPath);
+  const { client } = entry;
+  await client.initializePromise;
+  if (!client.ready || !client.capabilities?.documentFormattingProvider) return null;
+
+  const edits = await client.textDocumentFormatting({
+    textDocument: { uri: pathToUri(filePath) },
+    options: { tabSize: 4, insertSpaces: true },
+  });
+  if (!edits?.length) {
+    return { text: source, cursorOffset: Math.max(0, Math.min(cursorOffset, source.length)) };
+  }
+
+  const normalized = edits.map(edit => ({
+    from: offsetAtPosition(source, edit.range.start),
+    to: offsetAtPosition(source, edit.range.end),
+    insert: edit.newText,
+  })).sort((left, right) => left.from - right.from);
+
+  for (let index = 1; index < normalized.length; index++) {
+    if (normalized[index].from < normalized[index - 1].to) {
+      throw new Error('Language server returned overlapping formatting edits');
+    }
+  }
+
+  let text = source;
+  for (let index = normalized.length - 1; index >= 0; index--) {
+    const edit = normalized[index];
+    text = `${text.slice(0, edit.from)}${edit.insert}${text.slice(edit.to)}`;
+  }
+  let mappedCursor = cursorOffset;
+  let delta = 0;
+  for (const edit of normalized) {
+    if (cursorOffset < edit.from) break;
+    if (cursorOffset <= edit.to) {
+      mappedCursor = edit.from + delta + Math.min(cursorOffset - edit.from, edit.insert.length);
+      break;
+    }
+    delta += edit.insert.length - (edit.to - edit.from);
+    mappedCursor = cursorOffset + delta;
+  }
+  return { text, cursorOffset: Math.max(0, Math.min(mappedCursor, text.length)) };
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function posToOffset(doc: any, pos: { line: number; character: number }): number {
@@ -182,6 +262,10 @@ function uriToPath(uri: string): string {
 export interface LspExtensionOptions {
   filePath: string;
   rootPath: string;
+  activateOnTyping?: boolean;
+  activateOnTypingDelay?: number;
+  maxRenderedOptions?: number;
+  showDetails?: boolean;
   onDefinitionJump?: (filePath: string, line: number, col: number) => void;
   onMissingServer?: (language: LspLanguage, installCmd: string) => void;
 }
@@ -254,5 +338,11 @@ export async function createLspExtension(opts: LspExtensionOptions): Promise<Ext
     lintGutter(),
     definitionKeymap,
     ...lspExtensions,
+    autocompletion({
+      activateOnTyping: opts.activateOnTyping ?? true,
+      activateOnTypingDelay: opts.activateOnTypingDelay ?? 100,
+      maxRenderedOptions: opts.maxRenderedOptions ?? 30,
+      icons: opts.showDetails ?? true,
+    }),
   ];
 }

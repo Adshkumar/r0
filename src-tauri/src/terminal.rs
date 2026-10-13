@@ -14,14 +14,14 @@ struct TermInstance {
 
 pub struct TerminalState {
     instances: Mutex<HashMap<u32, TermInstance>>,
-    next_id:   AtomicU32,
+    next_id: AtomicU32,
 }
 
 impl TerminalState {
     pub fn new() -> Self {
         Self {
             instances: Mutex::new(HashMap::new()),
-            next_id:   AtomicU32::new(1),
+            next_id: AtomicU32::new(1),
         }
     }
 }
@@ -46,7 +46,12 @@ pub fn terminal_create(
 ) -> Result<u32, String> {
     let pty_system = native_pty_system();
     let pair = pty_system
-        .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+        .openpty(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        })
         .map_err(|e| e.to_string())?;
 
     let mut cmd = CommandBuilder::new(default_shell());
@@ -75,11 +80,13 @@ pub fn terminal_create(
         let _ = app.emit(&format!("terminal-exit-{}", id), ());
     });
 
-    state
-        .instances
-        .lock()
-        .unwrap()
-        .insert(id, TermInstance { master: pair.master, writer });
+    state.instances.lock().unwrap().insert(
+        id,
+        TermInstance {
+            master: pair.master,
+            writer,
+        },
+    );
 
     Ok(id)
 }
@@ -111,7 +118,12 @@ pub fn terminal_resize(
         .get(&id)
         .ok_or_else(|| "terminal not found".to_string())?;
     inst.master
-        .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+        .resize(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        })
         .map_err(|e| e.to_string())
 }
 
