@@ -12,6 +12,8 @@ import {
   useEditorSuggestionSettings,
 } from "../../lib/editorSuggestions";
 import { getSetting, setSetting } from "../../lib/settings";
+import { FILE_ICON_THEMES, setFileIconTheme, useFileIconTheme } from "../../lib/fileIconTheme";
+import { resolveFileIcon } from "../../lib/fileIcons";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -288,6 +290,9 @@ function AIProvidersSection() {
 
 function AppearanceSection() {
   const { theme, themes, setTheme } = useTheme();
+  const fileIconTheme = useFileIconTheme();
+  const [iconThemeError, setIconThemeError] = useState<string | null>(null);
+  const [savingIconTheme, setSavingIconTheme] = useState(false);
 
   return (
     <div style={{ padding: "2px 0 16px" }}>
@@ -345,6 +350,69 @@ function AppearanceSection() {
             );
           })}
         </div>
+      </div>
+      <div>
+        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--r0-fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
+          File Icon Theme
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {FILE_ICON_THEMES.map(iconTheme => {
+            const isActive = iconTheme.id === fileIconTheme;
+            const examples = [
+              resolveFileIcon("App.tsx", false, false, iconTheme.id),
+              resolveFileIcon("package.json", false, false, iconTheme.id),
+              resolveFileIcon("components", true, true, iconTheme.id),
+            ];
+            return (
+              <button
+                key={iconTheme.id}
+                type="button"
+                disabled={savingIconTheme}
+                aria-pressed={isActive}
+                onClick={async () => {
+                  setIconThemeError(null);
+                  setSavingIconTheme(true);
+                  try {
+                    await setFileIconTheme(iconTheme.id);
+                  } catch (error) {
+                    setIconThemeError(`Could not save file icon theme: ${String(error)}`);
+                  } finally {
+                    setSavingIconTheme(false);
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: `1px solid ${isActive ? "var(--r0-fg-muted)" : "var(--r0-border-default)"}`,
+                  backgroundColor: isActive ? "var(--r0-bg-hover)" : "var(--r0-bg-base)",
+                  color: "var(--r0-fg-default)",
+                  cursor: savingIconTheme ? "wait" : "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span aria-hidden="true" style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                  {examples.map((example, index) => {
+                    const Icon = example.icon;
+                    return <Icon key={index} size={15} style={{ color: example.color }} />;
+                  })}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: "13px", fontWeight: isActive ? 500 : 400 }}>
+                    {iconTheme.label}
+                  </span>
+                  <span style={{ display: "block", marginTop: 3, fontSize: "11px", color: "var(--r0-fg-muted)" }}>
+                    {iconTheme.description}
+                  </span>
+                </span>
+                {isActive && <Check size={14} aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+        {iconThemeError && <p role="alert" style={{ margin: "8px 0 0", color: "var(--r0-semantic-error)", fontSize: 11 }}>{iconThemeError}</p>}
       </div>
     </div>
   );

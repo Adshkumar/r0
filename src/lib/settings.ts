@@ -51,6 +51,7 @@ export interface IDESettings {
   'debug.lastLaunchConfig': DebugLastConfig | null;
   'editor.suggestions': EditorSuggestionSettings;
   'editor.formatOnSave': boolean;
+  'explorer.fileIconTheme': 'r0' | 'vscode' | 'minimal';
 }
 
 export const DEFAULT_EDITOR_SUGGESTION_SETTINGS: EditorSuggestionSettings = {
@@ -94,6 +95,7 @@ const DEFAULTS: IDESettings = {
   'debug.lastLaunchConfig': null,
   'editor.suggestions': DEFAULT_EDITOR_SUGGESTION_SETTINGS,
   'editor.formatOnSave': false,
+  'explorer.fileIconTheme': 'r0',
 };
 
 let _store: Store | null = null;
