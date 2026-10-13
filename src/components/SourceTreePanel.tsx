@@ -462,9 +462,9 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
                       onMouseLeave={e => { e.currentTarget.style.background = selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent'; }}
                     >
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 11, lineHeight: 1.35, color: 'var(--r0-fg-default)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 11, lineHeight: 1.35, color: 'var(--r0-fg-default)' }}>
                           {commit.is_head && <span style={{ color: 'var(--r0-accent-blue)', fontSize: 9, fontWeight: 700, flexShrink: 0 }}>HEAD</span>}
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{commit.subject || '(no subject)'}</span>
+                          <span style={{ flex: '1 1 0%', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{commit.subject || '(no subject)'}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, marginTop: 2, fontSize: 9, color: 'var(--r0-fg-subtle)', whiteSpace: 'nowrap' }}>
                           <span style={{ fontFamily: 'var(--font-mono)' }}>{commit.hash.slice(0, 8)}</span>

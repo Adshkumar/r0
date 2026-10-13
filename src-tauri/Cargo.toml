@@ -43,10 +43,3 @@ lto         = "thin"   # cross-crate dead-code elimination
 codegen-units = 1      # single codegen unit lets LLVM optimise across more code
 strip       = true     # strip debug symbols from the binary
 panic       = "abort"  # removes unwinding machinery (~200 KB)
-
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> bce230661cf9d45cab50f4dcafaec0d534af9906
