@@ -53,53 +53,64 @@ pub struct GitChanges {
     log: Vec<CommitEntry>,
 }
 
-#[tauri::command]
-pub fn git_changes(path: String) -> Option<GitChanges> {
-    let status = git_cmd()
-        .args(["status", "--porcelain"])
-        .current_dir(&path)
-        .output()
-        .ok()?;
-    if !status.status.success() {
-        return None;
+fn parse_status_summary(output: &str) -> (usize, usize) {
+    let mut files = 0;
+    let mut commits_ahead = 0;
+    for line in output.lines() {
+        if let Some(counts) = line.strip_prefix("# branch.ab ") {
+            commits_ahead = counts
+                .split_whitespace()
+                .next()
+                .and_then(|ahead| ahead.strip_prefix('+'))
+                .and_then(|ahead| ahead.parse().ok())
+                .unwrap_or(0);
+        } else if !line.is_empty() && !line.starts_with('#') {
+            files += 1;
+        }
     }
-    let files = String::from_utf8_lossy(&status.stdout)
-        .lines()
-        .filter(|l| !l.is_empty())
-        .count();
+    (files, commits_ahead)
+}
 
-    let commits_ahead = git_cmd()
-        .args(["rev-list", "--count", "@{u}..HEAD"])
-        .current_dir(&path)
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .and_then(|s| s.trim().parse::<usize>().ok())
-        .unwrap_or(0);
+#[tauri::command]
+pub async fn git_changes(path: String) -> Option<GitChanges> {
+    tokio::task::spawn_blocking(move || {
+        let status = git_cmd()
+            .args(["status", "--porcelain=v2", "--branch"])
+            .current_dir(&path)
+            .output()
+            .ok()?;
+        if !status.status.success() {
+            return None;
+        }
+        let status_output = String::from_utf8_lossy(&status.stdout);
+        let (files, commits_ahead) = parse_status_summary(&status_output);
 
-    let log = git_cmd()
-        .args(["log", "--max-count=5", "--pretty=format:%h\x01%s"])
-        .current_dir(&path)
-        .output()
-        .ok()
-        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
-        .unwrap_or_default()
-        .lines()
-        .filter(|l| !l.is_empty())
-        .map(|l| {
-            let mut p = l.splitn(2, '\x01');
-            CommitEntry {
-                hash: p.next().unwrap_or("").to_string(),
-                msg: p.next().unwrap_or("").to_string(),
-            }
+        let log = git_cmd()
+            .args(["log", "--max-count=5", "--pretty=format:%h\x01%s"])
+            .current_dir(&path)
+            .output()
+            .ok()
+            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+            .unwrap_or_default()
+            .lines()
+            .filter(|l| !l.is_empty())
+            .map(|l| {
+                let mut p = l.splitn(2, '\x01');
+                CommitEntry {
+                    hash: p.next().unwrap_or("").to_string(),
+                    msg: p.next().unwrap_or("").to_string(),
+                }
+            })
+            .collect();
+
+        Some(GitChanges {
+            files,
+            commits_ahead,
+            log,
         })
-        .collect();
-
-    Some(GitChanges {
-        files,
-        commits_ahead,
-        log,
     })
+    .await
+    .ok()?
 }
 
 #[derive(serde::Serialize)]
@@ -408,10 +419,17 @@ fn valid_revision(revision: &str) -> bool {
 }
 
 fn validate_relative_path(file_path: &str) -> Result<(), String> {
-    let path = std::path::Path::new(file_path);
+    let normalized_path = file_path.replace('\\', "/");
+    let path = std::path::Path::new(&normalized_path);
+    let windows_drive_prefix = normalized_path.as_bytes().get(1) == Some(&b':')
+        && normalized_path
+            .as_bytes()
+            .first()
+            .is_some_and(u8::is_ascii_alphabetic);
     if file_path.is_empty()
         || file_path.contains('\r')
         || file_path.contains('\n')
+        || windows_drive_prefix
         || path.is_absolute()
         || path.components().any(|part| {
             matches!(
@@ -900,6 +918,7 @@ fn historical_diff_hunks(
         vec![
             "diff".to_string(),
             "--no-ext-diff".to_string(),
+            "--no-textconv".to_string(),
             "--no-color".to_string(),
             "--unified=0".to_string(),
             "--find-renames".to_string(),
@@ -913,6 +932,7 @@ fn historical_diff_hunks(
             "--no-commit-id".to_string(),
             "-r".to_string(),
             "--no-ext-diff".to_string(),
+            "--no-textconv".to_string(),
             "--no-color".to_string(),
             "--unified=0".to_string(),
             "--find-renames".to_string(),
@@ -1133,7 +1153,7 @@ pub fn git_commit_push(path: String, title: String, description: String) -> Resu
 mod tests {
     use super::{
         commit_details, file_diff, git_cmd, github_repository_from_remote, history,
-        parse_name_status, parse_numstat, parse_status_files, valid_revision,
+        parse_name_status, parse_numstat, parse_status_files, parse_status_summary, valid_revision,
         validate_relative_path,
     };
     use std::path::{Path, PathBuf};
@@ -1203,6 +1223,24 @@ mod tests {
     }
 
     #[test]
+    fn parses_porcelain_v2_status_and_ahead_count_from_one_result() {
+        let output = concat!(
+            "# branch.oid 0123456789abcdef\n",
+            "# branch.head main\n",
+            "# branch.upstream origin/main\n",
+            "# branch.ab +3 -1\n",
+            "1 .M N... 100644 100644 100644 abc def modified file.rs\n",
+            "2 R. N... 100644 100644 100644 abc def R100 new name.rs\told name.rs\n",
+            "? untracked file.rs\n",
+        );
+        assert_eq!(parse_status_summary(output), (3, 3));
+        assert_eq!(
+            parse_status_summary("# branch.oid (initial)\n# branch.head main\n? new file\n"),
+            (1, 0)
+        );
+    }
+
+    #[test]
     fn parses_porcelain_status_with_spaces_and_renames() {
         let files =
             parse_status_files(b"M  file name.rs\0R  new name.rs\0old name.rs\0?? untracked.txt\0");
@@ -1259,6 +1297,9 @@ mod tests {
         assert!(validate_relative_path("src/main.rs").is_ok());
         assert!(validate_relative_path("../outside.txt").is_err());
         assert!(validate_relative_path("C:\\outside.txt").is_err());
+        assert!(validate_relative_path("..\\outside.txt").is_err());
+        assert!(validate_relative_path("src\\..\\outside.txt").is_err());
+        assert!(validate_relative_path("src\\main.rs").is_ok());
     }
 
     #[test]
@@ -1493,5 +1534,51 @@ mod tests {
             )),
             Some((1, 2, 0, 0))
         );
+    }
+
+    #[test]
+    fn historical_diff_hunks_include_only_changed_lines() {
+        let repo = new_test_repo();
+        let path = repo.0.join("sample.rs");
+        let old_lines: Vec<_> = (1..=10).map(|line| format!("line {line}")).collect();
+        std::fs::write(&path, old_lines.join("\n") + "\n").expect("write original version");
+        run_git(&repo.0, &["add", "--", "sample.rs"]);
+        run_git(&repo.0, &["commit", "--quiet", "-m", "original"]);
+        let old_hash = commit_hash(&repo.0);
+
+        let mut new_lines = old_lines.clone();
+        new_lines[4] = "changed line 5".to_string();
+        new_lines[8] = "changed line 9".to_string();
+        std::fs::write(&path, new_lines.join("\n") + "\n").expect("write changed version");
+        run_git(&repo.0, &["add", "--", "sample.rs"]);
+        run_git(&repo.0, &["commit", "--quiet", "-m", "change two lines"]);
+        let new_hash = commit_hash(&repo.0);
+
+        let diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(old_hash),
+            Some(new_hash),
+            "sample.rs".to_string(),
+            "sample.rs".to_string(),
+            false,
+            false,
+            false,
+        )
+        .expect("load exact historical contents and Git hunks");
+
+        let hunks = diff.hunks.expect("historical comparison has Git hunks");
+        assert_eq!(hunks.len(), 2);
+        assert_eq!(
+            hunks
+                .iter()
+                .map(|hunk| (hunk.old_start, hunk.old_lines, hunk.new_start, hunk.new_lines))
+                .collect::<Vec<_>>(),
+            vec![(5, 1, 5, 1), (9, 1, 9, 1)]
+        );
+        assert_eq!(diff.old_content, old_lines.join("\n") + "\n");
+        assert_eq!(diff.new_content, new_lines.join("\n") + "\n");
     }
 }
