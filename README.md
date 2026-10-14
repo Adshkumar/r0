@@ -69,7 +69,7 @@ This README describes features present in the source and the latest published re
 
 ### Release scope
 
-The latest published release is **v0.2.2**. Workspace and tab restoration with unsaved-document recovery is not included in that release.
+See the [releases page](https://github.com/Adshkumar/r0/releases) for the latest published version. Workspace and tab restoration with unsaved-document recovery is not currently included in a published release.
 
 ## Screenshots
 
@@ -102,14 +102,10 @@ The latest published release provides Windows x64 installers:
 - [Download the latest NSIS setup installer](https://github.com/Adshkumar/r0/releases/latest/download/r0-latest-setup.exe)
 - [View all releases and artifacts](https://github.com/Adshkumar/r0/releases)
 
-For a version-pinned MSI, download [r0 v0.2.2 x64 MSI](https://github.com/Adshkumar/r0/releases/download/v0.2.2/r0_0.2.2_x64_en-US.msi). To install from PowerShell:
+An MSI installer is also available in the **Assets** section of the [latest release](https://github.com/Adshkumar/r0/releases/latest). After downloading it, install from PowerShell with:
 
 ```powershell
-$installer = Join-Path $env:TEMP "r0-0.2.2-x64.msi"
-Invoke-WebRequest `
-  "https://github.com/Adshkumar/r0/releases/download/v0.2.2/r0_0.2.2_x64_en-US.msi" `
-  -OutFile $installer
-Start-Process msiexec.exe -ArgumentList "/i `"$installer`"" -Wait
+msiexec.exe /i "<path-to-downloaded-msi>"
 ```
 
 ### macOS and Linux
