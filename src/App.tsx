@@ -135,6 +135,7 @@ function App() {
   const knownRecoveriesRef = useRef(new Set<string>());
   const recoveryErrorRef = useRef(new Set<string>());
   const allowCloseRef = useRef(false);
+  const closeInProgressRef = useRef(false);
   const sessionOptionsRef = useRef(sessionOptions);
   const workspacePathRef = useRef(folderPath);
 
@@ -422,6 +423,8 @@ function App() {
     win.onCloseRequested(async event => {
       if (allowCloseRef.current) return;
       event.preventDefault();
+      if (closeInProgressRef.current) return;
+      closeInProgressRef.current = true;
       if (sessionTimerRef.current !== null) {
         window.clearTimeout(sessionTimerRef.current);
         sessionTimerRef.current = null;
@@ -440,7 +443,13 @@ function App() {
         window.clearTimeout(timeoutId);
       }
       allowCloseRef.current = true;
-      await win.close();
+      try {
+        await win.destroy();
+      } catch (error) {
+        allowCloseRef.current = false;
+        closeInProgressRef.current = false;
+        showToast(`Could not close the application: ${String(error)}`, 'error');
+      }
     }).then(stop => {
       if (active) unlisten = stop;
       else stop();
