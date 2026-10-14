@@ -568,6 +568,7 @@ function App() {
                       if (!commitTab?.commitHash || !rootPath) return null;
                       return (
                         <GitCommitDetailsPane
+                          key={`${rootPath}:${commitTab.commitHash}`}
                           rootPath={rootPath}
                           hash={commitTab.commitHash}
                           onOpenDiff={handleOpenCommitFile}
@@ -577,8 +578,15 @@ function App() {
                   ) : activeTab?.startsWith('__git_diff__') ? (
                     (() => {
                       const gitDiffTab = tabs.find(t => t.path === activeTab);
-                      if (!gitDiffTab?.gitRootPath) return null;
-                      return <GitDiffPane rootPath={gitDiffTab.gitRootPath} tab={gitDiffTab} />;
+                      const rootPath = gitDiffTab?.gitRootPath;
+                      if (!gitDiffTab || !rootPath) return null;
+                      return (
+                        <GitDiffPane
+                          rootPath={rootPath}
+                          tab={gitDiffTab}
+                          onOpenCommit={hash => openGitCommitTab(rootPath, hash)}
+                        />
+                      );
                     })()
                   ) : activeTab === '__preview__' ? (
                     <WebPreviewPane />

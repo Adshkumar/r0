@@ -111,17 +111,39 @@ function languageItems(language: SuggestionLanguage): CompletionItem[] {
   }));
 }
 
+function collectLocalNames(source: string, patterns: RegExp[]): Set<string> {
+  const labels = new Set<string>();
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) {
+      for (const group of match.slice(1)) {
+        if (group && /^[A-Za-z_$][\w$]*$/.test(group)) labels.add(group);
+      }
+    }
+  }
+  return labels;
+}
+
 function localSymbols(source: string, language: SuggestionLanguage): CompletionItem[] {
   const clipped = source.slice(-100_000);
-  const pattern = language === 'python'
-    ? /^\s*(?:async\s+def|def|class|import|from\s+\S+\s+import)\s+([A-Za-z_]\w*)/gm
+  const patterns = language === 'python'
+    ? [
+        /^\s*(?:async\s+def|def|class|import|from\s+\S+\s+import)\s+([A-Za-z_]\w*)/gm,
+      ]
     : language === 'rust'
-      ? /^\s*(?:(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn|(?:pub(?:\([^)]*\))?\s+)?(?:struct|enum|trait|type|mod|const|static)\s+|let\s+(?:mut\s+)?)([A-Za-z_]\w*)/gm
-      : /^\s*(?:(?:export\s+)?(?:async\s+)?function|(?:export\s+)?class|(?:export\s+)?(?:const|let|var|type|interface|enum)\s+|import\s+(?:type\s+)?)([A-Za-z_$][\w$]*)/gm;
-  const labels = new Set<string>();
-  for (const match of clipped.matchAll(pattern)) {
-    if (match[1]) labels.add(match[1]);
-  }
+      ? [
+          /^\s*pub(?:\([^)]*\))?\s*(?:async\s+)?fn\s+([A-Za-z_]\w*)/gm,
+          /^\s*pub(?:\([^)]*\))?\s*(?:struct|enum|trait|type|mod|const|static)\s+([A-Za-z_]\w*)/gm,
+          /^\s*let\s+(?:mut\s+)?([A-Za-z_]\w*)/gm,
+        ]
+      : [
+          /(?:^|\s|;)\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm,
+          /(?:^|\s|;)\s*(?:export\s+(?:default\s+)?)?(?:class|interface|type|enum|namespace)\s+([A-Za-z_$][\w$]*)/gm,
+          /(?:^|\s|;)\s*(?:export\s+(?:default\s+)?)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm,
+          /(?:^|\s|;)\s*import\s+(?:type\s+)?(?:\*\s+as\s+)?([A-Za-z_$][\w$]*)/gm,
+          /(?:^|\s|;)\s*import\s+\{[^}]*?\b([A-Za-z_$][\w$]*)\b/gm,
+        ];
+
+  const labels = collectLocalNames(clipped, patterns);
   return [...labels].map(label => ({
     label,
     type: 'variable',

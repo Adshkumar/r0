@@ -1,11 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { GitBranch, GitCommitHorizontal, RefreshCw, ChevronRight } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useToast } from './ui/Toast';
 import {
+  getGitCommitDetails,
+  getGitHubCommitAuthorAvatar,
+  getGitRemoteUrl,
   getStatusFiles, getGitHistory, gitCommit, gitCommitPush, invalidateGitCache,
-  type StatusFile, type GitHistoryCommit,
+  type GitCommitDetails, type GitHubCommitAuthorAvatar, type StatusFile, type GitHistoryCommit,
 } from '../lib/git';
+import { calculatePopoverPosition, getGitHubAvatarUrl } from '../lib/githubAvatar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +35,59 @@ function shortPath(p: string): string {
   return parts.length > 2 ? parts.slice(-2).join('/') : p;
 }
 
+function initialsFromName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return '?';
+  return parts.map(part => part[0]?.toUpperCase() ?? '').join('').slice(0, 2);
+}
+
+function githubCommitUrl(remoteUrl: string | null, hash: string): string | null {
+  if (!remoteUrl || !hash) return null;
+  const normalized = remoteUrl.trim();
+  const candidates = [normalized, normalized.replace(/\.git$/, '')];
+  const httpMatch = candidates.find(value => /^(https?:\/\/|git@)/.test(value));
+  if (!httpMatch) return null;
+
+  const githubMatch = httpMatch.match(/^(?:https?:\/\/github\.com\/|git@github\.com:)([^/]+)\/([^/]+?)(?:\.git)?$/i);
+  if (!githubMatch) return null;
+
+  const [, owner, repo] = githubMatch;
+  return `https://github.com/${owner}/${repo}/commit/${hash}`;
+}
+
+function coAuthorsFromMessage(message: string): string[] {
+  return message
+    .split(/\r?\n/)
+    .map(line => line.match(/^Co-authored-by:\s*(.+?)\s*<[^>]+>\s*$/i)?.[1])
+    .filter((name): name is string => !!name);
+}
+
+function avatarDataUri(name: string): string {
+  const label = initialsFromName(name || 'Unknown user');
+  const safeName = (name || 'Unknown user').replace(/["'<>]/g, '');
+  let hash = 0;
+  for (let i = 0; i < safeName.length; i += 1) {
+    hash = safeName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  const fill = `hsl(${hue} 62% 55%)`;
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${fill}" />
+          <stop offset="100%" stop-color="hsl(${(hue + 28) % 360} 60% 46%)" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="32" fill="url(#g)" />
+      <text x="50%" y="54%" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="white">${label}</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 const HISTORY_PAGE_SIZE = 100;
@@ -48,33 +106,53 @@ function branchLabel(ref: string): string {
 interface GraphPosition { lane: number; }
 
 function graphPositions(commits: GitHistoryCommit[]): { positions: Map<string, GraphPosition>; laneCount: number } {
-  const lanes: string[] = [];
   const positions = new Map<string, GraphPosition>();
-  commits.forEach(commit => {
-    let lane = lanes.indexOf(commit.hash);
-    if (lane < 0) {
-      lane = lanes.indexOf('');
-      if (lane < 0) lane = lanes.length;
-      lanes[lane] = commit.hash;
+  const laneLookup = new Map<string, number>();
+  const occupiedLanes = new Map<number, string>();
+  let laneCount = 1;
+
+  const claimLane = (commitHash: string, preferredLane?: number) => {
+    let lane = typeof preferredLane === 'number' ? preferredLane : 0;
+    if (typeof preferredLane !== 'number' || occupiedLanes.has(lane)) {
+      lane = 0;
+      while (occupiedLanes.has(lane)) lane += 1;
+    }
+    occupiedLanes.set(lane, commitHash);
+    laneLookup.set(commitHash, lane);
+    laneCount = Math.max(laneCount, lane + 1);
+    return lane;
+  };
+
+  for (const commit of [...commits].reverse()) {
+    const parentLanes = commit.parents
+      .map(parent => laneLookup.get(parent))
+      .filter((lane): lane is number => lane !== undefined);
+
+    let lane: number | undefined;
+    if (parentLanes.length > 0) {
+      const primaryParentLane = parentLanes[0];
+      const owner = occupiedLanes.get(primaryParentLane);
+      if (!owner || owner === commit.parents[0]) {
+        lane = primaryParentLane;
+      }
+    }
+
+    if (lane === undefined) {
+      lane = claimLane(commit.hash);
+    } else {
+      occupiedLanes.set(lane, commit.hash);
+      laneLookup.set(commit.hash, lane);
+      laneCount = Math.max(laneCount, lane + 1);
     }
     positions.set(commit.hash, { lane });
-    if (commit.parents.length) {
-      let firstParentLane = lanes.indexOf(commit.parents[0]);
-      if (firstParentLane < 0) {
-        lanes[lane] = commit.parents[0];
-        firstParentLane = lane;
-      } else {
-        lanes.splice(lane, 1);
-        if (firstParentLane > lane) firstParentLane -= 1;
-      }
-      for (const parent of commit.parents.slice(1)) {
-        if (!lanes.includes(parent)) lanes.splice(firstParentLane + 1, 0, parent);
-      }
-    } else {
-      lanes.splice(lane, 1);
-    }
-  });
-  return { positions, laneCount: Math.max(1, ...Array.from(positions.values(), point => point.lane + 1)) };
+  }
+
+  for (const commit of commits) {
+    const lane = laneLookup.get(commit.hash);
+    if (lane !== undefined) positions.set(commit.hash, { lane });
+  }
+
+  return { positions, laneCount: Math.max(1, laneCount) };
 }
 
 interface Props {
@@ -99,12 +177,31 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hoveredCommit, setHoveredCommit] = useState<{ hash: string } | null>(null);
+  const [hoverDetails, setHoverDetails] = useState<GitCommitDetails | null>(null);
+  const [hoverError, setHoverError] = useState<{ hash: string; message: string } | null>(null);
+  const [authorAvatar, setAuthorAvatar] = useState<{
+    hash: string;
+    value: GitHubCommitAuthorAvatar | null;
+  } | null>(null);
+  const [authorAvatarError, setAuthorAvatarError] = useState<{ hash: string; message: string } | null>(null);
+  const [hoverCardPosition, setHoverCardPosition] = useState<{ left: number; top: number } | null>(null);
+  const [remoteState, setRemoteState] = useState<{ path: string; url: string | null } | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const hoverCardRef = useRef<HTMLDivElement | null>(null);
+  const hoverTimerRef = useRef<number | null>(null);
+  const hoverCloseTimerRef = useRef<number | null>(null);
+  const hoverTargetRef = useRef<HTMLButtonElement | null>(null);
+  const hoverRowActiveRef = useRef(false);
+  const hoverCardActiveRef = useRef(false);
   const currentRepository = repositoryState?.rootPath === folderPath ? repositoryState : null;
   const files = currentRepository?.files ?? [];
   const history = currentRepository?.history ?? EMPTY_HISTORY;
   const historyError = currentRepository?.error ?? null;
   const hasOlderHistory = currentRepository?.hasOlderHistory ?? false;
   const loadingHistory = !!folderPath && currentRepository === null;
+  const remoteUrl = remoteState?.path === folderPath ? remoteState.url : null;
+  const hoveredHash = hoveredCommit?.hash;
 
   const load = useCallback(async () => {
     if (!folderPath) return { files: [], history: [] as GitHistoryCommit[] };
@@ -241,6 +338,92 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
     }
     return { visibleCommitY, graphHeight };
   }, [groupedHistory]);
+  useEffect(() => {
+    if (!hoveredCommit || !folderPath) return;
+    const hash = hoveredCommit.hash;
+    let active = true;
+    getGitCommitDetails(folderPath, hash, null)
+      .then(details => {
+        if (active) {
+          setHoverDetails(details);
+          setHoverError(current => current?.hash === hash ? null : current);
+        }
+      })
+      .catch(reason => {
+        if (active) setHoverError({ hash, message: String(reason) });
+      });
+    return () => { active = false; };
+  }, [folderPath, hoveredCommit]);
+
+  useEffect(() => {
+    if (!folderPath) return;
+    let active = true;
+    getGitRemoteUrl(folderPath)
+      .then(url => {
+        if (active) setRemoteState({ path: folderPath, url });
+      })
+      .catch(() => {
+        if (active) setRemoteState({ path: folderPath, url: null });
+      });
+    return () => { active = false; };
+  }, [folderPath]);
+
+  useEffect(() => {
+    if (!hoveredHash || !remoteUrl || !githubCommitUrl(remoteUrl, hoveredHash)) return;
+    const hash = hoveredHash;
+    let active = true;
+    getGitHubCommitAuthorAvatar(remoteUrl, hash)
+      .then(value => {
+        if (active) {
+          setAuthorAvatar({ hash, value });
+          setAuthorAvatarError(current => current?.hash === hash ? null : current);
+        }
+      })
+      .catch(reason => {
+        if (active) setAuthorAvatarError({ hash, message: String(reason) });
+      });
+    return () => { active = false; };
+  }, [hoveredHash, remoteUrl]);
+
+  useEffect(() => () => {
+    if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
+    if (hoverCloseTimerRef.current !== null) window.clearTimeout(hoverCloseTimerRef.current);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!hoveredCommit || !hoverTargetRef.current || !hoverCardRef.current) {
+      setHoverCardPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const target = hoverTargetRef.current;
+      const card = hoverCardRef.current;
+      if (!target?.isConnected || !card) return;
+      const targetRect = target.getBoundingClientRect();
+      setHoverCardPosition(calculatePopoverPosition({
+        targetRect,
+        cardWidth: card.getBoundingClientRect().width,
+        cardHeight: card.getBoundingClientRect().height,
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: document.documentElement.clientHeight,
+        gap: 12,
+        padding: 8,
+      }));
+    };
+
+    updatePosition();
+    const observer = new ResizeObserver(updatePosition);
+    observer.observe(hoverCardRef.current);
+    if (panelRef.current) observer.observe(panelRef.current);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [hoveredCommit, hoverDetails, hoverError, remoteUrl]);
   const laneStep = graph.laneCount > 1 ? Math.min(9, 68 / (graph.laneCount - 1)) : 0;
   const graphWidth = 16 + Math.max(0, graph.laneCount - 1) * laneStep;
   const graphSvg = useMemo(() => (
@@ -269,6 +452,35 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
       })}
     </svg>
   ), [filteredHistory, graph.positions, visibleCommitY, graphWidth, graphHeight, laneStep]);
+  const hoveredHistoryCommit = hoveredCommit
+    ? history.find(commit => commit.hash === hoveredCommit.hash) ?? null
+    : null;
+  const currentHoverDetails = hoveredCommit && hoverDetails?.hash === hoveredCommit.hash
+    ? hoverDetails
+    : null;
+  const currentHoverError = hoveredCommit && hoverError?.hash === hoveredCommit.hash
+    ? hoverError.message
+    : null;
+  const currentAuthorAvatar = hoveredCommit && authorAvatar?.hash === hoveredCommit.hash
+    ? authorAvatar.value
+    : null;
+  const currentAuthorAvatarError = hoveredCommit && authorAvatarError?.hash === hoveredCommit.hash
+    ? authorAvatarError.message
+    : null;
+  const hoverCard = hoveredCommit && (currentHoverDetails ?? {
+    hash: hoveredCommit.hash,
+    parents: hoveredHistoryCommit?.parents ?? [],
+    comparison_parent: null,
+    message: hoveredHistoryCommit?.subject ?? '',
+    author: hoveredHistoryCommit?.author ?? '',
+    author_email: hoveredHistoryCommit?.author_email ?? '',
+    author_time: hoveredHistoryCommit?.author_time ?? 0,
+    committer: '',
+    committer_email: '',
+    committer_time: 0,
+    refs: hoveredHistoryCommit?.refs ?? [],
+    files: [],
+  });
 
   if (!folderPath) {
     return (
@@ -439,8 +651,118 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
           ) : filteredHistory.length === 0 ? (
             <p style={{ padding: '8px 10px', fontSize: 11, color: 'var(--r0-fg-subtle)' }}>No commits on this date.</p>
           ) : (
-            <div style={{ position: 'relative' }}>
+            <div ref={panelRef} data-source-tree-root="true" style={{ position: 'relative' }}>
               {graphSvg}
+              {hoveredCommit && hoverCard && createPortal(
+                <div
+                  ref={hoverCardRef}
+                  style={{
+                    position: 'fixed',
+                    left: hoverCardPosition?.left ?? 0,
+                    top: hoverCardPosition?.top ?? 0,
+                    width: 'min(320px, calc(100vw - 24px))',
+                    maxHeight: 'min(420px, calc(100vh - 16px))',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    borderRadius: 8,
+                    background: 'var(--r0-bg-panel)',
+                    border: '1px solid var(--r0-border-default)',
+                    boxShadow: '0 14px 32px rgba(0,0,0,0.22)',
+                    color: 'var(--r0-fg-default)',
+                    pointerEvents: 'auto',
+                    visibility: hoverCardPosition ? 'visible' : 'hidden',
+                  }}
+                  onMouseEnter={() => {
+                    hoverCardActiveRef.current = true;
+                    if (hoverCloseTimerRef.current !== null) {
+                      window.clearTimeout(hoverCloseTimerRef.current);
+                      hoverCloseTimerRef.current = null;
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    hoverCardActiveRef.current = false;
+                    if (!hoverRowActiveRef.current) {
+                      hoverCloseTimerRef.current = window.setTimeout(() => {
+                        if (!hoverRowActiveRef.current && !hoverCardActiveRef.current) {
+                          setHoveredCommit(null);
+                          hoverTargetRef.current = null;
+                        }
+                      }, 140);
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 10px 8px' }}>
+                    <img
+                      src={currentAuthorAvatar?.avatar_url
+                        ?? getGitHubAvatarUrl(hoverCard.author_email || '')
+                        ?? avatarDataUri(hoverCard.author || hoverCard.author_email || 'Unknown user')}
+                      alt={`Avatar of ${hoverCard.author || 'unknown author'}`}
+                      onError={e => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = avatarDataUri(hoverCard.author || hoverCard.author_email || 'Unknown user');
+                      }}
+                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--r0-border-default)', background: 'var(--r0-bg-hover)' }}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hoverCard.author || 'Unknown author'}</div>
+                      <div style={{ fontSize: 10, color: 'var(--r0-fg-subtle)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hoverCard.author_email || 'unknown@example.invalid'}</div>
+                      {currentAuthorAvatar && (
+                        <div style={{ fontSize: 9, color: 'var(--r0-fg-subtle)' }}>GitHub @{currentAuthorAvatar.login}</div>
+                      )}
+                    </div>
+                  </div>
+                  {currentAuthorAvatarError && (
+                    <div style={{ padding: '0 10px 8px', fontSize: 9, color: 'var(--r0-fg-subtle)' }}>
+                      Couldn’t verify a GitHub profile image; showing initials instead.
+                    </div>
+                  )}
+                  <div style={{ padding: '0 10px 10px', display: 'grid', gap: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.4, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                      {hoverCard.message?.trim() || (currentHoverError ? '(commit details unavailable)' : 'Loading commit details…')}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {hoverCard.refs.length > 0 ? hoverCard.refs.slice(0, 3).map(ref => (
+                        <span key={ref} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 4, padding: '2px 6px', background: 'color-mix(in srgb, var(--r0-accent-blue) 16%, transparent)', color: 'var(--r0-accent-blue)', fontSize: 9 }}>
+                          <GitBranch size={9} /> {branchLabel(ref)}
+                        </span>
+                      )) : <span style={{ fontSize: 9, color: 'var(--r0-fg-subtle)' }}>No refs</span>}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '2px 8px', fontSize: 10, color: 'var(--r0-fg-subtle)' }}>
+                      <span>Commit</span><span style={{ fontFamily: 'var(--font-mono)', color: 'var(--r0-fg-default)' }}>{hoverCard.hash.slice(0, 8)}</span>
+                      <span>Time</span><span>{new Date(hoverCard.author_time * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>Files</span><span>{currentHoverDetails ? hoverCard.files.length : 'Loading…'}</span>
+                      {currentHoverDetails && (
+                        <>
+                          <span>Changes</span>
+                          <span>
+                            +{hoverCard.files.reduce((total, file) => total + (file.additions ?? 0), 0)}
+                            {' / '}
+                            -{hoverCard.files.reduce((total, file) => total + (file.deletions ?? 0), 0)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {coAuthorsFromMessage(hoverCard.message).length > 0 && (
+                      <div style={{ fontSize: 10, color: 'var(--r0-fg-subtle)' }}>
+                        Co-authored by {coAuthorsFromMessage(hoverCard.message).join(', ')}
+                      </div>
+                    )}
+                    {remoteUrl && githubCommitUrl(remoteUrl, hoverCard.hash) && (
+                      <a
+                        href={githubCommitUrl(remoteUrl, hoverCard.hash) ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 10, color: 'var(--r0-accent-blue)', textDecoration: 'none' }}
+                      >
+                        Open on GitHub
+                      </a>
+                    )}
+                    {currentHoverError && <div style={{ fontSize: 10, color: 'var(--r0-semantic-error)' }}>{currentHoverError}</div>}
+                  </div>
+                </div>,
+                document.body,
+              )}
               {groupedHistory.map(([day, commits]) => (
                 <div key={day}>
                   <button
@@ -456,10 +778,50 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
                     <button
                       key={commit.hash}
                       onClick={() => onOpenCommit(commit.hash)}
-                      title={`${commit.subject}\n${commit.hash}\n${commit.parents.length > 1 ? `${commit.parents.length} parents` : ''}`}
+                      aria-label={`${commit.subject || '(no subject)'}, ${commit.hash}`}
                       style={{ height: 48, width: '100%', display: 'flex', alignItems: 'center', padding: `0 7px 0 ${graphWidth + 5}px`, position: 'relative', zIndex: 1, border: 0, borderBottom: '1px solid color-mix(in srgb, var(--r0-border-default) 45%, transparent)', background: selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}
-                      onMouseEnter={e => { if (selectedCommitHash !== commit.hash) e.currentTarget.style.background = 'var(--r0-bg-hover)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent'; }}
+                      onMouseEnter={e => {
+                        if (selectedCommitHash !== commit.hash) e.currentTarget.style.background = 'var(--r0-bg-hover)';
+                        hoverRowActiveRef.current = true;
+                        if (hoverCloseTimerRef.current !== null) {
+                          window.clearTimeout(hoverCloseTimerRef.current);
+                          hoverCloseTimerRef.current = null;
+                        }
+                        if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
+                        const target = e.currentTarget;
+                        hoverTargetRef.current = target;
+                        if (hoveredCommit?.hash !== commit.hash) {
+                          setHoveredCommit(null);
+                          setHoverCardPosition(null);
+                        }
+                        hoverTimerRef.current = window.setTimeout(() => {
+                          hoverTimerRef.current = null;
+                          if (hoverRowActiveRef.current && target.isConnected) {
+                            setHoveredCommit({ hash: commit.hash });
+                          }
+                        }, 120);
+                      }}
+                      onMouseMove={e => {
+                        if (hoveredCommit?.hash === commit.hash) {
+                          hoverTargetRef.current = e.currentTarget;
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        hoverRowActiveRef.current = false;
+                        if (hoverTimerRef.current !== null) {
+                          window.clearTimeout(hoverTimerRef.current);
+                          hoverTimerRef.current = null;
+                        }
+                        e.currentTarget.style.background = selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent';
+                        if (!hoverCardActiveRef.current) {
+                          hoverCloseTimerRef.current = window.setTimeout(() => {
+                            if (!hoverRowActiveRef.current && !hoverCardActiveRef.current) {
+                              setHoveredCommit(current => current?.hash === commit.hash ? null : current);
+                              hoverTargetRef.current = null;
+                            }
+                          }, 140);
+                        }
+                      }}
                     >
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 11, lineHeight: 1.35, color: 'var(--r0-fg-default)' }}>

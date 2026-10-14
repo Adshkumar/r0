@@ -199,6 +199,8 @@ pub fn run() {
             fs::read_editor_keybindings,
             fs::detect_installed_editors,
             git::git_branch,
+            git::git_remote_url,
+            git::git_github_commit_author_avatar,
             git::git_changes,
             git::git_status_files,
             git::git_log_full,
