@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { getGitChanges, type GitChanges } from "../lib/git";
 import { getMemory, type MemoryInfo } from "../lib/system";
-import { readUsage, resetUsage, type UsageStore } from "../lib/usage";
+import { readUsage, resetUsage, subscribeUsageChanges, type UsageStore } from "../lib/usage";
 import { PROVIDERS } from "./ai/providers";
 import { useWorkspace } from "../context/WorkspaceContext";
 
@@ -487,18 +487,29 @@ export default function StatusIsland({ gitBranch, dirtyCount: _dirtyCount }: Sta
     return () => clearInterval(id);
   }, [folderPath]);
 
-  // Poll memory every 10 s
+  // Refresh memory only while its value is visible in the pill or card.
   useEffect(() => {
-    getMemory().then(setMemory);
-    const id = setInterval(() => getMemory().then(setMemory), 10_000);
-    return () => clearInterval(id);
-  }, []);
+    if (activeId !== "memory") return;
+    let active = true;
+    const refreshMemory = () => {
+      getMemory().then(value => {
+        if (!active) return;
+        setMemory(current =>
+          current?.used_gb === value?.used_gb && current?.total_gb === value?.total_gb
+            ? current
+            : value,
+        );
+      });
+    };
+    refreshMemory();
+    const id = setInterval(refreshMemory, 10_000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [activeId]);
 
-  // Poll usage store every 5 s so the card refreshes after each chat
-  useEffect(() => {
-    const id = setInterval(() => setUsageData(readUsage()), 5_000);
-    return () => clearInterval(id);
-  }, []);
+  useEffect(() => subscribeUsageChanges(setUsageData), []);
 
   // Click-outside + Escape to close
   useEffect(() => {
