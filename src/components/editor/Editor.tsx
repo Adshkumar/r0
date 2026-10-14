@@ -30,6 +30,7 @@ import { createLocalCompletions, getSuggestionLanguage } from '../../lib/localCo
 import { formatSource } from '../../lib/formatting';
 import { formatWithLanguageServer, supportsLspFormatting } from '../../lib/lspCm6';
 import { getEffectiveKey } from '../../lib/keybindings';
+import type { PersistedEditorState } from '../../lib/session';
 import { useEditorSuggestionSettings, useEditorSuggestionSettingsLoaded } from '../../lib/editorSuggestions';
 import {
   createDapExtension,
@@ -302,6 +303,8 @@ interface Props {
   onChange?: (value: string) => void;
   onCursorChange?: (line: number, col: number) => void;
   initialCursor?: { line: number; col: number };
+  initialEditorState?: PersistedEditorState;
+  onEditorStateChange?: (state: PersistedEditorState) => void;
   jumpTo?: { line: number; col: number; key: number };
   onAddToAiContext?: (ctx: EditorContext) => void;
   onAcceptDiff?: () => void;
@@ -319,7 +322,7 @@ interface Props {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 const Editor = forwardRef<EditorHandle, Props>(function Editor(
-  { path, content, onChange, onCursorChange, initialCursor, jumpTo, onAddToAiContext, onAcceptDiff, onReady, rootPath, onDefinitionJump, onMissingServer, getAiCompletion, onToggleBreakpoint }, ref
+  { path, content, onChange, onCursorChange, initialCursor, initialEditorState, onEditorStateChange, jumpTo, onAddToAiContext, onAcceptDiff, onReady, rootPath, onDefinitionJump, onMissingServer, getAiCompletion, onToggleBreakpoint }, ref
 ) {
   const containerRef   = useRef<HTMLDivElement>(null);
   const viewRef        = useRef<EditorView | null>(null);
@@ -327,6 +330,8 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   onChangeRef.current  = onChange;
   const onCursorRef    = useRef(onCursorChange);
   onCursorRef.current  = onCursorChange;
+  const onEditorStateRef = useRef(onEditorStateChange);
+  onEditorStateRef.current = onEditorStateChange;
 
   // One Compartment per editor instance — lets us swap in/out the merge extension.
   const mergeCompartment = useRef(new Compartment());
@@ -630,6 +635,19 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
             const pos  = update.state.selection.main.head;
             const line = update.state.doc.lineAt(pos);
             onCursorRef.current?.(line.number, pos - line.from + 1);
+            const selection = update.state.selection.main;
+            const anchor = update.state.doc.lineAt(selection.anchor);
+            const head = update.state.doc.lineAt(selection.head);
+            onEditorStateRef.current?.({
+              line: head.number,
+              col: selection.head - head.from + 1,
+              anchorLine: anchor.number,
+              anchorCol: selection.anchor - anchor.from + 1,
+              headLine: head.number,
+              headCol: selection.head - head.from + 1,
+              scrollTop: update.view.scrollDOM.scrollTop,
+              scrollLeft: update.view.scrollDOM.scrollLeft,
+            });
           }
         }),
       ],
@@ -641,8 +659,16 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     // useImperativeHandle runs before useEffect, so editorRef.current is already set.
     onReady?.();
 
-    // Restore cursor position from previous visit to this file
-    if (initialCursor && (initialCursor.line > 1 || initialCursor.col > 1)) {
+    const savedState = initialEditorState;
+    if (savedState) {
+      const anchorLine = view.state.doc.line(Math.min(Math.max(1, savedState.anchorLine), view.state.doc.lines));
+      const headLine = view.state.doc.line(Math.min(Math.max(1, savedState.headLine), view.state.doc.lines));
+      const anchor = anchorLine.from + Math.min(Math.max(0, savedState.anchorCol - 1), anchorLine.length);
+      const head = headLine.from + Math.min(Math.max(0, savedState.headCol - 1), headLine.length);
+      view.dispatch({ selection: { anchor, head } });
+      view.scrollDOM.scrollTop = Math.max(0, savedState.scrollTop);
+      view.scrollDOM.scrollLeft = Math.max(0, savedState.scrollLeft);
+    } else if (initialCursor && (initialCursor.line > 1 || initialCursor.col > 1)) {
       const doc     = view.state.doc;
       const lineNum = Math.min(Math.max(1, initialCursor.line), doc.lines);
       const line    = doc.line(lineNum);
@@ -651,8 +677,33 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     }
 
     view.focus();
+    let scrollTimer: number | null = null;
+    const onScroll = () => {
+      if (scrollTimer !== null) window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        scrollTimer = null;
+        const current = viewRef.current;
+        if (!current) return;
+        const selection = current.state.selection.main;
+        const anchor = current.state.doc.lineAt(selection.anchor);
+        const head = current.state.doc.lineAt(selection.head);
+        onEditorStateRef.current?.({
+          line: head.number,
+          col: selection.head - head.from + 1,
+          anchorLine: anchor.number,
+          anchorCol: selection.anchor - anchor.from + 1,
+          headLine: head.number,
+          headCol: selection.head - head.from + 1,
+          scrollTop: current.scrollDOM.scrollTop,
+          scrollLeft: current.scrollDOM.scrollLeft,
+        });
+      }, 180);
+    };
+    view.scrollDOM.addEventListener('scroll', onScroll, { passive: true });
 
     return () => {
+      view.scrollDOM.removeEventListener('scroll', onScroll);
+      if (scrollTimer !== null) window.clearTimeout(scrollTimer);
       view.destroy();
       viewRef.current = null;
       setDiffPending(false);

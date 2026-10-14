@@ -44,6 +44,10 @@ export interface IDESettings {
   'onboarding.done': boolean;
   'recent.projects': RecentProject[];
   'workspace.folder': string;
+  'session.restore': boolean;
+  'session.restoreTabs': boolean;
+  'session.restoreEditorState': boolean;
+  'session.recoverUnsaved': boolean;
   'terminal.open': boolean;
   'terminal.height': number;
   'terminal.tabs': SavedTermTab[];
@@ -88,6 +92,10 @@ const DEFAULTS: IDESettings = {
   'onboarding.done': false,
   'recent.projects': [],
   'workspace.folder': '',
+  'session.restore': true,
+  'session.restoreTabs': true,
+  'session.restoreEditorState': true,
+  'session.recoverUnsaved': true,
   'terminal.open': false,
   'terminal.height': 240,
   'terminal.tabs': [],

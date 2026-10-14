@@ -38,6 +38,17 @@ import { useWorkspacePersistence } from "./hooks/useWorkspacePersistence";
 import { useGlobalKeybindings } from "./hooks/useGlobalKeybindings";
 import { isImageFile } from "./lib/imagePreview";
 import { canFormat, canFormatOffline, formatSource } from "./lib/formatting";
+import {
+  deleteRecoveredDocument,
+  loadPersistedSession,
+  loadRecoveredDocuments,
+  savePersistedSession,
+  saveRecoveredDocument,
+  type PersistedEditorState,
+  type PersistedSession,
+  type RecoveredDocument,
+} from "./lib/session";
+import { readDir } from "./lib/fs";
 
 function App() {
   const { folderPath, setFolderPath } = useWorkspace();
@@ -55,6 +66,7 @@ function App() {
     activeTabRef,
     fileContentsRef,
     openTab, openTabAtLine, closeTab, handlePathRenamed,
+    restoreSessionTabs,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
     openGitCommitTab, openGitDiffTab,
     handleSave, handleSaveAs, handleSaveAll,
@@ -65,12 +77,11 @@ function App() {
     aiPanelOpen, setAiPanelOpen,
     terminalOpen, setTerminalOpen,
     terminalHeight, setTerminalHeight,
+    settingsLoaded,
   } = useWorkspacePersistence();
 
   // Once the terminal has been opened, keep it mounted so PTY sessions survive toggle.
-  const [terminalMounted, setTerminalMounted] = useState(terminalOpen);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-way latch: mount terminal once opened
-  useEffect(() => { if (terminalOpen) setTerminalMounted(true); }, [terminalOpen]);
+  const [terminalMounted, setTerminalMounted] = useState(false);
 
   // Auto-hide sidebars when entering live preview; restore on exit.
   // Auto-hide all panels when entering live preview; restore on exit.
@@ -100,6 +111,365 @@ function App() {
   const [_zoom,          setZoom]          = useState(1.0);
   const [pinnedContext,  setPinnedContext]  = useState<EditorContext | null>(null);
   const [cursorPositions, setCursorPositions] = useState<Record<string, { line: number; col: number }>>({});
+  const [editorStates, setEditorStates] = useState<Record<string, PersistedEditorState>>({});
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set());
+  const [activeSidebarPanel, setActiveSidebarPanel] = useState("explorer");
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const [restoreReady, setRestoreReady] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-way latch: mount terminal once opened
+  useEffect(() => { if (restoreReady && terminalOpen) setTerminalMounted(true); }, [restoreReady, terminalOpen]);
+  const [sessionOptions, setSessionOptions] = useState({
+    restore: true,
+    restoreTabs: true,
+    restoreEditorState: true,
+    recoverUnsaved: true,
+  });
+  const restoredSessionRef = useRef<PersistedSession | null>(null);
+  const sessionRevisionRef = useRef(0);
+  const sessionTimerRef = useRef<number | null>(null);
+  const sessionSnapshotRef = useRef<Omit<PersistedSession, "revision"> | null>(null);
+  const tabsRef = useRef(tabs);
+  const contentsRef = useRef(fileContents);
+  const recoveryTimersRef = useRef(new Map<string, number>());
+  const recoveryRevisionRef = useRef(new Map<string, number>());
+  const knownRecoveriesRef = useRef(new Set<string>());
+  const recoveryErrorRef = useRef(new Set<string>());
+  const allowCloseRef = useRef(false);
+  const sessionOptionsRef = useRef(sessionOptions);
+  const workspacePathRef = useRef(folderPath);
+
+  tabsRef.current = tabs;
+  contentsRef.current = fileContents;
+  sessionOptionsRef.current = sessionOptions;
+  workspacePathRef.current = folderPath;
+
+  useEffect(() => {
+    if (!settingsLoaded || restoreStartedRef.current) return;
+    restoreStartedRef.current = true;
+    let current = true;
+    void (async () => {
+      try {
+        const [restore, restoreTabs, restoreEditorState, recoverUnsaved, savedSession, configuredWorkspace] =
+          await Promise.all([
+            getSetting('session.restore'),
+            getSetting('session.restoreTabs'),
+            getSetting('session.restoreEditorState'),
+            getSetting('session.recoverUnsaved'),
+            loadPersistedSession().catch(error => {
+              showToast(`Could not read the saved session: ${String(error)}`, 'error');
+              return null;
+            }),
+            getSetting('workspace.folder'),
+          ]);
+        if (!current) return;
+        setSessionOptions({ restore, restoreTabs, restoreEditorState, recoverUnsaved });
+        restoredSessionRef.current = savedSession;
+        sessionRevisionRef.current = savedSession?.revision ?? 0;
+
+        const requestedWorkspace = restore
+          ? savedSession?.workspacePath || configuredWorkspace || folderPath
+          : null;
+        let usableWorkspace: string | null = null;
+        if (requestedWorkspace) {
+          try {
+            await readDir(requestedWorkspace);
+            usableWorkspace = requestedWorkspace;
+          } catch {
+            showToast(`The previous workspace is unavailable: ${requestedWorkspace}`, 'error', {
+              label: 'Choose Folder',
+              onClick: () => { void handleOpenFolder(); },
+            });
+          }
+        }
+        setFolderPath(usableWorkspace);
+
+        if (restore && savedSession) {
+          setSidebarOpen(savedSession.layout.sidebarOpen);
+          setAiPanelOpen(savedSession.layout.aiPanelOpen);
+          setTerminalOpen(savedSession.layout.terminalOpen);
+          setTerminalHeight(savedSession.layout.terminalHeight);
+          setActiveSidebarPanel(savedSession.layout.activeSidebarPanel || 'explorer');
+          setSidebarWidth(savedSession.layout.sidebarWidth || 240);
+          setExpandedFolders(new Set(savedSession.expandedFolders ?? []));
+          if (restoreEditorState) {
+            setEditorStates(savedSession.editorStates);
+            setCursorPositions(Object.fromEntries(
+              Object.entries(savedSession.editorStates).map(([path, state]) => [path, { line: state.line, col: state.col }]),
+            ));
+          }
+        }
+
+        let recoveries: RecoveredDocument[] = [];
+        if (recoverUnsaved) {
+          try {
+            recoveries = await loadRecoveredDocuments();
+          } catch (error) {
+            showToast(`Could not load unsaved recovery data; recovery files were kept: ${String(error)}`, 'error');
+          }
+        }
+        const recoveryWorkspace = savedSession?.workspacePath ?? usableWorkspace;
+        const relevantRecoveries = recoveries.filter(record =>
+          record.workspacePath === recoveryWorkspace
+          || (!record.workspacePath && !recoveryWorkspace),
+        );
+        if (restore) {
+          const paths = restoreTabs ? [...(savedSession?.tabs ?? [])] : [];
+          for (const recovery of relevantRecoveries) {
+            if (!paths.includes(recovery.filePath)) paths.push(recovery.filePath);
+            knownRecoveriesRef.current.add(recovery.filePath);
+            recoveryRevisionRef.current.set(recovery.filePath, recovery.revision);
+          }
+          const recoveryMap = new Map(relevantRecoveries.map(record => [record.filePath, record]));
+          await restoreSessionTabs(
+            paths,
+            restoreTabs ? savedSession?.activeTab ?? null : null,
+            recoveryMap,
+          );
+        }
+      } catch (error) {
+        showToast(`Could not restore the previous session: ${String(error)}`, 'error');
+      } finally {
+        if (current) setRestoreReady(true);
+      }
+    })();
+    return () => {
+      current = false;
+      restoreStartedRef.current = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- startup restoration runs once after settings hydration.
+  }, [settingsLoaded]);
+
+  const tabOrderKey = tabs.map(tab => tab.path).join('\u0000');
+  const sessionWorkspacePath = folderPath ?? restoredSessionRef.current?.workspacePath ?? null;
+  sessionSnapshotRef.current = {
+    version: 1,
+    workspacePath: sessionWorkspacePath,
+    tabs: tabs.filter(tab => !tab.path.startsWith('__')).map(tab => tab.path),
+    activeTab: activeTab && !activeTab.startsWith('__') ? activeTab : null,
+    editorStates,
+    expandedFolders: [...expandedFolders],
+    selectedExplorerPath: activeTab && !activeTab.startsWith('__') ? activeTab : null,
+    layout: {
+      sidebarOpen,
+      aiPanelOpen,
+      terminalOpen,
+      terminalHeight,
+      activeSidebarPanel,
+      sidebarWidth,
+    },
+  };
+
+  async function persistCurrentSession() {
+    if (!sessionOptionsRef.current.restore || !sessionSnapshotRef.current) return;
+    const next = {
+      ...sessionSnapshotRef.current,
+      revision: ++sessionRevisionRef.current,
+    };
+    try {
+      await savePersistedSession(next);
+      restoredSessionRef.current = next;
+    } catch (error) {
+      showToast(`Could not save the current session: ${String(error)}`, 'error');
+    }
+  }
+
+  async function persistDirtyDocuments() {
+    if (!sessionOptionsRef.current.recoverUnsaved) return;
+    const workspace = workspacePathRef.current ?? restoredSessionRef.current?.workspacePath ?? null;
+    const writes: Promise<void>[] = [];
+    for (const tab of tabsRef.current) {
+      if (!tab.isDirty || tab.path.startsWith('__')) continue;
+      const content = contentsRef.current[tab.path];
+      if (content === undefined) continue;
+      const timer = recoveryTimersRef.current.get(tab.path);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        recoveryTimersRef.current.delete(tab.path);
+      }
+      const revision = (recoveryRevisionRef.current.get(tab.path) ?? 0) + 1;
+      recoveryRevisionRef.current.set(tab.path, revision);
+      const record: RecoveredDocument = {
+        version: 1,
+        revision,
+        workspacePath: workspace,
+        filePath: tab.path,
+        content,
+        updatedAt: Date.now(),
+      };
+      const write = saveRecoveredDocument(record).then(() => {
+        knownRecoveriesRef.current.add(tab.path);
+        recoveryErrorRef.current.delete(tab.path);
+      }).catch(error => {
+        if (!recoveryErrorRef.current.has(tab.path)) {
+          recoveryErrorRef.current.add(tab.path);
+          showToast(`Could not preserve unsaved changes for ${tab.path}: ${String(error)}`, 'error');
+        }
+        throw error;
+      });
+      writes.push(write);
+    }
+    await Promise.all(writes);
+  }
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    if (sessionTimerRef.current !== null) window.clearTimeout(sessionTimerRef.current);
+    if (!sessionOptions.restore) return;
+    sessionTimerRef.current = window.setTimeout(() => {
+      sessionTimerRef.current = null;
+      void persistCurrentSession();
+    }, 450);
+    return () => {
+      if (sessionTimerRef.current !== null) {
+        window.clearTimeout(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshots use current refs and state dependencies listed here.
+  }, [
+    restoreReady, sessionOptions.restore, folderPath, tabOrderKey, activeTab,
+    editorStates, expandedFolders, sidebarOpen, aiPanelOpen, terminalOpen,
+    terminalHeight, activeSidebarPanel, sidebarWidth,
+  ]);
+
+  useEffect(() => {
+    if (!restoreReady || !sessionOptions.recoverUnsaved) return;
+    const dirtyPaths = new Set(tabs.filter(tab => tab.isDirty && !tab.path.startsWith('__')).map(tab => tab.path));
+    for (const path of dirtyPaths) {
+      const existing = recoveryTimersRef.current.get(path);
+      if (existing !== undefined) window.clearTimeout(existing);
+      const content = fileContents[path];
+      if (content === undefined) continue;
+      recoveryTimersRef.current.set(path, window.setTimeout(() => {
+        recoveryTimersRef.current.delete(path);
+        const tab = tabsRef.current.find(current => current.path === path && current.isDirty);
+        const latestContent = contentsRef.current[path];
+        if (!tab || latestContent === undefined) return;
+        const revision = (recoveryRevisionRef.current.get(path) ?? 0) + 1;
+        recoveryRevisionRef.current.set(path, revision);
+        void saveRecoveredDocument({
+          version: 1,
+          revision,
+          workspacePath: folderPath ?? restoredSessionRef.current?.workspacePath ?? null,
+          filePath: path,
+          content: latestContent,
+          updatedAt: Date.now(),
+        }).then(() => {
+          knownRecoveriesRef.current.add(path);
+          recoveryErrorRef.current.delete(path);
+        }).catch(error => {
+          if (!recoveryErrorRef.current.has(path)) {
+            recoveryErrorRef.current.add(path);
+            showToast(`Could not preserve unsaved changes for ${path}: ${String(error)}`, 'error');
+          }
+        });
+      }, 700));
+    }
+    for (const path of [...knownRecoveriesRef.current]) {
+      if (dirtyPaths.has(path)) continue;
+      const timer = recoveryTimersRef.current.get(path);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        recoveryTimersRef.current.delete(path);
+      }
+      void deleteRecoveredDocument(path).then(() => {
+        knownRecoveriesRef.current.delete(path);
+        recoveryRevisionRef.current.delete(path);
+      }).catch(error => showToast(`Could not clear saved recovery for ${path}: ${String(error)}`, 'error'));
+    }
+    const timers = recoveryTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) window.clearTimeout(timer);
+      timers.clear();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- timer callbacks always read latest document snapshots through refs.
+  }, [restoreReady, sessionOptions.recoverUnsaved, tabs, fileContents, folderPath]);
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    const onSessionCleared = () => {
+      if (sessionTimerRef.current !== null) {
+        window.clearTimeout(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+      localStorage.removeItem('r0-workspace-folder');
+    };
+    const onOptionChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ key: string; value: boolean }>).detail;
+      const keyMap: Record<string, keyof typeof sessionOptions> = {
+        'session.restore': 'restore',
+        'session.restoreTabs': 'restoreTabs',
+        'session.restoreEditorState': 'restoreEditorState',
+        'session.recoverUnsaved': 'recoverUnsaved',
+      };
+      const key = keyMap[detail?.key];
+      if (key) setSessionOptions(current => ({ ...current, [key]: detail.value }));
+    };
+    window.addEventListener('r0-session-cleared', onSessionCleared);
+    window.addEventListener('r0-session-option-changed', onOptionChanged);
+    return () => {
+      window.removeEventListener('r0-session-cleared', onSessionCleared);
+      window.removeEventListener('r0-session-option-changed', onOptionChanged);
+    };
+  }, [restoreReady]);
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    let active = true;
+    const recoveryTimers = recoveryTimersRef.current;
+    const win = getCurrentWindow();
+    let unlisten: (() => void) | null = null;
+    win.onCloseRequested(async event => {
+      if (allowCloseRef.current) return;
+      event.preventDefault();
+      if (sessionTimerRef.current !== null) {
+        window.clearTimeout(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+      for (const timer of recoveryTimers.values()) window.clearTimeout(timer);
+      recoveryTimers.clear();
+      let timeoutId = 0;
+      const timeout = new Promise<void>(resolve => {
+        timeoutId = window.setTimeout(resolve, 5_000);
+      });
+      try {
+        await Promise.race([Promise.all([persistCurrentSession(), persistDirtyDocuments()]).then(() => {}), timeout]);
+      } catch {
+        // Persistence errors have already been reported; keep shutdown responsive.
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+      allowCloseRef.current = true;
+      await win.close();
+    }).then(stop => {
+      if (active) unlisten = stop;
+      else stop();
+    }).catch(error => showToast(`Could not register session shutdown handling: ${String(error)}`, 'error'));
+    return () => {
+      active = false;
+      unlisten?.();
+      if (sessionTimerRef.current !== null) window.clearTimeout(sessionTimerRef.current);
+      for (const timer of recoveryTimers.values()) window.clearTimeout(timer);
+      recoveryTimers.clear();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- close handler reads latest session snapshot and uses bounded flush.
+  }, [restoreReady, sessionOptions.restore, sessionOptions.recoverUnsaved, showToast]);
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    void setSetting('workspace.folder', folderPath ?? '').catch(error => {
+      showToast(`Could not save the workspace path: ${String(error)}`, 'error');
+    });
+  }, [restoreReady, folderPath, showToast]);
+
+  const handleFolderExpansionChange = useCallback((path: string, expanded: boolean) => {
+    setExpandedFolders(current => {
+      const next = new Set(current);
+      if (expanded) next.add(path);
+      else next.delete(path);
+      return next;
+    });
+  }, []);
   const [gitBranch,      setGitBranch]     = useState<string | null>(null);
   const [selectedCommit, setSelectedCommit] = useState<{ rootPath: string; hash: string } | null>(null);
   const [paletteOpen,    setPaletteOpen]   = useState(false);
@@ -107,6 +477,7 @@ function App() {
   const [aboutOpen,      setAboutOpen]     = useState(false);
   const [htmlPreviewTarget, setHtmlPreviewTarget] = useState<{ path: string; rootPath: string | null } | null>(null);
   const [htmlPreviewRefresh, setHtmlPreviewRefresh] = useState(0);
+  const restoreStartedRef = useRef(false);
 
   function handleOpenHtmlPreview(path: string) {
     openTab(path);
@@ -206,15 +577,13 @@ function App() {
     };
   }, []); // Empty deps — reads localStorage lazily at call time
 
-  // Persist folderPath to Tauri store (WorkspaceContext handles localStorage)
-  useEffect(() => { setSetting('workspace.folder', folderPath ?? ''); }, [folderPath]);
-
   // Refresh git branch on folder change
   useEffect(() => {
+    if (!restoreReady) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset when no folder is open
     if (!folderPath) { setGitBranch(null); return; }
     getBranch(folderPath).then(setGitBranch).catch(() => setGitBranch(null));
-  }, [folderPath]);
+  }, [folderPath, restoreReady]);
 
   // Poke CodeMirror + xterm to re-measure after window geometry changes
   useEffect(() => {
@@ -327,6 +696,20 @@ function App() {
       setFolderPath(path);
     } catch (error) {
       showToast(`Could not open folder: ${String(error)}`, 'error');
+    }
+  }
+
+  async function handleRecentProjectOpen(path: string) {
+    try {
+      await readDir(path);
+      setFolderPath(path);
+      const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+      await pushRecentProject({ path, name });
+    } catch (error) {
+      showToast(`Could not reopen project ${path}: ${String(error)}`, 'error', {
+        label: 'Choose Folder',
+        onClick: () => { void handleOpenFolder(); },
+      });
     }
   }
 
@@ -496,6 +879,14 @@ function App() {
     isDebugActive: debugCtx.session.status !== 'idle' && debugCtx.session.status !== 'terminated',
   };
 
+  if (!restoreReady) {
+    return (
+      <div className="h-full w-full flex items-center justify-center" style={{ backgroundColor: "var(--r0-bg-base)", color: "var(--r0-fg-muted)" }}>
+        Restoring session…
+      </div>
+    );
+  }
+
   return (
     <CommandContext.Provider value={commands}>
     <div
@@ -519,6 +910,12 @@ function App() {
                 onOpenCommit={handleOpenCommit}
                 onOpenWorkingDiff={handleOpenWorkingDiff}
                 selectedCommitHash={selectedCommit?.rootPath === folderPath ? selectedCommit.hash : null}
+                expandedFolders={expandedFolders}
+                onFolderExpansionChange={handleFolderExpansionChange}
+                activePanel={activeSidebarPanel}
+                onActivePanelChange={setActiveSidebarPanel}
+                width={sidebarWidth}
+                onWidthChange={setSidebarWidth}
               />
             )}
             <div className="flex flex-1 overflow-hidden">
@@ -551,7 +948,7 @@ function App() {
                     <EditorEmptyState
                       folderPath={folderPath}
                       onFolderOpen={handleOpenFolder}
-                      onRecentProjectOpen={setFolderPath}
+                      onRecentProjectOpen={handleRecentProjectOpen}
                       onFileOpen={handleOpenFile}
                       onNewFile={handleNewFile}
                     />
@@ -602,6 +999,12 @@ function App() {
                         setCursorPositions(prev => ({ ...prev, [activeTab]: { line, col } }))
                       }
                       initialCursor={cursorPositions[activeTab]}
+                      initialEditorState={sessionOptions.restoreEditorState ? editorStates[activeTab] : undefined}
+                      onEditorStateChange={state => {
+                        setEditorStates(previous => previous[activeTab] === state
+                          ? previous
+                          : { ...previous, [activeTab]: state });
+                      }}
                       jumpTo={jumpRequest?.path === activeTab ? jumpRequest : undefined}
                       onAddToAiContext={ctx => { setPinnedContext(ctx); setAiPanelOpen(true); }}
                       onAcceptDiff={() => saveAndRefreshPreview(activeTab)}

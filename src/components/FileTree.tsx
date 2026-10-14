@@ -28,6 +28,8 @@ interface TreeCtx {
   fileIconTheme: ReturnType<typeof useFileIconTheme>;
   onPathRenamed: (from: string, to: string) => void;
   selectedFilePath: string | null;
+  expandedFolders: Set<string>;
+  onFolderExpansionChange: (path: string, expanded: boolean) => void;
 }
 
 const TreeCtx = createContext<TreeCtx>({
@@ -41,6 +43,8 @@ const TreeCtx = createContext<TreeCtx>({
   fileIconTheme: 'r0',
   onPathRenamed: () => {},
   selectedFilePath: null,
+  expandedFolders: new Set(),
+  onFolderExpansionChange: () => {},
 });
 
 // ── Path utils ────────────────────────────────────────────────────────────────
@@ -145,8 +149,8 @@ function CreateInput({ parentPath, kind, depth, onDone }: {
 // ── Tree node ─────────────────────────────────────────────────────────────────
 
 function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
-  const { onFileOpen, renamingPath, setRenamingPath, pendingCreate, setPendingCreate, openContextMenu, nodeRefreshKey, fileIconTheme, selectedFilePath } = useContext(TreeCtx);
-  const [expanded, setExpanded] = useState(false);
+  const { onFileOpen, renamingPath, setRenamingPath, pendingCreate, setPendingCreate, openContextMenu, nodeRefreshKey, fileIconTheme, selectedFilePath, expandedFolders, onFolderExpansionChange } = useContext(TreeCtx);
+  const [expanded, setExpanded] = useState(() => expandedFolders.has(entry.path));
   const [children, setChildren] = useState<FsEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -154,6 +158,21 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
   const isRenaming = renamingPath === entry.path;
   const isSelected = selectedFilePath === entry.path;
   const createHere = entry.is_dir && pendingCreate?.parentPath === entry.path;
+
+  useEffect(() => {
+    if (!entry.is_dir || !expanded || loaded) return;
+    let current = true;
+    readDir(entry.path)
+      .then(entries => {
+        if (!current) return;
+        setChildren(entries);
+        setLoaded(true);
+      })
+      .catch(error => {
+        if (current) console.error(`Could not read folder ${entry.path}:`, error);
+      });
+    return () => { current = false; };
+  }, [entry.is_dir, entry.path, expanded, loaded]);
 
   // Auto-expand folder when a create is pending inside it
   useEffect(() => {
@@ -193,7 +212,10 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
         }
         setLoaded(true);
       }
-      setExpanded(v => !v);
+      setExpanded(v => {
+        onFolderExpansionChange(entry.path, !v);
+        return !v;
+      });
     } else {
       onFileOpen(entry.path);
     }
@@ -265,9 +287,11 @@ interface Props {
   onPathRenamed: (from: string, to: string) => void;
   selectedFilePath: string | null;
   refreshKey?: number;
+  expandedFolders?: Set<string>;
+  onFolderExpansionChange?: (path: string, expanded: boolean) => void;
 }
 
-export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, refreshKey }: Props) {
+export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, refreshKey, expandedFolders = new Set(), onFolderExpansionChange = () => {} }: Props) {
   const { folderPath } = useWorkspace();
   const fileIconTheme = useFileIconTheme();
   const [rootEntries, setRootEntries] = useState<FsEntry[]>([]);
@@ -385,6 +409,8 @@ export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, sel
       fileIconTheme,
       onPathRenamed,
       selectedFilePath,
+      expandedFolders,
+      onFolderExpansionChange,
     }}>
       <div
         className="flex-1 flex flex-col overflow-y-auto"
