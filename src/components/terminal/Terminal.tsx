@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import {
   terminalCreate,
@@ -116,12 +115,15 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
     if (!containerRef.current) return;
 
     const xterm = new XTerm({
-      fontFamily: "GeistMono, 'Cascadia Code', 'Fira Code', Consolas, monospace",
+      fontFamily: "'Geist Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
       fontSize: 13,
       lineHeight: 1.2,
       theme: buildTheme(),
       cursorBlink: true,
-      scrollback: 5000,
+      scrollback: 10000,
+      scrollOnUserInput: true,
+      scrollSensitivity: 2,
+      fastScrollSensitivity: 5,
     });
 
     xtermRef.current = xterm;
@@ -129,19 +131,6 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
     fitAddonRef.current = fitAddon;
     xterm.loadAddon(fitAddon);
     xterm.open(containerRef.current);
-
-    // WebGL renderer — falls back to canvas silently if the GPU context is unavailable.
-    // Do NOT dispose the addon on context loss: xterm owns the addon lifecycle and will
-    // dispose it when xterm.dispose() is called. Disposing it manually here causes a
-    // double-dispose crash because xterm's AddonManager still holds a reference.
-    try {
-      const webglAddon = new WebglAddon();
-      // On context loss, xterm's AddonManager handles addon disposal; nothing to do here.
-      webglAddon.onContextLoss(() => {});
-      xterm.loadAddon(webglAddon);
-    } catch {
-      // GPU context unavailable — xterm falls back to the canvas renderer silently.
-    }
 
     fitAddon.fit();
 
@@ -267,6 +256,7 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
     <>
       <div
         ref={containerRef}
+        className="r0-terminal-host"
         onContextMenu={event => {
           event.preventDefault();
           setContextMenu({

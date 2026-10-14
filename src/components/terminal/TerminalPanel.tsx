@@ -471,7 +471,7 @@ const TerminalPanel = forwardRef<TerminalPanelHandle, Props>(function TerminalPa
       </div>
 
       {/* Terminal instances — all mounted, only active is visible */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative", overflow: "hidden" }}>
 
         {tabs.map((tab) => (
           <div
@@ -479,6 +479,8 @@ const TerminalPanel = forwardRef<TerminalPanelHandle, Props>(function TerminalPa
             style={{
               position: "absolute",
               inset: 0,
+              minHeight: 0,
+              minWidth: 0,
               opacity: tab.id === activeId ? 1 : 0,
               pointerEvents: tab.id === activeId ? "auto" : "none",
             }}
