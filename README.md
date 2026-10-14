@@ -1,306 +1,257 @@
 <div align="center">
 
-<img src="media/wordmark.svg" width="340" alt="r0 IDE" />
+<img src="media/wordmark.svg" width="320" alt="r0" />
 
-### A fast, agentic code editor built for AI-first development.
+### A desktop IDE for AI-assisted software development
 
-**Bring your own keys. Run everything locally. No telemetry. No lock-in.**
+r0 brings a code editor, AI coding tools, source control, and an integrated terminal together in a Rust-powered desktop application.
 
-<br/>
+[![Latest release](https://img.shields.io/github/v/release/Adshkumar/r0?label=release)](https://github.com/Adshkumar/r0/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Adshkumar/r0/total)](https://github.com/Adshkumar/r0/releases)
+[![CI](https://github.com/Adshkumar/r0/actions/workflows/ci.yml/badge.svg)](https://github.com/Adshkumar/r0/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/Adshkumar/r0)](LICENSE)
 
-[![Version](https://img.shields.io/github/v/release/Adshkumar/r0?style=for-the-badge&color=7c3aed&labelColor=1a1a2e)](https://github.com/Adshkumar/r0/releases)
-[![Downloads](https://img.shields.io/github/downloads/Adshkumar/r0/total?style=for-the-badge&color=2ea043&labelColor=1a1a2e)](https://github.com/Adshkumar/r0/releases)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge&labelColor=1a1a2e)](LICENSE)
-
-[![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#-installation)
-[![Tauri](https://img.shields.io/badge/Tauri_2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app)
-[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
-[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-
-<br/>
-
-**[Install](#-installation)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[AI Providers](#-ai-providers)** · **[Build from source](#-building-from-source)** · **[Privacy](#-privacy--security)**
+[Install for Windows](#installation) · [Features](#features) · [Build from source](#build-from-source)
 
 </div>
 
 ---
 
-## 📸 Screenshots
+## Contents
 
-<div align="center">
-  <img src="media/r0-1-ss.png" alt="r0 IDE — Welcome screen with AI panel" width="100%" />
-  <br/>
-  <em>Welcome screen with integrated AI panel</em>
-</div>
+- [About](#about)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [AI providers](#ai-providers)
+- [Technology stack](#technology-stack)
+- [Project structure](#project-structure)
+- [Development and testing](#development-and-testing)
+- [Roadmap and release status](#roadmap-and-release-status)
+- [Contributing](#contributing)
+- [License and acknowledgments](#license-and-acknowledgments)
+- [Links](#links)
 
-<br/>
+## About
+
+r0 is an open-source desktop IDE for developers who want AI assistance alongside their regular editing workflow. The AI can answer questions about a workspace, inspect files, propose a plan, and help make code changes from the editor.
+
+The app is built with Tauri 2, React, TypeScript, and Rust. AI access is configured by the user: connect a supported provider in Settings, or use a compatible local inference service. AI requests are sent to the selected provider; API keys for cloud providers are stored using the operating system's credential store.
+
+This README describes features present in the source and the latest published release. Features still being developed locally are not represented as available release functionality.
+
+## Features
+
+### Editor and workspace
+
+- CodeMirror 6 editor with syntax support for JavaScript, TypeScript, JSX/TSX, Rust, Python, CSS, SCSS/Sass, HTML, JSON, Markdown, YAML, TOML, SQL, shell scripts, and PowerShell.
+- Editor tabs, dirty-file indicators, find and replace, formatting, diagnostics, and configurable themes.
+- File explorer, workspace search, command palette, recent projects, and multi-file context for AI conversations.
+- Image previews and a local HTML preview panel.
+
+### AI assistance
+
+- **Ask** for codebase questions, **Plan** to explore and propose a structured approach, and **Agent** for multi-step coding tasks.
+- Built-in tools for reading and searching workspace files; file writes, edits, and shell commands require user approval.
+- AI-powered inline completion can be enabled and configured in Settings.
+- Select a provider and model in the AI panel. See [AI providers](#ai-providers) for the supported integrations.
+
+### Terminal and source control
+
+- Integrated terminal powered by xterm.js and Rust `portable-pty`, with multiple terminal tabs.
+- Git status, commit and push actions, branch operations, commit history, and historical file diffs.
+
+### Themes and extensions
+
+- Includes r0 Dark, r0 Light, Dracula, GitHub Dark, and Cobalt2 themes.
+- The Extensions panel searches Open VSX, installs extensions, and supports contributed themes. This is not a general-purpose VS Code extension host; extension features outside the supported theme workflow may not work.
+
+### Release scope
+
+The latest published release is **v0.2.2**. Workspace and tab restoration with unsaved-document recovery is not included in that release.
+
+## Screenshots
+
+<p align="center">
+  <img src="media/r0-1-ss.png" alt="r0 welcome screen and AI panel" width="900" />
+</p>
 
 <details>
-<summary><b>▸ Click to see more screenshots</b></summary>
-<br/>
+<summary>More screenshots</summary>
 
-<div align="center">
-  <img src="media/r0-2-ss.png" alt="r0 IDE — Code editor" width="100%" />
-  <br/>
-  <em>Code editor with syntax highlighting and integrated terminal</em>
-  <br/><br/>
-  <img src="media/r0-3-ss.png" alt="r0 IDE — Command palette" width="100%" />
-  <br/>
-  <em>Command palette with fuzzy file search</em>
-</div>
+<p align="center">
+  <img src="media/r0-2-ss.png" alt="r0 code editor and terminal" width="900" />
+  <br />
+  <em>Editor with syntax highlighting and integrated terminal</em>
+</p>
 
+<p align="center">
+  <img src="media/r0-3-ss.png" alt="r0 command palette" width="900" />
+  <br />
+  <em>Command palette and file navigation</em>
+</p>
 </details>
 
----
+## Installation
 
-## 💡 What is r0?
+### Windows
 
-**r0** is a native desktop IDE built on **Tauri 2** and **React**. It merges a full code editor, a real terminal, and a deeply integrated AI panel into one lightweight app.
+The latest published release provides Windows x64 installers:
 
-> **No subscriptions. No telemetry. No cloud lock-in.**
-> You bring your API keys; r0 does the rest.
+- [Download the latest NSIS setup installer](https://github.com/Adshkumar/r0/releases/latest/download/r0-latest-setup.exe)
+- [View all releases and artifacts](https://github.com/Adshkumar/r0/releases)
 
-The AI is **not** a sidebar afterthought. It has full agentic capabilities — it can read files, write code, run shell commands, and propose structured multi-step plans, all with **your approval** before anything touches disk.
-
----
-
-## ✨ Features
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### 📝 Editor
-- **CodeMirror 6** with a fully custom, CSS-variable-driven theme
-- Syntax highlighting for **TS, JS, Rust, Python, CSS, HTML, JSON, Markdown**
-- Find & replace (`Ctrl+F` / `Ctrl+H`)
-- Per-tab cursor memory + dirty indicators
-- Inline AI diff view with **Accept / Reject**
-- Full menu-bar file operations
-
-### 🤖 AI Panel
-- **17+ providers** — Anthropic, OpenAI, Gemini, OpenRouter, DeepSeek, Mistral, Groq, xAI, Cohere, Ollama, LM Studio, vLLM…
-- **Bring Your Own Key** — stored in OS keychain
-- **Agent mode** — up to 24 tool-use steps per run
-  - Auto-execute: `read_file`, `list_directory`, `grep`, `glob`
-  - Approval-gated: `write_file`, `edit`, `bash_run`
-- **Plan mode** — AI explores with read-only tools, proposes a plan, executes on approval
-- **Ask mode** — plain chat, no tools
-- SEARCH/REPLACE engine for precise multi-region edits
-- `@` file mention & `+` multi-file attach
-- SQLite session persistence + crash recovery
-
-</td>
-<td width="50%" valign="top">
-
-### 💻 Terminal
-- Real PTY via `portable-pty` (Windows ConPTY)
-- Multiple tabs, inline rename
-- Persistent history across tab switches
-- Instant theme sync
-
-### 🏝 Status Island
-- Persistent pill in the title bar
-- **Current Task** — set / complete / clear
-- **What Changed** — live git status
-- **Memory** — real-time RAM usage
-- **AI Spend** — token cost donut chart
-
-### 🌿 Source Control
-- File status (M / A / D / U)
-- Commit & Commit + Push
-- Git history (up to 100 commits)
-
-### 🔍 Shell & Workspace
-- Command palette (`Ctrl+P`)
-- Fuzzy search, `@` file mode, `%` full-text
-- Lazy-loading file tree + right-click menu
-- Settings panel (`Ctrl+,`)
-- Multi-window support
-
-</td>
-</tr>
-</table>
-
----
-
-## 📥 Installation
-
-### 🪟 Windows — One-line install *(recommended)*
-
-Open **PowerShell** and run:
+For a version-pinned MSI, download [r0 v0.2.2 x64 MSI](https://github.com/Adshkumar/r0/releases/download/v0.2.2/r0_0.2.2_x64_en-US.msi). To install from PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/Adshkumar/r0/main/install.ps1 | iex
+$installer = Join-Path $env:TEMP "r0-0.2.2-x64.msi"
+Invoke-WebRequest `
+  "https://github.com/Adshkumar/r0/releases/download/v0.2.2/r0_0.2.2_x64_en-US.msi" `
+  -OutFile $installer
+Start-Process msiexec.exe -ArgumentList "/i `"$installer`"" -Wait
 ```
 
-Downloads the latest release and launches the installer. r0 appears in your Start Menu when it finishes.
+### macOS and Linux
 
-### ⚡ Windows — Direct terminal install
+The current GitHub Release workflow publishes Windows installers only. macOS and Linux users can build from source if they have the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for their platform.
 
-Prefer a raw command? These stable URLs always point to the newest release.
+## Quick start
 
-**NSIS installer** (setup wizard):
+1. Install r0 using the Windows installer, or [build it from source](#build-from-source).
+2. Open a project folder or create a file.
+3. To use AI features, open **Settings → AI Providers**, choose a provider, and configure its API key if required.
+4. Choose a model in the AI panel and start with Ask, Plan, or Agent mode.
 
-```powershell
-$u='https://github.com/Adshkumar/r0/releases/latest/download/r0-latest-setup.exe'
-$m="$env:TEMP\r0-setup.exe"
-iwr $u -OutFile $m
-& $m
+Cloud model access may require a provider account and may incur charges. Local providers require their inference service to be installed and running on the configured local endpoint.
+
+## AI providers
+
+The current provider list in r0 includes:
+
+| Provider   | Connection                       |
+| ---------- | -------------------------------- |
+| Anthropic  | Cloud API                        |
+| OpenAI     | Cloud API                        |
+| Gemini     | Cloud API                        |
+| OpenRouter | Cloud API                        |
+| DeepSeek   | Cloud API                        |
+| Mistral    | Cloud API                        |
+| Groq       | Cloud API                        |
+| Cohere     | Cloud API                        |
+| xAI        | Cloud API                        |
+| Ollama     | Local OpenAI-compatible endpoint |
+| LM Studio  | Local OpenAI-compatible endpoint |
+| vLLM       | OpenAI-compatible endpoint       |
+
+Configure cloud credentials in **Settings → AI Providers**. r0 uses the operating system's credential store for API keys. Ollama, LM Studio, and vLLM connect to their configured local endpoints; select a model supported by that service.
+
+Provider model availability and names can change independently of r0. Refer to each provider's documentation for current model access and pricing.
+
+## Technology stack
+
+| Area                             | Technology                                                       |
+| -------------------------------- | ---------------------------------------------------------------- |
+| Desktop shell and native backend | Tauri 2, Rust                                                    |
+| Frontend                         | React 19, TypeScript, Vite                                       |
+| Code editor                      | CodeMirror 6                                                     |
+| AI integration                   | Vercel AI SDK with provider SDKs and OpenAI-compatible endpoints |
+| Terminal                         | xterm.js, Rust `portable-pty`                                    |
+| Persistence                      | Tauri Store, SQLite                                              |
+| Credentials                      | Rust `keyring` crate and native OS credential stores             |
+| Extensions                       | Open VSX discovery and installation                              |
+
+## Project structure
+
+```text
+.
+├── media/                 # README logo and screenshots
+├── src/
+│   ├── components/        # React UI, editor, AI, terminal, and panels
+│   ├── context/           # Shared workspace and debug state
+│   ├── hooks/             # Frontend state and interaction hooks
+│   ├── lib/               # AI, Git, filesystem, terminal, and utilities
+│   └── themes/            # Built-in theme definitions and theme handling
+├── src-tauri/
+│   ├── capabilities/      # Tauri permissions
+│   └── src/               # Rust commands and desktop backend
+├── docs/                  # Project documentation
+├── package.json           # Frontend scripts and dependencies
+└── README.md
 ```
 
-**MSI installer** (silent, good for scripts):
+## Build from source
 
-```powershell
-$u='https://github.com/Adshkumar/r0/releases/latest/download/r0-latest.msi'
-$m="$env:TEMP\r0.msi"
-iwr $u -OutFile $m
-msiexec /i $m /qb
-```
+### Prerequisites
 
-**Versioned MSI** (pin a specific release):
+- Node.js 20 or newer and npm.
+- Rust stable via [rustup](https://rustup.rs/).
+- Platform-specific [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). On Windows, install the Microsoft C++ build tools and ensure WebView2 is available.
+- Git.
 
-```powershell
-$v="0.1.5"
-$u="https://github.com/Adshkumar/r0/releases/download/v$v/r0-$v.msi"
-$m="$env:TEMP\r0-$v.msi"
-iwr $u -OutFile $m
-msiexec /i $m /qb
-```
+### Run the development app
 
-> 💡 `msiexec /i <file>.msi /qb` shows a small progress bar; use `/qn` for fully silent.
-
-### 📦 Windows — Manual download
-
-Grab an installer from the **[latest release →](https://github.com/Adshkumar/r0/releases/latest)**
-
-| Artifact | Description |
-|----------|-------------|
-| `r0-latest-setup.exe` | **NSIS installer** — stable link, always newest version |
-| `r0-latest.msi` | **MSI installer** — stable link, for enterprise / group policy |
-| `r0-0.1.5-setup.exe` | Versioned NSIS installer |
-| `r0-0.1.5.msi` | Versioned MSI installer |
-| `r0_0.1.5_x64-setup.exe` | Tauri-generated NSIS installer |
-| `r0_0.1.5_x64_en-US.msi` | Tauri-generated MSI installer |
-| `r0.exe` | Portable binary — requires WebView2 (pre-installed on Win 10/11) |
-
-### 🍎 macOS & 🐧 Linux
-
-Prebuilt `.dmg` / `.deb` / `.AppImage` packages are **not yet published**.
-
-👉 In the meantime, please [**build from source**](#-building-from-source).
-
----
-
-## 🚀 Quick Start
-
-1. **Launch r0**
-2. On the welcome screen, click **Configure AI Keys** — or press `Ctrl+,` anytime
-3. Add your provider API key (Anthropic, OpenAI, Gemini, Ollama, Groq, …)
-4. Open a folder or create a new file
-5. Open the **AI panel** and start coding
-
-> **First time?** Try **Ask mode** for a simple chat, then switch to **Agent mode** once you trust it.
-
----
-
-## 🧠 AI Providers
-
-r0 speaks **OpenAI-compatible SSE**, so any provider that follows that protocol works. Add your key in **Settings** (`Ctrl+,`) → **AI Providers**. Keys are stored in your OS keychain.
-
-| Provider | Type | Notable Models |
-|----------|------|----------------|
-| **Anthropic** | ☁️ Cloud | Claude 3.5 Sonnet, Claude 3 Opus |
-| **OpenAI** | ☁️ Cloud | GPT-4o, GPT-4 Turbo, o1 |
-| **Google Gemini** | ☁️ Cloud | Gemini 1.5 Pro, Gemini Flash |
-| **OpenRouter** | ☁️ Cloud | 100+ models via unified API |
-| **DeepSeek** | ☁️ Cloud | DeepSeek V3, DeepSeek R1 |
-| **Mistral** | ☁️ Cloud | Mistral Large, Codestral |
-| **Groq** | ☁️ Cloud | Llama 3, Mixtral (fast inference) |
-| **xAI** | ☁️ Cloud | Grok-2, Grok Beta |
-| **Cohere** | ☁️ Cloud | Command R, Command R+ |
-| **Ollama** | 🏠 Local | Any model pulled locally |
-| **LM Studio** | 🏠 Local | Any GGUF model |
-| **vLLM** | 🏠 Local | Self-hosted inference server |
-
----
-
-## 🛠 Building from Source
-
-> **Prerequisites:** [Rust](https://rustup.rs) · [Node.js 20+](https://nodejs.org) · [Tauri prerequisites](https://tauri.app/start/prerequisites/)
-
-```bash
+```sh
 git clone https://github.com/Adshkumar/r0.git
 cd r0
-npm install
-
-npm run tauri dev       # dev mode (hot reload)
-npm run tauri build     # production build + installers
+npm ci
+npm run dev
 ```
 
-Installers land in `src-tauri/target/release/bundle/`:
+`npm run dev` starts the Vite development server and launches the Tauri desktop application.
 
-| Platform | Output |
-|----------|--------|
-| **Windows** | `bundle/msi/*.msi` · `bundle/nsis/*-setup.exe` |
-| **macOS** | `bundle/dmg/*.dmg` |
-| **Linux** | `bundle/deb/*.deb` · `bundle/appimage/*.AppImage` |
+### Build
 
----
-
-## 🧩 Architecture
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Shell** | Tauri 2.x | Native app window, IPC, filesystem, OS APIs |
-| **Frontend** | React 19 + TypeScript + Vite 7 | UI, editor, terminal, panels |
-| **Styling** | Tailwind CSS v4 | All theming via CSS variables |
-| **Fonts** | Geist Sans + Geist Mono | Bundled — no network requests |
-| **Editor** | CodeMirror 6 | Syntax highlighting, inline diffs |
-| **Terminal** | `portable-pty` + xterm.js | Native terminal (ConPTY on Windows) |
-| **AI Runtime** | Vercel AI SDK v6 | Streaming, tool calls, agent loop |
-| **HTTP Proxy** | Rust `reqwest` | Bypasses WebView2 CORS restrictions |
-| **Persistence** | `tauri-plugin-store` + SQLite | Settings, session history, crash recovery |
-| **Secrets** | `keyring` crate | OS-native keychain storage |
-
----
-
-## 🔒 Privacy & Security
-
-- ✅ **No telemetry** — zero data leaves your machine except AI requests *you* trigger
-- ✅ **Local AI proxy** — every request routes through Rust, no third-party relay
-- ✅ **OS keychain** — API keys stored in macOS Keychain / Windows Credential Manager / Linux Secret Service
-- ✅ **Approval-gated tools** — file writes and shell commands require explicit confirmation
-- ✅ **Local storage only** — chat history in SQLite at `AppData\Roaming\com.r0ide.ide\`
-- ❌ No accounts · ❌ No analytics · ❌ No cloud sync
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first.
-
-```bash
-git checkout -b feature/amazing-idea
-# make your changes
-git commit -m "feat: amazing idea"
-git push origin feature/amazing-idea
-# open a Pull Request
+```sh
+npm run build:frontend  # Type-check and build the frontend assets
+npm run build           # Build the Tauri application and platform bundles
 ```
 
-Found a bug? [Open an issue →](https://github.com/Adshkumar/r0/issues)
+Tauri bundle outputs are placed under `src-tauri/target/release/bundle/`. Available bundle formats depend on the build host and its installed platform prerequisites.
 
----
+## Development and testing
 
-## 📄 License
+Run the repository's available checks from the project root:
 
-Released under the **Apache 2.0 License** — see [LICENSE](LICENSE) for the full text.
+```sh
+npm run lint
+npm run typecheck
+npm test
+```
 
-</a>
+Run the Rust backend tests from `src-tauri`:
 
-<br/><br/>
+```sh
+cd src-tauri
+cargo test
+```
 
-**If r0 is useful to you, please consider ⭐ starring the repo — it really helps!**
+The GitHub Actions CI workflow runs frontend linting, type checking, and tests. It also checks and tests the Rust backend; that CI job is currently marked `continue-on-error` in the workflow.
 
-</div>
+## Roadmap and release status
+
+There is no published, committed feature roadmap. Proposed work and bug reports can be discussed in the [issue tracker](https://github.com/Adshkumar/r0/issues). Check the [releases page](https://github.com/Adshkumar/r0/releases) for shipped versions and platform artifacts.
+
+## Contributing
+
+Bug reports, feature proposals, and pull requests are welcome. Please review [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), then:
+
+1. Open an issue for a bug or a larger proposed change.
+2. Create a focused branch and make the change.
+3. Run the relevant checks listed in [Development and testing](#development-and-testing).
+4. Open a pull request with a clear description and testing notes.
+
+## License and acknowledgments
+
+r0 is distributed under the [Apache License 2.0](LICENSE).
+
+r0 is built with [Tauri](https://tauri.app/), [React](https://react.dev/), [CodeMirror](https://codemirror.net/), [Rust](https://www.rust-lang.org/), [Vercel AI SDK](https://ai-sdk.dev/), and [xterm.js](https://xtermjs.org/). Extension discovery uses [Open VSX](https://open-vsx.org/).
+
+## Links
+
+- [Repository](https://github.com/Adshkumar/r0)
+- [Issues](https://github.com/Adshkumar/r0/issues)
+- [Releases](https://github.com/Adshkumar/r0/releases)
+- [Latest release](https://github.com/Adshkumar/r0/releases/latest)
+- [Contributing guide](CONTRIBUTING.md)
+- [License](LICENSE)
