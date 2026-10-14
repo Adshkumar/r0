@@ -67,10 +67,6 @@ This README describes features present in the source and the latest published re
 - Includes r0 Dark, r0 Light, Dracula, GitHub Dark, and Cobalt2 themes.
 - The Extensions panel searches Open VSX, installs extensions, and supports contributed themes. This is not a general-purpose VS Code extension host; extension features outside the supported theme workflow may not work.
 
-### Release scope
-
-See the [releases page](https://github.com/Adshkumar/r0/releases) for the latest published version. Workspace and tab restoration with unsaved-document recovery is not currently included in a published release.
-
 ## Screenshots
 
 <p align="center">
