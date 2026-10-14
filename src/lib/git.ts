@@ -4,6 +4,51 @@ export async function getBranch(path: string): Promise<string | null> {
   return invoke<string | null>('git_branch', { path });
 }
 
+export async function getGitRemoteUrl(path: string): Promise<string | null> {
+  return invoke<string | null>('git_remote_url', { path });
+}
+
+export interface GitHubCommitAuthorAvatar {
+  login: string;
+  avatar_url: string;
+}
+
+interface GitHubAvatarCacheEntry {
+  value: GitHubCommitAuthorAvatar | null;
+  expiresAt: number;
+}
+
+const githubAvatarCache = new Map<string, GitHubAvatarCacheEntry>();
+const githubAvatarRequests = new Map<string, Promise<GitHubCommitAuthorAvatar | null>>();
+
+export function getGitHubCommitAuthorAvatar(
+  remoteUrl: string,
+  hash: string,
+): Promise<GitHubCommitAuthorAvatar | null> {
+  const key = `${remoteUrl}\u0000${hash}`;
+  const cached = githubAvatarCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+  if (cached) githubAvatarCache.delete(key);
+
+  const pending = githubAvatarRequests.get(key);
+  if (pending) return pending;
+
+  const request = invoke<GitHubCommitAuthorAvatar | null>('git_github_commit_author_avatar', {
+    remoteUrl,
+    hash,
+  }).then(value => {
+    githubAvatarCache.set(key, {
+      value,
+      expiresAt: Date.now() + (value ? 12 * 60 * 60 * 1000 : 15 * 60 * 1000),
+    });
+    return value;
+  }).finally(() => {
+    if (githubAvatarRequests.get(key) === request) githubAvatarRequests.delete(key);
+  });
+  githubAvatarRequests.set(key, request);
+  return request;
+}
+
 export interface CommitEntry { hash: string; msg: string; }
 export interface GitChanges { files: number; commits_ahead: number; log: CommitEntry[]; }
 
@@ -57,6 +102,14 @@ export interface GitCommitDetails {
 export interface GitFileDiff {
   old_content: string;
   new_content: string;
+  hunks: GitDiffHunk[] | null;
+}
+
+export interface GitDiffHunk {
+  old_start: number;
+  old_lines: number;
+  new_start: number;
+  new_lines: number;
 }
 
 interface CacheEntry<T> {

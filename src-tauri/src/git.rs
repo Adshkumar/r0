@@ -157,9 +157,158 @@ pub struct GitCommitDetails {
 }
 
 #[derive(serde::Serialize)]
+pub struct GitDiffHunk {
+    old_start: usize,
+    old_lines: usize,
+    new_start: usize,
+    new_lines: usize,
+}
+
+#[derive(serde::Serialize)]
 pub struct GitFileDiff {
     old_content: String,
     new_content: String,
+    hunks: Option<Vec<GitDiffHunk>>,
+}
+
+#[tauri::command]
+pub fn git_remote_url(path: String) -> Option<String> {
+    let candidates = vec!["origin", "upstream", "github"];
+    for name in candidates {
+        let out = git_cmd()
+            .args(["remote", "get-url", name])
+            .current_dir(&path)
+            .output()
+            .ok()?;
+        if out.status.success() {
+            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !url.is_empty() {
+                return Some(url);
+            }
+        }
+    }
+
+    let out = git_cmd()
+        .args(["remote", "-v"])
+        .current_dir(&path)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .find_map(|line| {
+            let mut parts = line.split_whitespace();
+            let url = parts.nth(1)?;
+            if url.is_empty() {
+                None
+            } else {
+                Some(url.to_string())
+            }
+        })
+}
+
+fn github_repository_from_remote(remote_url: &str) -> Option<(String, String)> {
+    let path = if let Some(path) = remote_url.strip_prefix("https://github.com/") {
+        path
+    } else if let Some(path) = remote_url.strip_prefix("git@github.com:") {
+        path
+    } else {
+        return None;
+    };
+
+    let mut parts = path.trim_end_matches('/').split('/');
+    let owner = parts.next()?;
+    let repository = parts.next()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    let repository = repository.strip_suffix(".git").unwrap_or(repository);
+    let valid_segment = |value: &str| {
+        !value.is_empty()
+            && value != "."
+            && value != ".."
+            && value
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+    };
+    if !valid_segment(owner) || !valid_segment(repository) {
+        return None;
+    }
+
+    Some((owner.to_string(), repository.to_string()))
+}
+
+#[derive(serde::Deserialize)]
+struct GitHubCommitResponse {
+    author: Option<GitHubCommitAuthor>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct GitHubCommitAuthor {
+    login: String,
+    avatar_url: String,
+}
+
+#[tauri::command]
+pub async fn git_github_commit_author_avatar(
+    remote_url: String,
+    hash: String,
+) -> Result<Option<GitHubCommitAuthor>, String> {
+    if !(7..=40).contains(&hash.len()) || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("Invalid commit hash for GitHub author lookup.".to_string());
+    }
+    let Some((owner, repository)) = github_repository_from_remote(&remote_url) else {
+        return Ok(None);
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|error| format!("Could not initialize GitHub lookup: {error}"))?;
+    let response = client
+        .get(format!(
+            "https://api.github.com/repos/{owner}/{repository}/commits/{hash}"
+        ))
+        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
+        .header(reqwest::header::USER_AGENT, "r0-ide")
+        .send()
+        .await
+        .map_err(|error| format!("GitHub author lookup failed: {error}"))?;
+
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(None);
+    }
+    if !response.status().is_success() {
+        return Err(format!(
+            "GitHub author lookup returned HTTP {}.",
+            response.status()
+        ));
+    }
+
+    let commit = response
+        .json::<GitHubCommitResponse>()
+        .await
+        .map_err(|error| format!("Could not read GitHub author response: {error}"))?;
+    let Some(author) = commit.author else {
+        return Ok(None);
+    };
+
+    let avatar_url = url::Url::parse(&author.avatar_url)
+        .map_err(|_| "GitHub returned an invalid profile image URL.".to_string())?;
+    if avatar_url.scheme() != "https"
+        || !matches!(
+            avatar_url.host_str(),
+            Some("avatars.githubusercontent.com" | "github.com")
+        )
+        || author.login.is_empty()
+    {
+        return Ok(None);
+    }
+
+    Ok(Some(author))
 }
 
 fn git_error(out: &std::process::Output) -> String {
@@ -698,6 +847,89 @@ fn read_revision_files(path: &str, specs: &[String]) -> Result<Vec<String>, Stri
     Ok(contents)
 }
 
+fn parse_diff_hunks(output: &[u8]) -> Result<Vec<GitDiffHunk>, String> {
+    let output = String::from_utf8_lossy(output);
+    output
+        .lines()
+        .filter(|line| line.starts_with("@@ "))
+        .map(|line| {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            let parse_range = |value: &str, prefix: char| -> Result<(usize, usize), String> {
+                let range = value
+                    .strip_prefix(prefix)
+                    .ok_or_else(|| "Git returned a malformed diff hunk".to_string())?;
+                let mut parts = range.splitn(2, ',');
+                let start = parts
+                    .next()
+                    .and_then(|part| part.parse().ok())
+                    .ok_or_else(|| "Git returned a malformed diff hunk".to_string())?;
+                let lines = parts
+                    .next()
+                    .map(|part| part.parse())
+                    .transpose()
+                    .map_err(|_| "Git returned a malformed diff hunk".to_string())?
+                    .unwrap_or(1);
+                Ok((start, lines))
+            };
+            if fields.len() < 4 {
+                return Err("Git returned a malformed diff hunk".to_string());
+            }
+            let (old_start, old_lines) = parse_range(fields[1], '-')?;
+            let (new_start, new_lines) = parse_range(fields[2], '+')?;
+            Ok(GitDiffHunk {
+                old_start,
+                old_lines,
+                new_start,
+                new_lines,
+            })
+        })
+        .collect()
+}
+
+fn historical_diff_hunks(
+    path: &str,
+    old_revision: Option<&str>,
+    new_revision: &str,
+    old_file_path: &str,
+    new_file_path: &str,
+) -> Result<Vec<GitDiffHunk>, String> {
+    let mut paths = vec![old_file_path, new_file_path];
+    paths.sort_unstable();
+    paths.dedup();
+    let mut args = if let Some(old_revision) = old_revision {
+        vec![
+            "diff".to_string(),
+            "--no-ext-diff".to_string(),
+            "--no-color".to_string(),
+            "--unified=0".to_string(),
+            "--find-renames".to_string(),
+            old_revision.to_string(),
+            new_revision.to_string(),
+        ]
+    } else {
+        vec![
+            "diff-tree".to_string(),
+            "--root".to_string(),
+            "--no-commit-id".to_string(),
+            "-r".to_string(),
+            "--no-ext-diff".to_string(),
+            "--no-color".to_string(),
+            "--unified=0".to_string(),
+            "--find-renames".to_string(),
+            new_revision.to_string(),
+        ]
+    };
+    args.push("--".to_string());
+    args.extend(
+        paths
+            .into_iter()
+            .map(|file_path| format!(":(literal){file_path}")),
+    );
+    let arg_refs: Vec<_> = args.iter().map(String::as_str).collect();
+    let out = output_ok(path, &arg_refs)?;
+    parse_diff_hunks(&out.stdout)
+}
+
 fn file_diff(
     path: String,
     old_revision: Option<String>,
@@ -770,9 +1002,21 @@ fn file_diff(
     } else {
         blobs.next().ok_or("Git did not return the new file")?
     };
+    let hunks = if new_is_working_tree {
+        None
+    } else {
+        Some(historical_diff_hunks(
+            &path,
+            old_revision.as_deref(),
+            new_revision.as_deref().ok_or("New revision is missing")?,
+            &old_file_path,
+            &new_file_path,
+        )?)
+    };
     Ok(GitFileDiff {
         old_content,
         new_content,
+        hunks,
     })
 }
 
@@ -888,8 +1132,9 @@ pub fn git_commit_push(path: String, title: String, description: String) -> Resu
 #[cfg(test)]
 mod tests {
     use super::{
-        commit_details, file_diff, git_cmd, history, parse_name_status, parse_numstat,
-        parse_status_files, valid_revision, validate_relative_path,
+        commit_details, file_diff, git_cmd, github_repository_from_remote, history,
+        parse_name_status, parse_numstat, parse_status_files, valid_revision,
+        validate_relative_path,
     };
     use std::path::{Path, PathBuf};
 
@@ -935,6 +1180,26 @@ mod tests {
         String::from_utf8_lossy(&run_git(repo, &["rev-parse", "HEAD"]).stdout)
             .trim()
             .to_string()
+    }
+
+    #[test]
+    fn github_remote_parser_accepts_standard_github_remotes_only() {
+        assert_eq!(
+            github_repository_from_remote("https://github.com/Adshkumar/r0.git"),
+            Some(("Adshkumar".to_string(), "r0".to_string()))
+        );
+        assert_eq!(
+            github_repository_from_remote("git@github.com:Adshkumar/r0.git"),
+            Some(("Adshkumar".to_string(), "r0".to_string()))
+        );
+        assert_eq!(
+            github_repository_from_remote("https://example.com/Adshkumar/r0.git"),
+            None
+        );
+        assert_eq!(
+            github_repository_from_remote("https://github.com/owner/repo/extra"),
+            None
+        );
     }
 
     #[test]
@@ -1025,6 +1290,31 @@ mod tests {
         assert!(root_details.parents.is_empty());
         assert_eq!(root_details.files[0].status, "added");
         assert_eq!(root_details.files[0].additions, Some(1));
+        let root_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            None,
+            Some(root_hash.clone()),
+            "file with spaces.txt".to_string(),
+            "file with spaces.txt".to_string(),
+            true,
+            false,
+            false,
+        )
+        .expect("read the root commit against its empty tree");
+        assert!(root_diff.old_content.is_empty());
+        assert_eq!(root_diff.new_content, "first line\n");
+        assert_eq!(
+            root_diff.hunks.as_ref().map(|hunks| (
+                hunks[0].old_start,
+                hunks[0].old_lines,
+                hunks[0].new_start,
+                hunks[0].new_lines,
+            )),
+            Some((0, 0, 1, 1))
+        );
 
         std::fs::write(&file, "first line\nsecond line\n").expect("write next revision");
         run_git(&repo.0, &["add", "--", "file with spaces.txt"]);
@@ -1050,13 +1340,15 @@ mod tests {
         assert_eq!(details.files[0].additions, Some(1));
         assert_eq!(details.files[0].deletions, Some(0));
 
+        std::fs::write(&file, "uncommitted working-tree content\n")
+            .expect("change working tree without committing");
         let diff = file_diff(
             repo.0
                 .to_str()
                 .expect("temporary path is UTF-8")
                 .to_string(),
-            Some(root_hash),
-            Some(second_hash),
+            Some(root_hash.clone()),
+            Some(second_hash.clone()),
             "file with spaces.txt".to_string(),
             "file with spaces.txt".to_string(),
             false,
@@ -1066,5 +1358,140 @@ mod tests {
         .expect("read exact historical contents");
         assert_eq!(diff.old_content, "first line\n");
         assert_eq!(diff.new_content, "first line\nsecond line\n");
+        assert_eq!(
+            diff.hunks.as_ref().map(|hunks| (
+                hunks[0].old_start,
+                hunks[0].old_lines,
+                hunks[0].new_start,
+                hunks[0].new_lines,
+            )),
+            Some((1, 0, 2, 1))
+        );
+
+        let reverse_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(second_hash.clone()),
+            Some(root_hash.clone()),
+            "file with spaces.txt".to_string(),
+            "file with spaces.txt".to_string(),
+            false,
+            false,
+            false,
+        )
+        .expect("preserve requested revision comparison order");
+        assert_eq!(reverse_diff.old_content, "first line\nsecond line\n");
+        assert_eq!(reverse_diff.new_content, "first line\n");
+        assert_eq!(
+            reverse_diff.hunks.as_ref().map(|hunks| (
+                hunks[0].old_start,
+                hunks[0].old_lines,
+                hunks[0].new_start,
+                hunks[0].new_lines,
+            )),
+            Some((2, 1, 1, 0))
+        );
+
+        let identical_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(second_hash.clone()),
+            Some(second_hash.clone()),
+            "file with spaces.txt".to_string(),
+            "file with spaces.txt".to_string(),
+            false,
+            false,
+            false,
+        )
+        .expect("compare a revision with itself");
+        assert!(identical_diff.hunks.as_ref().is_some_and(Vec::is_empty));
+
+        std::fs::write(&file, "first line\nchanged line\n")
+            .expect("write changed historical content");
+        run_git(&repo.0, &["add", "--", "file with spaces.txt"]);
+        run_git(&repo.0, &["commit", "--quiet", "-m", "replace second line"]);
+        let third_hash = commit_hash(&repo.0);
+        let modified_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(second_hash.clone()),
+            Some(third_hash.clone()),
+            "file with spaces.txt".to_string(),
+            "file with spaces.txt".to_string(),
+            false,
+            false,
+            false,
+        )
+        .expect("read modified-line hunks");
+        assert_eq!(modified_diff.old_content, "first line\nsecond line\n");
+        assert_eq!(modified_diff.new_content, "first line\nchanged line\n");
+        assert_eq!(
+            modified_diff.hunks.as_ref().map(|hunks| (
+                hunks[0].old_start,
+                hunks[0].old_lines,
+                hunks[0].new_start,
+                hunks[0].new_lines,
+            )),
+            Some((2, 1, 2, 1))
+        );
+
+        let renamed_file = repo.0.join("renamed file.txt");
+        std::fs::rename(&file, &renamed_file).expect("rename historical file");
+        run_git(&repo.0, &["add", "-A"]);
+        run_git(&repo.0, &["commit", "--quiet", "-m", "rename file"]);
+        let fourth_hash = commit_hash(&repo.0);
+        let renamed_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(third_hash.clone()),
+            Some(fourth_hash.clone()),
+            "file with spaces.txt".to_string(),
+            "renamed file.txt".to_string(),
+            false,
+            false,
+            false,
+        )
+        .expect("read both sides of a historical rename");
+        assert_eq!(renamed_diff.old_content, "first line\nchanged line\n");
+        assert_eq!(renamed_diff.new_content, renamed_diff.old_content);
+        assert!(renamed_diff.hunks.as_ref().is_some_and(Vec::is_empty));
+
+        std::fs::remove_file(&renamed_file).expect("delete historical file");
+        run_git(&repo.0, &["add", "-A"]);
+        run_git(&repo.0, &["commit", "--quiet", "-m", "delete file"]);
+        let fifth_hash = commit_hash(&repo.0);
+        let deleted_diff = file_diff(
+            repo.0
+                .to_str()
+                .expect("temporary path is UTF-8")
+                .to_string(),
+            Some(fourth_hash),
+            Some(fifth_hash),
+            "renamed file.txt".to_string(),
+            "renamed file.txt".to_string(),
+            false,
+            true,
+            false,
+        )
+        .expect("read historical deletion hunks");
+        assert_eq!(deleted_diff.old_content, "first line\nchanged line\n");
+        assert!(deleted_diff.new_content.is_empty());
+        assert_eq!(
+            deleted_diff.hunks.as_ref().map(|hunks| (
+                hunks[0].old_start,
+                hunks[0].old_lines,
+                hunks[0].new_start,
+                hunks[0].new_lines,
+            )),
+            Some((1, 2, 0, 0))
+        );
     }
 }
