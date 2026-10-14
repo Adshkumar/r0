@@ -7,6 +7,7 @@ mod html_preview;
 mod keychain;
 mod lsp;
 mod search;
+mod session;
 mod system;
 mod terminal;
 mod tree;
@@ -217,6 +218,12 @@ pub fn run() {
             search::search_in_files,
             search::search_symbols,
             search::list_workspace_files,
+            session::session_load,
+            session::session_save,
+            session::session_recovery_list,
+            session::session_recovery_save,
+            session::session_recovery_delete,
+            session::session_clear,
             tree::get_file_tree,
             tree::get_import_edges,
             ai::agent_bash_run,

@@ -4,6 +4,7 @@ import { readFile, writeFile } from "../lib/fs";
 import { isImageFile } from "../lib/imagePreview";
 import type { Tab } from "../components/editor/TabBar";
 import { useToast } from "../components/ui/Toast";
+import { deleteRecoveredDocument, type RecoveredDocument } from "../lib/session";
 
 export function useTabs() {
   const { showToast } = useToast();
@@ -51,6 +52,53 @@ export function useTabs() {
     setTabs(prev => prev.find(t => t.path === path) ? prev : [...prev, { path, name, isDirty: false }]);
     setActiveTab(path);
   }
+
+  const restoreSessionTabs = useCallback(async (
+    paths: string[],
+    preferredActivePath: string | null,
+    recoveries: Map<string, RecoveredDocument>,
+  ) => {
+    const restoredTabs: Tab[] = [];
+    const restoredContents: Record<string, string> = {};
+    for (const path of paths) {
+      if (path.startsWith('__')) continue;
+      const recovery = recoveries.get(path);
+      try {
+        const diskContent = await readFile(path);
+        const content = recovery?.content ?? diskContent;
+        const recoveredDirty = !!recovery && recovery.content !== diskContent;
+        if (recovery && !recoveredDirty) {
+          await deleteRecoveredDocument(path).catch(error => {
+            showToast(`Restored saved file ${path}, but could not clear its old recovery copy: ${String(error)}`, 'error');
+          });
+        }
+        restoredContents[path] = content;
+        restoredTabs.push({
+          path,
+          name: path.split(/[\\/]/).filter(Boolean).pop() ?? path,
+          isDirty: recoveredDirty,
+        });
+      } catch (error) {
+        if (!recovery) {
+          showToast(`Could not restore ${path}: ${String(error)}`, 'error');
+          continue;
+        }
+        restoredContents[path] = recovery.content;
+        restoredTabs.push({
+          path,
+          name: path.split(/[\\/]/).filter(Boolean).pop() ?? path,
+          isDirty: true,
+        });
+        showToast(`Restored unsaved recovery for inaccessible file ${path}`, 'info');
+      }
+    }
+    setTabs(restoredTabs);
+    setFileContents(restoredContents);
+    const nextActive = restoredTabs.find(tab => tab.path === preferredActivePath)?.path
+      ?? restoredTabs[0]?.path
+      ?? null;
+    setActiveTab(nextActive);
+  }, [showToast]);
 
   function openTabAtLine(path: string, line: number, col: number) {
     openTab(path);
@@ -226,12 +274,18 @@ export function useTabs() {
       const dest = await save({ defaultPath: tab.name });
       if (!dest) return;
       await writeFile(dest, content);
+      await deleteRecoveredDocument(path).catch(error => {
+        showToast(`Saved ${tab.name}, but could not clear its recovery copy: ${String(error)}`, 'error');
+      });
       const newName = dest.split(/[\\/]/).filter(Boolean).pop() ?? dest;
       setTabs(prev => prev.map(t => t.path === path ? { ...t, path: dest, name: newName, isDirty: false, isUntitled: false } : t));
       setActiveTab(dest);
       setFileContents(prev => { const next = { ...prev, [dest]: content }; delete next[path]; return next; });
     } else {
       await writeFile(path, content);
+      await deleteRecoveredDocument(path).catch(error => {
+        showToast(`Saved ${tab?.name ?? path}, but could not clear its recovery copy: ${String(error)}`, 'error');
+      });
       if (contentOverride !== undefined) {
         setFileContents(prev => ({ ...prev, [path]: content }));
       }
@@ -249,6 +303,9 @@ export function useTabs() {
     if (!dest) return;
     const newName = dest.split(/[\\/]/).filter(Boolean).pop() ?? dest;
     await writeFile(dest, content);
+    await deleteRecoveredDocument(path).catch(error => {
+      showToast(`Saved ${tab?.name ?? path}, but could not clear its recovery copy: ${String(error)}`, 'error');
+    });
     setTabs(prev => prev.map(t => t.path === path ? { ...t, path: dest, name: newName, isDirty: false, isUntitled: false } : t));
     setActiveTab(dest);
     setFileContents(prev => { const next = { ...prev, [dest]: content }; if (dest !== path) delete next[path]; return next; });
@@ -269,6 +326,7 @@ export function useTabs() {
     activeTabRef,
     fileContentsRef,
     openTab, openTabAtLine, closeTab,
+    restoreSessionTabs,
     handlePathRenamed,
     handleNewFile, handleEditorChange, openAiDiffTab, openPreviewTab,
     openGitCommitTab, openGitDiffTab,

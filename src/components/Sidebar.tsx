@@ -21,9 +21,15 @@ interface Props {
   onOpenCommit: (hash: string) => void;
   onOpenWorkingDiff: (file: StatusFile) => void;
   selectedCommitHash: string | null;
+  expandedFolders: Set<string>;
+  onFolderExpansionChange: (path: string, expanded: boolean) => void;
+  activePanel: string;
+  onActivePanelChange: (panel: string) => void;
+  width: number;
+  onWidthChange: (width: number) => void;
 }
 
-function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: {
+function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash, expandedFolders, onFolderExpansionChange }: {
   id: string;
   onFileOpen: (path: string) => void;
   onPreviewOpen: (path: string) => void;
@@ -34,9 +40,11 @@ function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFil
   onOpenCommit: (hash: string) => void;
   onOpenWorkingDiff: (file: StatusFile) => void;
   selectedCommitHash: string | null;
+  expandedFolders: Set<string>;
+  onFolderExpansionChange: (path: string, expanded: boolean) => void;
 }) {
   switch (id) {
-    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} />;
+    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} expandedFolders={expandedFolders} onFolderExpansionChange={onFolderExpansionChange} />;
     case "search":     return <SearchPanel onFileOpenAtLine={onFileOpenAtLine} />;
     case "sourcetree": return <SourceTreePanel onOpenCommit={onOpenCommit} onOpenWorkingDiff={onOpenWorkingDiff} selectedCommitHash={selectedCommitHash} />;
     case "debug":      return <DebugPanel onFileOpenAtLine={onFileOpenAtLine} />;
@@ -45,9 +53,9 @@ function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFil
   }
 }
 
-export default function Sidebar({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
-  const [active, setActive] = useState("explorer");
+export default function Sidebar({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, onFileOpenAtLine, fileTreeKey, onOpenCommit, onOpenWorkingDiff, selectedCommitHash, expandedFolders, onFolderExpansionChange, activePanel, onActivePanelChange, width, onWidthChange }: Props) {
+  const [resizeWidth, setResizeWidth] = useState(width || DEFAULT_WIDTH);
+  const resizeWidthRef = useRef(width || DEFAULT_WIDTH);
   const isResizing = useRef(false);
 
   const startResize = useCallback((e: React.MouseEvent) => {
@@ -56,31 +64,34 @@ export default function Sidebar({ onFileOpen, onPreviewOpen, onPathRenamed, sele
 
     function onMouseMove(e: MouseEvent) {
       if (!isResizing.current) return;
-      setWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX)));
+      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      resizeWidthRef.current = next;
+      setResizeWidth(next);
     }
 
     function onMouseUp() {
       isResizing.current = false;
+      onWidthChange(resizeWidthRef.current);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     }
 
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
-  }, []);
+  }, [onWidthChange]);
 
   return (
     <div
       className="relative flex flex-col shrink-0 border-r"
       style={{
-        width,
+        width: resizeWidth,
         backgroundColor: "var(--r0-bg-sidebar)",
         borderColor: "var(--r0-border-default)",
       }}
     >
-      <ActivityBar active={active} onSelect={setActive} />
+      <ActivityBar active={activePanel} onSelect={onActivePanelChange} />
       <ActivePanel
-        id={active}
+        id={activePanel}
         onFileOpen={onFileOpen}
         onPreviewOpen={onPreviewOpen}
         onPathRenamed={onPathRenamed}
@@ -90,6 +101,8 @@ export default function Sidebar({ onFileOpen, onPreviewOpen, onPathRenamed, sele
         onOpenCommit={onOpenCommit}
         onOpenWorkingDiff={onOpenWorkingDiff}
         selectedCommitHash={selectedCommitHash}
+        expandedFolders={expandedFolders}
+        onFolderExpansionChange={onFolderExpansionChange}
       />
 
       {/* Resize handle */}

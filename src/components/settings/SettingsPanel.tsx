@@ -14,6 +14,7 @@ import {
 import { getSetting, setSetting } from "../../lib/settings";
 import { FILE_ICON_THEMES, setFileIconTheme, useFileIconTheme } from "../../lib/fileIconTheme";
 import { resolveFileIcon } from "../../lib/fileIcons";
+import { clearPersistedSession } from "../../lib/session";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -576,6 +577,12 @@ function PromptsSection() {
 
 const AUTOCOMPLETE_DELAY_KEY = 'r0-editor-autocomplete-delay';
 const AUTOCOMPLETE_DELAY_UNIT_KEY = 'r0-editor-autocomplete-delay-unit';
+const SESSION_OPTION_KEYS = [
+  'session.restore',
+  'session.restoreTabs',
+  'session.restoreEditorState',
+  'session.recoverUnsaved',
+] as const;
 
 type DelayUnit = 'ms' | 's';
 
@@ -597,13 +604,47 @@ function GeneralSection() {
   const [inputVal, setInputVal] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [formatOnSave, setFormatOnSave] = useState(false);
+  const [sessionOptions, setSessionOptions] = useState({
+    'session.restore': true,
+    'session.restoreTabs': true,
+    'session.restoreEditorState': true,
+    'session.recoverUnsaved': true,
+  });
   const completionsEnabled = suggestionSettings.aiInlineCompletions;
 
   useEffect(() => {
     getSetting('editor.formatOnSave')
       .then(setFormatOnSave)
       .catch(error => setSettingsError(`Could not load format-on-save setting: ${String(error)}`));
+    SESSION_OPTION_KEYS.forEach(key => {
+      getSetting(key)
+        .then(value => setSessionOptions(current => ({ ...current, [key]: value })))
+        .catch(error => setSettingsError(`Could not load ${key}: ${String(error)}`));
+    });
   }, []);
+
+  async function toggleSessionOption(key: keyof typeof sessionOptions) {
+    const next = !sessionOptions[key];
+    setSessionOptions(current => ({ ...current, [key]: next }));
+    try {
+      await setSetting(key, next);
+      window.dispatchEvent(new CustomEvent('r0-session-option-changed', { detail: { key, value: next } }));
+    } catch (error) {
+      setSessionOptions(current => ({ ...current, [key]: !next }));
+      setSettingsError(`Could not save ${key}: ${String(error)}`);
+    }
+  }
+
+  async function clearSession() {
+    if (!window.confirm('Clear the saved workspace and editor session? Unsaved recovery copies will be kept.')) return;
+    try {
+      await clearPersistedSession();
+      await setSetting('workspace.folder', '');
+      setSettingsError(null);
+    } catch (error) {
+      setSettingsError(`Could not clear the saved session: ${String(error)}`);
+    }
+  }
 
   function commitInput(raw: string) {
     const ms = displayToMs(raw, unit);
@@ -763,6 +804,51 @@ function GeneralSection() {
         </div>
       </div>
       {settingsError && <p role="alert" style={{ color: "var(--r0-semantic-error)", fontSize: 11 }}>{settingsError}</p>}
+      <section style={{ marginTop: 24 }}>
+        <div style={{
+          fontSize: "12px", fontWeight: 600, color: "var(--r0-fg-muted)",
+          textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px",
+        }}>
+          Session Restoration
+        </div>
+        {([
+          ['session.restore', 'Restore previous session', 'Reopen the last workspace and layout when r0 starts.'],
+          ['session.restoreTabs', 'Restore open editor tabs', 'Reopen the files that were open in the previous session.'],
+          ['session.restoreEditorState', 'Restore editor positions', 'Restore cursor, selection, and scroll position.'],
+          ['session.recoverUnsaved', 'Recover unsaved changes', 'Keep crash-safe recovery copies of dirty files.'],
+        ] as const).map(([key, label, description]) => (
+          <div key={key} style={{
+            display: "flex", alignItems: "center", gap: "12px",
+            padding: "10px 12px", marginBottom: 6, borderRadius: "8px",
+            border: "1px solid var(--r0-border-default)", backgroundColor: "var(--r0-bg-base)",
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "13px", color: "var(--r0-fg-default)" }}>{label}</div>
+              <div style={{ fontSize: "11px", color: "var(--r0-fg-muted)", marginTop: "2px" }}>{description}</div>
+            </div>
+            <button
+              onClick={() => void toggleSessionOption(key)}
+              aria-pressed={sessionOptions[key]}
+              style={{
+                padding: "4px 12px", borderRadius: "6px", fontSize: "12px",
+                border: "1px solid var(--r0-border-default)",
+                backgroundColor: sessionOptions[key] ? "var(--r0-fg-default)" : "transparent",
+                color: sessionOptions[key] ? "var(--r0-bg-base)" : "var(--r0-fg-muted)",
+                cursor: "pointer", fontWeight: 500,
+              }}
+            >
+              {sessionOptions[key] ? "On" : "Off"}
+            </button>
+          </div>
+        ))}
+        <button onClick={() => void clearSession()} style={{
+          padding: "5px 10px", borderRadius: "6px", fontSize: "12px",
+          border: "1px solid var(--r0-border-default)", background: "transparent",
+          color: "var(--r0-fg-muted)", cursor: "pointer",
+        }}>
+          Clear saved session
+        </button>
+      </section>
     </div>
   );
 }
