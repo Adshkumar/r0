@@ -181,14 +181,13 @@ html, body, #root {
   background-color: var(--r0-git-diff-removed-text);
   background-image: none;
 }
-.r0-git-diff-view .cm-editor.cm-merge-b .cm-changedText,
-.r0-git-diff-view .cm-editor .cm-insertedLine {
+.r0-git-diff-view .cm-editor.cm-merge-b .cm-changedText {
   background-color: var(--r0-git-diff-added-text);
   background-image: none;
 }
+.r0-git-diff-view .cm-editor .cm-insertedLine,
 .r0-git-diff-view .cm-editor .cm-deletedLine {
-  background-color: var(--r0-git-diff-removed-text);
-  background-image: none;
+  background: transparent;
 }
 .r0-git-diff-view .cm-editor .cm-scroller {
   scrollbar-color: var(--r0-border-subtle) var(--r0-bg-editor);
