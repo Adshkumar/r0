@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMMANDS, matchesEvent } from '../keybindings';
+import { COMMANDS, isAllowedInTextEntry, matchesEvent } from '../keybindings';
 
 function keyEvent(key: string, options: Partial<KeyboardEvent> = {}): KeyboardEvent {
   return {
@@ -28,5 +28,11 @@ describe('global shortcut defaults', () => {
     expect(matchesEvent(keyEvent('f', { ctrlKey: true, shiftKey: true }), 'ctrl+shift+f')).toBe(true);
     expect(COMMANDS.find(command => command.id === 'r0.reloadWindow')?.defaultKey).toBe('ctrl+r');
     expect(matchesEvent(keyEvent('r', { ctrlKey: true }), 'ctrl+r')).toBe(true);
+  });
+
+  it('allows saving while focused in a text entry without enabling other shortcuts', () => {
+    expect(isAllowedInTextEntry('r0.save')).toBe(true);
+    expect(isAllowedInTextEntry('r0.togglePalette')).toBe(true);
+    expect(isAllowedInTextEntry('r0.closeTab')).toBe(false);
   });
 });

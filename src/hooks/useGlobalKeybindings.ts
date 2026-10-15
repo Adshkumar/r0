@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getCommandKeyMap, matchesEvent } from "../lib/keybindings";
+import { getCommandKeyMap, isAllowedInTextEntry, matchesEvent } from "../lib/keybindings";
 
 export interface GlobalHandlers {
   // Always provided
@@ -118,7 +118,7 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
         const handler = dispatch[cmdId];
         if (!handler) continue;
         if (matchesEvent(e, keyStr)) {
-          if (isTextEntry && cmdId !== "r0.togglePalette") continue;
+          if (isTextEntry && !isAllowedInTextEntry(cmdId)) continue;
           if (
             cmdId === "r0.formatDocument" &&
             !(e.target instanceof HTMLElement && e.target.closest(".cm-editor"))

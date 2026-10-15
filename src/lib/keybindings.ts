@@ -146,6 +146,10 @@ export function matchesEvent(e: KeyboardEvent, keyStr: string): boolean {
   );
 }
 
+export function isAllowedInTextEntry(commandId: string): boolean {
+  return commandId === "r0.save" || commandId === "r0.togglePalette";
+}
+
 // ── VS Code / Cursor / Windsurf import ───────────────────────────────────────
 
 // Maps VS Code command IDs → r0 command IDs
