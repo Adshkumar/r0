@@ -10,6 +10,10 @@ describe('convertVsCodeTheme', () => {
         colors: {
           'editor.background': '#101820',
           'editor.foreground': '#f0f0f0',
+          'terminal.background': '#202830',
+          'terminalCursor.foreground': '#aabbcc',
+          'diffEditor.insertedLineBackground': '#203020',
+          'diffEditor.removedTextBackground': '#402020',
           'focusBorder': 'url(https://invalid.test)',
         },
         tokenColors: [
@@ -26,6 +30,10 @@ describe('convertVsCodeTheme', () => {
     expect(converted.colors['syntax.keyword']).toBe('#ff00aa');
     expect(converted.colors['syntax.comment']).toBe('#789');
     expect(converted.colors['syntax.string']).toBe('#00ff00');
+    expect(converted.colors['terminal.background']).toBe('#202830');
+    expect(converted.colors['terminal.cursor']).toBe('#aabbcc');
+    expect(converted.colors['diff.added.background']).toBe('#203020');
+    expect(converted.colors['diff.removed.inline']).toBe('#402020');
     expect(converted.colors['accent.blue']).toBeUndefined();
   });
 

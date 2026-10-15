@@ -18,7 +18,7 @@ function formatEvent(e: KeyboardEvent): string {
   if (e.ctrlKey || e.metaKey) parts.push("ctrl");
   if (e.shiftKey) parts.push("shift");
   if (e.altKey) parts.push("alt");
-  const k = e.key === " " ? "space" : e.key.toLowerCase();
+  const k = e.code === "Backquote" ? "`" : e.key === " " ? "space" : e.key.toLowerCase();
   // Ignore bare modifiers
   if (["control", "shift", "alt", "meta", "os"].includes(k)) return "";
   parts.push(k);

@@ -10,6 +10,22 @@ export interface SavedTermTab {
   cwd: string;
 }
 
+export interface TypographySettings {
+  uiFontFamily: string;
+  uiFontSize: number;
+  sidebarFontSize: number;
+  tabFontSize: number;
+  editorFontFamily: string;
+  editorFontSize: number;
+  editorFontWeight: number;
+  editorLineHeight: number;
+  editorFontLigatures: boolean;
+  editorLetterSpacing: number;
+  terminalFontFamily: string;
+  terminalFontSize: number;
+  terminalLineHeight: number;
+}
+
 export interface DebugLastConfig {
   adapter: string;
   adapterPath: string;
@@ -56,7 +72,24 @@ export interface IDESettings {
   'editor.suggestions': EditorSuggestionSettings;
   'editor.formatOnSave': boolean;
   'explorer.fileIconTheme': 'r0' | 'vscode' | 'minimal';
+  'typography': TypographySettings;
 }
+
+export const DEFAULT_TYPOGRAPHY_SETTINGS: TypographySettings = {
+  uiFontFamily: "'Geist Sans', 'Segoe UI', sans-serif",
+  uiFontSize: 13,
+  sidebarFontSize: 12,
+  tabFontSize: 12,
+  editorFontFamily: "'Geist Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
+  editorFontSize: 13,
+  editorFontWeight: 400,
+  editorLineHeight: 1.65,
+  editorFontLigatures: false,
+  editorLetterSpacing: 0,
+  terminalFontFamily: "'Geist Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
+  terminalFontSize: 13,
+  terminalLineHeight: 1.2,
+};
 
 export const DEFAULT_EDITOR_SUGGESTION_SETTINGS: EditorSuggestionSettings = {
   enabled: true,
@@ -104,6 +137,7 @@ const DEFAULTS: IDESettings = {
   'editor.suggestions': DEFAULT_EDITOR_SUGGESTION_SETTINGS,
   'editor.formatOnSave': false,
   'explorer.fileIconTheme': 'r0',
+  'typography': DEFAULT_TYPOGRAPHY_SETTINGS,
 };
 
 let _store: Store | null = null;

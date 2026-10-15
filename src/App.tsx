@@ -51,6 +51,7 @@ import {
   type RecoveredDocument,
 } from "./lib/session";
 import { readDir } from "./lib/fs";
+import { useTheme } from "./themes/ThemeContext";
 
 function isPathWithinRoot(path: string, root: string): boolean {
   const normalizedPath = path.replace(/\\/g, '/').replace(/\/+$/, '');
@@ -62,6 +63,7 @@ function isPathWithinRoot(path: string, root: string): boolean {
 }
 
 function App() {
+  const { theme } = useTheme();
   const { folderPath, setFolderPath, workspaceRoots, setWorkspaceRoots, addWorkspaceRoot } = useWorkspace();
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem('r0-onboarding') === 'true'
@@ -867,7 +869,7 @@ function App() {
       width: 1280,
       height: 800,
       decorations: false,
-      backgroundColor: '#0a0a0a',
+      backgroundColor: theme.colors["bg.base"],
     });
   }
 

@@ -15,6 +15,7 @@ import { getSetting, setSetting } from "../../lib/settings";
 import { FILE_ICON_THEMES, setFileIconTheme, useFileIconTheme } from "../../lib/fileIconTheme";
 import { resolveFileIcon } from "../../lib/fileIcons";
 import { clearPersistedSession } from "../../lib/session";
+import { useTypography } from "../../context/TypographyContext";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -291,9 +292,21 @@ function AIProvidersSection() {
 
 function AppearanceSection() {
   const { theme, themes, setTheme } = useTheme();
+  const { settings: typography, updateSettings, resetSettings } = useTypography();
   const fileIconTheme = useFileIconTheme();
   const [iconThemeError, setIconThemeError] = useState<string | null>(null);
   const [savingIconTheme, setSavingIconTheme] = useState(false);
+  const [typographyError, setTypographyError] = useState<string | null>(null);
+  const themeGroups = [
+    { label: "Dark", themes: themes.filter(item => item.type === "dark" && item.contrast !== "high") },
+    { label: "Light", themes: themes.filter(item => item.type === "light" && item.contrast !== "high") },
+    { label: "High contrast", themes: themes.filter(item => item.contrast === "high") },
+  ];
+
+  function updateTypography(patch: Parameters<typeof updateSettings>[0]) {
+    setTypographyError(null);
+    void updateSettings(patch).catch(error => setTypographyError(`Could not save typography settings: ${String(error)}`));
+  }
 
   return (
     <div style={{ padding: "2px 0 16px" }}>
@@ -301,57 +314,112 @@ function AppearanceSection() {
         <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--r0-fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
           Theme
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          {themes.map(t => {
-            const isActive = t.name === theme.name;
-            return (
-              <button
-                key={t.name}
-                onClick={() => setTheme(t)}
-                aria-pressed={isActive}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: `1px solid ${isActive ? "var(--r0-fg-muted)" : "var(--r0-border-default)"}`,
-                  backgroundColor: isActive ? "var(--r0-bg-hover)" : "var(--r0-bg-base)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.1s",
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = "var(--r0-bg-hover)";
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = "var(--r0-bg-base)";
-                }}
-              >
-                <div aria-hidden="true" style={{
-                  display: "flex",
-                  width: 30,
-                  height: 20,
-                  overflow: "hidden",
-                  borderRadius: "5px",
-                  border: `1px solid ${t.colors["border.default"]}`,
-                  flexShrink: 0,
-                }}>
-                  {["bg.sidebar", "bg.editor", "accent.blue"].map(token => (
-                    <span key={token} style={{ flex: 1, backgroundColor: t.colors[token] }} />
-                  ))}
-                </div>
-                <span style={{ fontSize: "13px", color: "var(--r0-fg-default)", fontWeight: isActive ? 500 : 400 }}>
-                  {t.name}
-                </span>
-                {isActive && (
-                  <Check size={14} style={{ marginLeft: "auto", color: "var(--r0-fg-default)" }} />
-                )}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {themeGroups.map(group => (
+            <section key={group.label}>
+              <div style={{ margin: "0 0 5px 2px", fontSize: 10, fontWeight: 600, color: "var(--r0-fg-subtle)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {group.label}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                {group.themes.map(t => {
+                  const isActive = t.name === theme.name;
+                  return (
+                    <button
+                      key={t.name}
+                      onClick={() => setTheme(t)}
+                      aria-pressed={isActive}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: `1px solid ${isActive ? "var(--r0-fg-muted)" : "var(--r0-border-default)"}`,
+                        backgroundColor: isActive ? "var(--r0-bg-hover)" : "var(--r0-bg-base)",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "background 0.1s",
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = "var(--r0-bg-hover)";
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = "var(--r0-bg-base)";
+                      }}
+                    >
+                      <div aria-hidden="true" style={{
+                        display: "flex",
+                        width: 30,
+                        height: 20,
+                        overflow: "hidden",
+                        borderRadius: "5px",
+                        border: `1px solid ${t.colors["border.default"]}`,
+                        flexShrink: 0,
+                      }}>
+                        {["bg.sidebar", "bg.editor", "accent.blue"].map(token => (
+                          <span key={token} style={{ flex: 1, backgroundColor: t.colors[token] }} />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: "13px", color: "var(--r0-fg-default)", fontWeight: isActive ? 500 : 400 }}>
+                        {t.name}
+                      </span>
+                      {isActive && (
+                        <Check size={14} style={{ marginLeft: "auto", color: "var(--r0-fg-default)" }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
+      <section style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--r0-fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          Typography
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(130px, 1.2fr)", gap: "8px 10px", alignItems: "center" }}>
+          <label htmlFor="ui-font-family" style={typographyLabelStyle}>UI font family</label>
+          <input id="ui-font-family" value={typography.uiFontFamily} onChange={event => updateTypography({ uiFontFamily: event.target.value })} style={typographyTextInputStyle} />
+          <label htmlFor="ui-font-size" style={typographyLabelStyle}>UI font size</label>
+          <input id="ui-font-size" type="number" min={10} max={24} value={typography.uiFontSize} onChange={event => updateTypography({ uiFontSize: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="sidebar-font-size" style={typographyLabelStyle}>Sidebar and file tree size</label>
+          <input id="sidebar-font-size" type="number" min={10} max={20} value={typography.sidebarFontSize} onChange={event => updateTypography({ sidebarFontSize: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="tab-font-size" style={typographyLabelStyle}>Editor tab size</label>
+          <input id="tab-font-size" type="number" min={10} max={20} value={typography.tabFontSize} onChange={event => updateTypography({ tabFontSize: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="editor-font-family" style={typographyLabelStyle}>Editor font family</label>
+          <input id="editor-font-family" value={typography.editorFontFamily} onChange={event => updateTypography({ editorFontFamily: event.target.value })} style={typographyTextInputStyle} />
+          <label htmlFor="editor-font-size" style={typographyLabelStyle}>Editor font size</label>
+          <input id="editor-font-size" type="number" min={8} max={40} value={typography.editorFontSize} onChange={event => updateTypography({ editorFontSize: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="editor-font-weight" style={typographyLabelStyle}>Editor font weight</label>
+          <select id="editor-font-weight" value={typography.editorFontWeight} onChange={event => updateTypography({ editorFontWeight: Number(event.target.value) })} style={typographyNumberInputStyle}>
+            {[300, 400, 500, 600, 700].map(weight => <option key={weight} value={weight}>{weight}</option>)}
+          </select>
+          <label htmlFor="editor-line-height" style={typographyLabelStyle}>Editor line height</label>
+          <input id="editor-line-height" type="number" min={1} max={3} step={0.05} value={typography.editorLineHeight} onChange={event => updateTypography({ editorLineHeight: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="editor-letter-spacing" style={typographyLabelStyle}>Editor letter spacing</label>
+          <input id="editor-letter-spacing" type="number" min={-2} max={5} step={0.1} value={typography.editorLetterSpacing} onChange={event => updateTypography({ editorLetterSpacing: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="editor-ligatures" style={typographyLabelStyle}>Editor font ligatures</label>
+          <input id="editor-ligatures" type="checkbox" checked={typography.editorFontLigatures} onChange={event => updateTypography({ editorFontLigatures: event.target.checked })} style={{ justifySelf: "start", accentColor: "var(--r0-accent-blue)" }} />
+          <label htmlFor="terminal-font-family" style={typographyLabelStyle}>Terminal font family</label>
+          <input id="terminal-font-family" value={typography.terminalFontFamily} onChange={event => updateTypography({ terminalFontFamily: event.target.value })} style={typographyTextInputStyle} />
+          <label htmlFor="terminal-font-size" style={typographyLabelStyle}>Terminal font size</label>
+          <input id="terminal-font-size" type="number" min={8} max={32} value={typography.terminalFontSize} onChange={event => updateTypography({ terminalFontSize: Number(event.target.value) })} style={typographyNumberInputStyle} />
+          <label htmlFor="terminal-line-height" style={typographyLabelStyle}>Terminal line height</label>
+          <input id="terminal-line-height" type="number" min={1} max={2} step={0.05} value={typography.terminalLineHeight} onChange={event => updateTypography({ terminalLineHeight: Number(event.target.value) })} style={typographyNumberInputStyle} />
+        </div>
+        {typographyError && <p role="alert" style={{ margin: "8px 0", color: "var(--r0-semantic-error)", fontSize: 11 }}>{typographyError}</p>}
+        <button
+          type="button"
+          onClick={() => {
+            setTypographyError(null);
+            void resetSettings().catch(error => setTypographyError(`Could not restore typography defaults: ${String(error)}`));
+          }}
+          style={typographyResetButtonStyle}
+        >
+          Restore typography defaults
+        </button>
+      </section>
       <div>
         <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--r0-fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
           File Icon Theme
@@ -417,7 +485,40 @@ function AppearanceSection() {
       </div>
     </div>
   );
+
 }
+
+const typographyLabelStyle: React.CSSProperties = {
+  color: "var(--r0-fg-muted)",
+  fontSize: 12,
+};
+
+const typographyTextInputStyle: React.CSSProperties = {
+  minWidth: 0,
+  width: "100%",
+  padding: "5px 7px",
+  border: "1px solid var(--r0-border-default)",
+  borderRadius: 5,
+  background: "var(--r0-bg-input)",
+  color: "var(--r0-fg-default)",
+  fontSize: 11,
+  fontFamily: "var(--font-sans)",
+};
+
+const typographyNumberInputStyle: React.CSSProperties = {
+  ...typographyTextInputStyle,
+};
+
+const typographyResetButtonStyle: React.CSSProperties = {
+  marginTop: 10,
+  padding: "5px 8px",
+  border: "1px solid var(--r0-border-default)",
+  borderRadius: 5,
+  background: "var(--r0-bg-base)",
+  color: "var(--r0-fg-default)",
+  cursor: "pointer",
+  fontSize: 11,
+};
 
 // ── Prompts Section ──────────────────────────────────────────────────────────
 

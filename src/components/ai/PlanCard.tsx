@@ -3,9 +3,9 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import type { ParsedPlan, PlanStep } from "../../lib/agent/planTypes";
 
 const ACTION_CONFIG: Record<PlanStep["action"], { label: string; bgVar: string; fgVar: string }> = {
-  edit:   { label: "edit",   bgVar: "var(--plan-badge-edit-bg)",   fgVar: "var(--plan-badge-edit-fg)"   },
-  create: { label: "create", bgVar: "var(--plan-badge-create-bg)", fgVar: "var(--plan-badge-create-fg)" },
-  delete: { label: "delete", bgVar: "var(--plan-badge-delete-bg)", fgVar: "var(--plan-badge-delete-fg)" },
+  edit:   { label: "edit",   bgVar: "var(--r0-diff-modified-background)", fgVar: "var(--r0-diff-modified-foreground)" },
+  create: { label: "create", bgVar: "var(--r0-diff-added-background)", fgVar: "var(--r0-diff-added-foreground)" },
+  delete: { label: "delete", bgVar: "var(--r0-diff-removed-background)", fgVar: "var(--r0-diff-removed-foreground)" },
 };
 
 export default function PlanCard({ plan, onApprove, onReject, status = "pending" }: {

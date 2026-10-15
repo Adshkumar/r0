@@ -11,27 +11,6 @@ import { r0BaseTheme, r0Highlight } from './Editor';
 import { getLanguageExtension } from './languageSupport';
 import type { Tab } from './TabBar';
 
-const gitDiffTheme = EditorView.theme({
-  '&.cm-merge-a .cm-changedLine': {
-    backgroundColor: 'var(--r0-git-diff-removed-line)',
-  },
-  '&.cm-merge-a .cm-changedLineGutter, &.cm-merge-a .cm-deletedLineGutter': {
-    backgroundColor: 'var(--r0-git-diff-removed-line)',
-  },
-  '&.cm-merge-b .cm-changedLine': {
-    backgroundColor: 'var(--r0-git-diff-added-line)',
-  },
-  '&.cm-merge-b .cm-changedLineGutter': {
-    backgroundColor: 'var(--r0-git-diff-added-line)',
-  },
-  '&.cm-merge-a .cm-changedText': {
-    backgroundColor: 'var(--r0-git-diff-removed-text)',
-  },
-  '&.cm-merge-b .cm-changedText': {
-    backgroundColor: 'var(--r0-git-diff-added-text)',
-  },
-});
-
 interface Props {
   rootPath: string;
   tab: Tab;
@@ -116,7 +95,6 @@ export default memo(function GitDiffPane({ rootPath, tab, onOpenCommit }: Props)
       EditorState.readOnly.of(true),
       EditorView.editable.of(false),
       r0BaseTheme,
-      gitDiffTheme,
     ];
     const merge = new MergeView({
       a: { doc: content.old, extensions: [...sharedExtensions, getLanguageExtension(diff.oldFilePath)] },

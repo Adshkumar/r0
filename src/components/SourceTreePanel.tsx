@@ -561,7 +561,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
               flex: 1.5, padding: '5px 0', borderRadius: 5, border: 'none',
               cursor: canCommit ? 'pointer' : 'not-allowed',
               background: canCommit ? 'var(--r0-semantic-success)' : 'var(--r0-bg-hover)',
-              color: canCommit ? '#ffffff' : 'var(--r0-fg-subtle)',
+              color: canCommit ? 'var(--r0-semantic-success-foreground)' : 'var(--r0-fg-subtle)',
               fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)',
               transition: 'opacity 0.15s',
             }}

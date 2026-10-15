@@ -2,6 +2,7 @@
 import { createPortal } from 'react-dom';
 import { X, File, GitCompare, Globe, Plus, FolderOpen } from 'lucide-react';
 import { fileColor } from '../../lib/fileColors';
+import { useFileIconTheme } from '../../lib/fileIconTheme';
 
 export interface Tab {
   path: string;   // for ai-diff tabs: "__diff__<approvalId>"
@@ -42,6 +43,7 @@ interface Props {
 
 function TabItem({ tab, active, onSelect, onClose }: { tab: Tab; active: boolean; onSelect: () => void; onClose: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const fileIconTheme = useFileIconTheme();
 
   function handleAuxClick(e: React.MouseEvent) {
     if (e.button === 1) { e.preventDefault(); onClose(); }
@@ -77,19 +79,19 @@ function TabItem({ tab, active, onSelect, onClose }: { tab: Tab; active: boolean
     >
       {/* Icon: diff badge, preview globe, dirty dot, or file icon */}
       {tab.kind === 'ai-diff' || tab.kind === 'git-diff'
-        ? <GitCompare size={13} style={{ flexShrink: 0, color: 'rgba(46,160,67,0.9)' }} />
+        ? <GitCompare size={13} style={{ flexShrink: 0, color: 'var(--r0-git-modified)' }} />
         : tab.kind === 'git-commit'
         ? <GitCompare size={13} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />
         : tab.kind === 'preview'
         ? <Globe size={13} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />
         : tab.isDirty
           ? <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--r0-fg-muted)', flexShrink: 0 }} />
-          : <File size={13} style={{ flexShrink: 0, color: fileColor(tab.name) }} />
+          : <File size={13} style={{ flexShrink: 0, color: fileColor(tab.name, fileIconTheme) }} />
       }
 
       {/* File name */}
       <span style={{
-        fontSize: '12px', flex: 1,
+        fontSize: 'var(--r0-tab-font-size, 12px)', flex: 1,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         color: active ? 'var(--r0-fg-default)' : 'var(--r0-fg-muted)',
         fontWeight: active ? 500 : 400,

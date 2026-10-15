@@ -98,9 +98,12 @@ export const r0BaseTheme = EditorView.theme({
   },
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': {
-    fontFamily: 'var(--font-mono, "Geist Mono", "Fira Code", monospace)',
-    fontSize: '13px',
-    lineHeight: '1.65',
+    fontFamily: 'var(--r0-editor-font-family, var(--font-mono, "Geist Mono", "Fira Code", monospace))',
+    fontSize: 'var(--r0-editor-font-size, 13px)',
+    fontWeight: 'var(--r0-editor-font-weight, 400)',
+    lineHeight: 'var(--r0-editor-line-height, 1.65)',
+    fontFeatureSettings: 'var(--r0-editor-font-features, none)',
+    letterSpacing: 'var(--r0-editor-letter-spacing, 0)',
     overflow: 'auto',
   },
   '.cm-content': {
@@ -224,32 +227,32 @@ export const r0BaseTheme = EditorView.theme({
   '.cm-button:hover': { background: 'var(--r0-bg-active)' },
   // ── Unified merge view (diff) ─────────────────────────────────────────────
   '.cm-deletedChunk': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-error) 14%, transparent)',
+    backgroundColor: 'var(--r0-diff-removed-background)',
   },
   '.cm-deletedChunk-gutter': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-error) 28%, transparent)',
-    borderRight: '3px solid color-mix(in srgb, var(--r0-semantic-error) 65%, transparent)',
+    backgroundColor: 'var(--r0-diff-removed-background)',
+    borderRight: '3px solid var(--r0-diff-removed-border)',
   },
   '.cm-changedChunk': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-success) 13%, transparent)',
+    backgroundColor: 'var(--r0-diff-modified-background)',
   },
   '.cm-changedChunk-gutter': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-success) 25%, transparent)',
-    borderRight: '3px solid color-mix(in srgb, var(--r0-semantic-success) 65%, transparent)',
+    backgroundColor: 'var(--r0-diff-modified-background)',
+    borderRight: '3px solid var(--r0-diff-modified-border)',
   },
   '.cm-insertedChunk': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-success) 13%, transparent)',
+    backgroundColor: 'var(--r0-diff-added-background)',
   },
   '.cm-insertedChunk-gutter': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-success) 25%, transparent)',
-    borderRight: '3px solid color-mix(in srgb, var(--r0-semantic-success) 65%, transparent)',
+    backgroundColor: 'var(--r0-diff-added-background)',
+    borderRight: '3px solid var(--r0-diff-added-border)',
   },
   '.cm-deletedChunkField': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-error) 35%, transparent)',
+    backgroundColor: 'var(--r0-diff-removed-inline)',
     borderRadius: '2px',
   },
   '.cm-changedChunkField': {
-    backgroundColor: 'color-mix(in srgb, var(--r0-semantic-success) 35%, transparent)',
+    backgroundColor: 'var(--r0-diff-modified-inline)',
     borderRadius: '2px',
   },
   '.cm-collapsedLines': {
@@ -921,13 +924,13 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
                 borderRadius: 5,
                 border: 'none',
                 backgroundColor: 'var(--r0-semantic-success)',
-                color: '#fff',
+                color: 'var(--r0-semantic-success-foreground)',
                 cursor: 'pointer',
                 fontSize: '11px',
                 fontFamily: 'var(--font-sans)',
                 fontWeight: 500,
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--r0-semantic-success) 80%, white)'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--r0-semantic-success) 80%, var(--r0-bg-base))'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--r0-semantic-success)'; }}
             >
               Accept All
@@ -939,13 +942,13 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
                 borderRadius: 5,
                 border: 'none',
                 backgroundColor: 'var(--r0-semantic-error)',
-                color: '#fff',
+                color: 'var(--r0-semantic-error-foreground)',
                 cursor: 'pointer',
                 fontSize: '11px',
                 fontFamily: 'var(--font-sans)',
                 fontWeight: 500,
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--r0-semantic-error) 80%, white)'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--r0-semantic-error) 80%, var(--r0-bg-base))'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--r0-semantic-error)'; }}
             >
               Reject All

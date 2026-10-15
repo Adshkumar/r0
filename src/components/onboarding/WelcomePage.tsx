@@ -34,7 +34,7 @@ export default function WelcomePage({ onStart, onSkip }: Props) {
         <p style={{ fontSize: '21px', fontWeight: 600, color: 'var(--r0-fg-default)', letterSpacing: '-0.3px', textAlign: 'center', lineHeight: 1.3 }}>
           Open-source AI coding without lock-in.
         </p>
-        <p style={{ fontSize: '14px', color: '#888', textAlign: 'center', lineHeight: 1.5, maxWidth: '460px' }}>
+        <p style={{ fontSize: '14px', color: 'var(--r0-fg-muted)', textAlign: 'center', lineHeight: 1.5, maxWidth: '460px' }}>
           Connect Claude, GPT, Gemini, OpenRouter, Ollama, or your own infrastructure.
         </p>
       </div>
@@ -60,7 +60,7 @@ export default function WelcomePage({ onStart, onSkip }: Props) {
             <button key={i} onClick={() => goTo(i)} style={{
               height: '5px', width: i === slideIdx ? '22px' : '6px',
               borderRadius: '3px', border: 'none', padding: 0, cursor: 'pointer',
-              background: i === slideIdx ? 'var(--r0-fg-default)' : '#2a2a2a',
+              background: i === slideIdx ? 'var(--r0-fg-default)' : 'var(--r0-border-subtle)',
               transition: 'all 0.3s ease',
             }} />
           ))}
@@ -79,9 +79,9 @@ export default function WelcomePage({ onStart, onSkip }: Props) {
         </button>
         <button
           onClick={onSkip}
-          style={{ background: 'none', border: 'none', color: '#555', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', fontFamily: 'inherit', letterSpacing: '0.1px' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#888'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#555'; }}
+          style={{ background: 'none', border: 'none', color: 'var(--r0-fg-subtle)', fontSize: '12px', cursor: 'pointer', padding: '4px 10px', fontFamily: 'inherit', letterSpacing: '0.1px' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--r0-fg-muted)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--r0-fg-subtle)'; }}
         >
           Skip setup
         </button>

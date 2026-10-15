@@ -39,7 +39,7 @@ export const COMMANDS: CommandDef[] = [
   { id: "r0.togglePalette",  label: "Command Palette",      category: "View",    defaultKey: "ctrl+shift+p" },
   { id: "r0.quickOpen",      label: "Quick Open",           category: "View",    defaultKey: "ctrl+p" },
   { id: "r0.toggleSidebar",  label: "Toggle Sidebar",       category: "View",    defaultKey: "ctrl+b" },
-  { id: "r0.toggleTerminal", label: "Toggle Panel",          category: "View",    defaultKey: "ctrl+j" },
+  { id: "r0.toggleTerminal", label: "Toggle Panel",          category: "View",    defaultKey: "ctrl+`" },
   { id: "r0.showExplorer",   label: "Show Explorer",        category: "View",    defaultKey: "ctrl+shift+e" },
   { id: "r0.showSearch",     label: "Show Search",          category: "View",    defaultKey: "ctrl+shift+f" },
   { id: "r0.showSourceControl", label: "Show Source Control", category: "View", defaultKey: "ctrl+shift+g" },
@@ -131,7 +131,8 @@ function parseKey(keyStr: string): ParsedKey {
 export function matchesEvent(e: KeyboardEvent, keyStr: string): boolean {
   const { ctrl, shift, alt, key } = parseKey(keyStr);
   // Normalise e.key → lowercase single token
-  const eKey = e.key === "`" ? "`"
+  const eKey = e.code === "Backquote" ? "`"
+    : e.key === "`" ? "`"
     : e.key === "=" ? "="
     : e.key === "-" ? "-"
     : e.key === "0" ? "0"
@@ -147,7 +148,9 @@ export function matchesEvent(e: KeyboardEvent, keyStr: string): boolean {
 }
 
 export function isAllowedInTextEntry(commandId: string): boolean {
-  return commandId === "r0.save" || commandId === "r0.togglePalette";
+  return commandId === "r0.save" ||
+    commandId === "r0.togglePalette" ||
+    commandId === "r0.toggleTerminal";
 }
 
 // ── VS Code / Cursor / Windsurf import ───────────────────────────────────────

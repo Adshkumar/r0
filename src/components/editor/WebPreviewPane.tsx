@@ -90,7 +90,7 @@ function UrlPicker({ onNavigate }: { onNavigate: (url: string) => void }) {
           style={{
             padding: '0 16px',
             background: 'var(--r0-accent-blue)',
-            color: '#fff',
+            color: 'var(--r0-bg-base)',
             border: 'none', borderRadius: '6px',
             fontSize: '12px', cursor: 'pointer', fontWeight: 500,
           }}

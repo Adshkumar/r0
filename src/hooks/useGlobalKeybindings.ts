@@ -119,6 +119,10 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
         if (!handler) continue;
         if (matchesEvent(e, keyStr)) {
           if (isTextEntry && !isAllowedInTextEntry(cmdId)) continue;
+          if (cmdId === "r0.closeTab" && e.repeat) {
+            e.preventDefault();
+            return;
+          }
           if (
             cmdId === "r0.formatDocument" &&
             !(e.target instanceof HTMLElement && e.target.closest(".cm-editor"))

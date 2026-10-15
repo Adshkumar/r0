@@ -29,7 +29,7 @@ function ToggleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       onClick={e => { e.stopPropagation(); onToggle(); }}
       style={{
         width: 32, height: 18, borderRadius: 9999, border: "none", cursor: "pointer", padding: 0, flexShrink: 0,
-        backgroundColor: on ? "#1a56db" : "var(--r0-border-default)",
+        backgroundColor: on ? "var(--r0-accent-blue)" : "var(--r0-border-default)",
         transition: "background-color 0.2s",
         position: "relative",
       }}
@@ -37,7 +37,7 @@ function ToggleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       <span style={{
         position: "absolute", top: 2, left: on ? 14 : 2,
         width: 14, height: 14, borderRadius: "50%",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--r0-fg-default)",
         transition: "left 0.2s",
         display: "block",
         boxShadow: "0 1px 3px rgba(0,0,0,0.3)",

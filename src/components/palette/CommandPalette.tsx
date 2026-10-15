@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { readDir, type FsEntry } from '../../lib/fs';
 import { fileColor } from '../../lib/fileColors';
+import { useFileIconTheme } from '../../lib/fileIconTheme';
 import { searchInFiles, type SearchMatch } from '../../lib/search';
 import { useTheme } from '../../themes/ThemeContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
@@ -141,6 +142,7 @@ export default function CommandPalette({
   const rootKey = workspaceRoots.join('\u0000');
   const roots = useMemo(() => rootKey ? rootKey.split('\u0000') : [], [rootKey]);
   const { theme, themes, setTheme } = useTheme();
+  const fileIconTheme = useFileIconTheme();
   const [query, setQuery] = useState(initialQuery);
   const [selected, setSelected] = useState(0);
   const [wsFiles, setWsFiles] = useState<WorkspaceFile[]>([]);
@@ -259,7 +261,7 @@ export default function CommandPalette({
       const rel = relativeToWorkspace(tab.path, roots);
       result.push({
         id: `open:${tab.path}`, kind: 'open-file', label: tab.name, detail: rel,
-        icon: <File size={14} style={{ color: fileColor(tab.name), flexShrink: 0 }} />,
+        icon: <File size={14} style={{ color: fileColor(tab.name, fileIconTheme), flexShrink: 0 }} />,
         badge: <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--r0-accent-blue)', flexShrink: 0 }} />,
         score: score - 20000,
         action: () => { onFileOpen(tab.path); onClose(); },
@@ -271,14 +273,14 @@ export default function CommandPalette({
       if (score === null) continue;
       result.push({
         id: `ws:${f.path}`, kind: 'workspace-file', label: f.name, detail: f.rel,
-        icon: <File size={14} style={{ color: fileColor(f.name), flexShrink: 0 }} />,
+        icon: <File size={14} style={{ color: fileColor(f.name, fileIconTheme), flexShrink: 0 }} />,
         score,
         action: () => { onFileOpen(f.path); onClose(); },
       });
     }
     result.sort((a, b) => a.score - b.score);
     return result.slice(0, 60);
-  }, [isFileMode, fileQuery, tabs, wsFiles, roots, onFileOpen, onClose]);
+  }, [isFileMode, fileQuery, tabs, wsFiles, roots, onFileOpen, onClose, fileIconTheme]);
 
   const items = useMemo<PaletteItem[]>(() => {
     if (isTextMode || isFileMode) return [];
@@ -292,7 +294,7 @@ export default function CommandPalette({
       const rel = relativeToWorkspace(tab.path, roots);
       result.push({
         id: `open:${tab.path}`, kind: 'open-file', label: tab.name, detail: rel,
-        icon: <File size={14} style={{ color: fileColor(tab.name), flexShrink: 0 }} />,
+        icon: <File size={14} style={{ color: fileColor(tab.name, fileIconTheme), flexShrink: 0 }} />,
         badge: <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--r0-accent-blue)', flexShrink: 0 }} />,
         score: score - 20000,
         action: () => { onFileOpen(tab.path); onClose(); },
@@ -307,7 +309,7 @@ export default function CommandPalette({
         if (score === null) continue;
         result.push({
           id: `ws:${f.path}`, kind: 'workspace-file', label: f.name, detail: f.rel,
-          icon: <File size={14} style={{ color: fileColor(f.name), flexShrink: 0 }} />,
+          icon: <File size={14} style={{ color: fileColor(f.name, fileIconTheme), flexShrink: 0 }} />,
           score,
           action: () => { onFileOpen(f.path); onClose(); },
         });
@@ -359,7 +361,7 @@ export default function CommandPalette({
   }, [isTextMode, isFileMode, isCommandMode, q, tabs, wsFiles, roots, terminalOpen, sidebarOpen, theme, themes, setTheme,
       onFileOpen, onClose, onNewFile, onOpenFolder, onAddFolderToWorkspace, onReloadWindow, onOpenFile, onToggleSidebar, onToggleTerminal, onOpenSettings,
       onOpenKeyboardShortcuts, onSave, onSaveAll, onCloseEditor, onSelectSidebarPanel,
-      activeFilePath, onOpenHtmlPreview, onFormatDocument]);
+      activeFilePath, onOpenHtmlPreview, onFormatDocument, fileIconTheme]);
 
   const textItems = useMemo<PaletteItem[]>(() =>
     textResults.map(r => {

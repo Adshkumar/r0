@@ -97,11 +97,11 @@ function CodeBlock({
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.backgroundColor = "var(--r0-accent-blue)";
               (e.currentTarget as HTMLElement).style.borderColor = "var(--r0-accent-blue)";
-              (e.currentTarget as HTMLElement).style.color = "#fff";
+              (e.currentTarget as HTMLElement).style.color = "var(--r0-bg-base)";
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(98,166,255,0.12)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(98,166,255,0.35)";
+              (e.currentTarget as HTMLElement).style.backgroundColor = "color-mix(in srgb, var(--r0-accent-blue) 12%, transparent)";
+              (e.currentTarget as HTMLElement).style.borderColor = "color-mix(in srgb, var(--r0-accent-blue) 35%, transparent)";
               (e.currentTarget as HTMLElement).style.color = "var(--r0-accent-blue)";
             }}
           >
@@ -148,8 +148,8 @@ const applyBtnStyle: React.CSSProperties = {
   gap: 4,
   fontSize: "11px",
   color: "var(--r0-accent-blue)",
-  backgroundColor: "rgba(98,166,255,0.12)",
-  border: "1px solid rgba(98,166,255,0.35)",
+  backgroundColor: "color-mix(in srgb, var(--r0-accent-blue) 12%, transparent)",
+  border: "1px solid color-mix(in srgb, var(--r0-accent-blue) 35%, transparent)",
   cursor: "pointer",
   padding: "2px 8px",
   borderRadius: 4,

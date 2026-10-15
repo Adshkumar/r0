@@ -42,7 +42,7 @@ export default function Onboarding({ onComplete }: Props) {
         <button
           style={winBtn}
           onClick={() => win.close()}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#c0392b'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--r0-semantic-error)'; (e.currentTarget as HTMLElement).style.color = 'var(--r0-semantic-error-foreground)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--r0-fg-muted)'; }}
         >
           <X size={13} />

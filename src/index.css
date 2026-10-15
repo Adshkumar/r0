@@ -52,22 +52,16 @@
 *, *::before, *::after {
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: #333 transparent;
+  scrollbar-color: var(--r0-scrollbar-thumb, #888) transparent;
 }
 *::-webkit-scrollbar { width: 6px; height: 6px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
-[data-theme-name="dracula"] *,
-[data-theme-name="dracula"] *::before,
-[data-theme-name="dracula"] *::after,
-[data-theme-name="cobalt2"] *,
-[data-theme-name="cobalt2"] *::before,
-[data-theme-name="cobalt2"] *::after {
-  scrollbar-color: var(--r0-border-subtle) transparent;
+*::-webkit-scrollbar-thumb {
+  background-color: var(--r0-scrollbar-thumb, #888);
+  border-radius: 3px;
 }
-[data-theme-name="dracula"] *::-webkit-scrollbar-thumb,
-[data-theme-name="cobalt2"] *::-webkit-scrollbar-thumb {
-  background-color: var(--r0-border-subtle);
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--r0-scrollbar-thumb-hover, #666);
 }
 
 /* Anchor the document chrome to the viewport rectangle the compositor
@@ -85,6 +79,7 @@ html, body, #root {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
+  font-size: var(--r0-ui-font-size, 13px);
   background-color: var(--r0-bg-base, #0a0a0a);
 }
 
@@ -95,22 +90,9 @@ html, body, #root {
   height: 100%;
 }
 
-/* Plan badge action colours — solid backgrounds that adapt to theme type */
-[data-theme="dark"] {
-  --plan-badge-edit-bg:   #3b82f6;
-  --plan-badge-edit-fg:   #fff;
-  --plan-badge-create-bg: #22c55e;
-  --plan-badge-create-fg: #fff;
-  --plan-badge-delete-bg: #ef4444;
-  --plan-badge-delete-fg: #fff;
-}
-[data-theme="light"] {
-  --plan-badge-edit-bg:   #1d4ed8;
-  --plan-badge-edit-fg:   #fff;
-  --plan-badge-create-bg: #15803d;
-  --plan-badge-create-fg: #fff;
-  --plan-badge-delete-bg: #b91c1c;
-  --plan-badge-delete-fg: #fff;
+[data-contrast="high"] :focus-visible {
+  outline: 2px solid var(--r0-accent-blue);
+  outline-offset: 2px;
 }
 
 /* CodeMirror selection — global override so it wins regardless of CM6's
@@ -125,10 +107,6 @@ html, body, #root {
 /* CodeMirror's merge package defaults collapsed-line pseudo-elements to a
    light gradient. Scope the replacement to the Git split diff, not AI diffs. */
 .r0-git-diff-view {
-  --r0-git-diff-removed-line: #4b1818;
-  --r0-git-diff-added-line: #373d29;
-  --r0-git-diff-removed-text: #6f1313;
-  --r0-git-diff-added-text: #3f4531;
   color: var(--r0-fg-default);
   background: var(--r0-bg-editor);
   border-top: 1px solid var(--r0-border-default);
@@ -163,26 +141,32 @@ html, body, #root {
 }
 .r0-git-diff-view .cm-editor.cm-merge-a .cm-changedLine,
 .r0-git-diff-view .cm-editor.cm-merge-a .cm-deletedChunk {
-  background-color: var(--r0-git-diff-removed-line);
+  background-color: var(--r0-diff-removed-background);
+  box-shadow: inset 2px 0 0 var(--r0-diff-removed-border);
 }
 .r0-git-diff-view .cm-editor.cm-merge-a .cm-changedLineGutter,
 .r0-git-diff-view .cm-editor.cm-merge-a .cm-deletedLineGutter {
-  background-color: var(--r0-git-diff-removed-line);
+  background-color: var(--r0-diff-removed-background);
+  border-left: 2px solid var(--r0-diff-removed-border);
+  color: var(--r0-diff-removed-foreground);
 }
 .r0-git-diff-view .cm-editor.cm-merge-b .cm-changedLine,
 .r0-git-diff-view .cm-editor.cm-merge-b .cm-inlineChangedLine {
-  background-color: var(--r0-git-diff-added-line);
+  background-color: var(--r0-diff-added-background);
+  box-shadow: inset 2px 0 0 var(--r0-diff-added-border);
 }
 .r0-git-diff-view .cm-editor.cm-merge-b .cm-changedLineGutter {
-  background-color: var(--r0-git-diff-added-line);
+  background-color: var(--r0-diff-added-background);
+  border-left: 2px solid var(--r0-diff-added-border);
+  color: var(--r0-diff-added-foreground);
 }
 .r0-git-diff-view .cm-editor.cm-merge-a .cm-changedText,
 .r0-git-diff-view .cm-editor .cm-deletedText {
-  background-color: var(--r0-git-diff-removed-text);
+  background-color: var(--r0-diff-removed-inline);
   background-image: none;
 }
 .r0-git-diff-view .cm-editor.cm-merge-b .cm-changedText {
-  background-color: var(--r0-git-diff-added-text);
+  background-color: var(--r0-diff-added-inline);
   background-image: none;
 }
 .r0-git-diff-view .cm-editor .cm-insertedLine,
@@ -190,13 +174,16 @@ html, body, #root {
   background: transparent;
 }
 .r0-git-diff-view .cm-editor .cm-scroller {
-  scrollbar-color: var(--r0-border-subtle) var(--r0-bg-editor);
+  scrollbar-color: var(--r0-scrollbar-thumb) var(--r0-bg-editor);
 }
 .r0-git-diff-view .cm-editor .cm-scroller::-webkit-scrollbar-track {
   background: var(--r0-bg-editor);
 }
 .r0-git-diff-view .cm-editor .cm-scroller::-webkit-scrollbar-thumb {
-  background-color: var(--r0-border-subtle);
+  background-color: var(--r0-scrollbar-thumb);
+}
+.r0-git-diff-view .cm-editor .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: var(--r0-scrollbar-thumb-hover);
 }
 .cm-editor.r0-hide-completion-docs .cm-tooltip.cm-completionInfo {
   display: none;

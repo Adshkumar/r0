@@ -136,7 +136,7 @@ function ConfirmDialog({
             onClick={onConfirm}
             style={{
               padding: "6px 14px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer",
-              background: "var(--r0-semantic-error)", border: "1px solid transparent", color: "#fff",
+              background: "var(--r0-semantic-error)", border: "1px solid transparent", color: "var(--r0-semantic-error-foreground)",
             }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}

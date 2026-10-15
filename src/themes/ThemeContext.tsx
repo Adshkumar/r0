@@ -9,10 +9,37 @@ const themeModules = import.meta.glob<{ default: r0Theme }>(
   { eager: true }
 );
 
-const themeOrder = ["Dark Modern", "Dracula", "One Dark Pro", "GitHub Dark", "Light Modern"];
-export const builtinThemes: r0Theme[] = Object.values(themeModules)
+const themeOrder = [
+  "Dark Modern",
+  "Dark+",
+  "Dracula",
+  "One Dark Pro",
+  "GitHub Dark",
+  "High Contrast Dark",
+  "Light Modern",
+  "Light+",
+  "High Contrast Light",
+];
+const themeDefinitions: r0Theme[] = Object.values(themeModules)
   .map((m) => m.default)
   .sort((a, b) => themeOrder.indexOf(a.name) - themeOrder.indexOf(b.name));
+
+const definitionsByName = new Map(themeDefinitions.map((theme) => [theme.name, theme]));
+export const builtinThemes: r0Theme[] = themeDefinitions.map((theme) => {
+  const { extends: baseName, ...definition } = theme;
+  const baseTheme = baseName ? definitionsByName.get(baseName) : undefined;
+  return {
+    ...definition,
+    colors: { ...baseTheme?.colors, ...theme.colors },
+  };
+});
+
+export function normalizeTheme(theme: r0Theme): r0Theme {
+  const baseTheme = builtinThemes.find((item) =>
+    item.name === (theme.type === "light" ? "Light Modern" : "Dark Modern")
+  ) ?? builtinThemes[0];
+  return { ...theme, colors: { ...baseTheme.colors, ...theme.colors } };
+}
 
 function resolveDefaultTheme(): r0Theme {
   // 1. Respect saved preference
@@ -29,8 +56,16 @@ function resolveDefaultTheme(): r0Theme {
     if (saved.startsWith("Open VSX: ")) {
       try {
         const custom = JSON.parse(localStorage.getItem("r0-custom-theme") ?? "null") as r0Theme | null;
-        if (custom?.name === saved && (custom.type === "dark" || custom.type === "light") && custom.colors) {
-          return custom;
+        if (
+          custom?.name === saved
+          && (custom.type === "dark" || custom.type === "light")
+          && (custom.contrast === undefined || custom.contrast === "normal" || custom.contrast === "high")
+          && custom.colors
+          && typeof custom.colors === "object"
+          && !Array.isArray(custom.colors)
+          && Object.values(custom.colors).every((value) => typeof value === "string")
+        ) {
+          return normalizeTheme(custom);
         }
       } catch {
         localStorage.removeItem("r0-custom-theme");
@@ -54,7 +89,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<r0Theme>(() => {
-    const t = resolveDefaultTheme();
+    const t = normalizeTheme(resolveDefaultTheme());
     applyTheme(t); // apply synchronously so CSS vars are set before any child effect reads them
     return t;
   });
@@ -85,11 +120,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme.name]);
 
   function setTheme(t: r0Theme) {
-    setThemeState(t);
-    applyTheme(t);
-    localStorage.setItem("r0-theme", t.name);
-    if (t.name.startsWith("Open VSX: ")) {
-      localStorage.setItem("r0-custom-theme", JSON.stringify(t));
+    const normalized = normalizeTheme(t);
+    setThemeState(normalized);
+    applyTheme(normalized);
+    localStorage.setItem("r0-theme", normalized.name);
+    if (normalized.name.startsWith("Open VSX: ")) {
+      localStorage.setItem("r0-custom-theme", JSON.stringify(normalized));
     } else {
       localStorage.removeItem("r0-custom-theme");
     }
@@ -98,7 +134,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function loadThemeFromJson(json: string) {
     try {
       const parsed = JSON.parse(json) as r0Theme;
-      if (!parsed.name || !parsed.colors) throw new Error("Invalid theme file");
+      if (
+        typeof parsed.name !== "string"
+        || !parsed.name
+        || (parsed.type !== "dark" && parsed.type !== "light")
+        || (parsed.contrast !== undefined && parsed.contrast !== "normal" && parsed.contrast !== "high")
+        || !parsed.colors
+        || typeof parsed.colors !== "object"
+        || Array.isArray(parsed.colors)
+        || !Object.values(parsed.colors).every((value) => typeof value === "string")
+      ) {
+        throw new Error("Invalid theme file");
+      }
       setTheme(parsed);
     } catch (e) {
       console.error("Failed to load theme:", e);

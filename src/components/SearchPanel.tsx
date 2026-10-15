@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, File } from 'lucide-react';
 import { searchInFiles, type SearchMatch } from '../lib/search';
 import { fileColor } from '../lib/fileColors';
+import { useFileIconTheme } from '../lib/fileIconTheme';
 import { useWorkspace } from '../context/WorkspaceContext';
 
 interface Props {
@@ -81,6 +82,7 @@ function MatchLine({ match, query, onOpen }: { match: SearchMatch; query: string
 
 export default function SearchPanel({ onFileOpenAtLine }: Props) {
   const { workspaceRoots } = useWorkspace();
+  const fileIconTheme = useFileIconTheme();
   const rootKey = workspaceRoots.join('\u0000');
   const roots = useMemo(() => rootKey ? rootKey.split('\u0000') : [], [rootKey]);
   const [query, setQuery]     = useState('');
@@ -195,7 +197,7 @@ export default function SearchPanel({ onFileOpenAtLine }: Props) {
               position: 'sticky', top: 0,
               background: 'var(--r0-bg-sidebar)',
             }}>
-              <File size={12} style={{ color: fileColor(group.name), flexShrink: 0 }} />
+              <File size={12} style={{ color: fileColor(group.name, fileIconTheme), flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                 {group.name}
               </span>

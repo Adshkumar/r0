@@ -126,7 +126,7 @@ function CreateInput({ parentPath, kind, depth, onDone }: {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `3px 8px 3px ${indent}px` }}>
       {kind === 'folder'
-        ? <FolderPlus size={14} style={{ flexShrink: 0, color: '#eab308' }} />
+        ? <FolderPlus size={14} style={{ flexShrink: 0, color: 'var(--r0-accent-yellow)' }} />
         : <FilePlus  size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />}
       <input
         ref={inputRef}
@@ -250,7 +250,7 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
           ? <RenameInput entry={entry} onDone={() => setRenamingPath(null)} />
           : (
             <span style={{
-              fontSize: 13, color: 'var(--r0-fg-default)',
+              fontSize: 'var(--r0-sidebar-font-size, 12px)', color: 'var(--r0-fg-default)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               opacity: entry.name.startsWith('.') ? 0.5 : 1,
             }}>

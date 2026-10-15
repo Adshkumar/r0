@@ -64,7 +64,7 @@ This README describes features present in the source and the latest published re
 
 ### Themes and extensions
 
-- Includes r0 Dark, r0 Light, Dracula, GitHub Dark, and Cobalt2 themes.
+- Includes Dark Modern, Dark+, Light Modern, Light+, Dracula, GitHub Dark, One Dark Pro, and high-contrast dark and light themes. Editor, UI, and terminal typography can be configured separately in Appearance settings.
 - The Extensions panel searches Open VSX, installs extensions, and supports contributed themes. This is not a general-purpose VS Code extension host; extension features outside the supported theme workflow may not work.
 
 ## Screenshots

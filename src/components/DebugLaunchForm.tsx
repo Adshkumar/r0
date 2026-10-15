@@ -182,7 +182,7 @@ export default function DebugLaunchForm() {
           backgroundColor: launching || !program.trim()
             ? 'var(--r0-bg-active)'
             : 'var(--r0-accent-blue)',
-          color: launching || !program.trim() ? 'var(--r0-fg-subtle)' : '#fff',
+          color: launching || !program.trim() ? 'var(--r0-fg-subtle)' : 'var(--r0-bg-base)',
           cursor: launching || !program.trim() ? 'not-allowed' : 'pointer',
           fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)',
           transition: 'background 0.15s',

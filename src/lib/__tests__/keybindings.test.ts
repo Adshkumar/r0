@@ -22,6 +22,8 @@ describe('global shortcut defaults', () => {
     expect(matchesEvent(keyEvent('p', { ctrlKey: true, shiftKey: true }), 'ctrl+shift+p')).toBe(true);
     expect(matchesEvent(keyEvent('p', { ctrlKey: true }), 'ctrl+p')).toBe(true);
     expect(matchesEvent(keyEvent('j', { ctrlKey: true }), 'ctrl+j')).toBe(true);
+    expect(matchesEvent(keyEvent('Dead', { code: 'Backquote', ctrlKey: true }), 'ctrl+`')).toBe(true);
+    expect(COMMANDS.find(command => command.id === 'r0.toggleTerminal')?.defaultKey).toBe('ctrl+`');
     expect(matchesEvent(keyEvent('e', { ctrlKey: true, shiftKey: true }), 'ctrl+shift+e')).toBe(true);
     expect(matchesEvent(keyEvent('g', { ctrlKey: true, shiftKey: true }), 'ctrl+shift+g')).toBe(true);
     expect(matchesEvent(keyEvent('x', { ctrlKey: true, shiftKey: true }), 'ctrl+shift+x')).toBe(true);
@@ -33,6 +35,7 @@ describe('global shortcut defaults', () => {
   it('allows saving while focused in a text entry without enabling other shortcuts', () => {
     expect(isAllowedInTextEntry('r0.save')).toBe(true);
     expect(isAllowedInTextEntry('r0.togglePalette')).toBe(true);
+    expect(isAllowedInTextEntry('r0.toggleTerminal')).toBe(true);
     expect(isAllowedInTextEntry('r0.closeTab')).toBe(false);
   });
 });

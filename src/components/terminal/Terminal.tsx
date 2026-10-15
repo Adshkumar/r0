@@ -13,6 +13,7 @@ import {
 } from "../../lib/terminal";
 import { useTheme } from "../../themes/ThemeContext";
 import { handleTerminalClipboardShortcut } from "../../lib/terminalClipboard";
+import { useTypography } from "../../context/TypographyContext";
 
 interface Props {
   cwd: string;
@@ -29,10 +30,10 @@ function cssVar(name: string): string {
 
 function buildTheme() {
   return {
-    background:          cssVar("--r0-bg-panel"),
+    background:          cssVar("--r0-terminal-background"),
     foreground:          cssVar("--r0-terminal-fg"),
-    cursor:              cssVar("--r0-terminal-fg"),
-    cursorAccent:        cssVar("--r0-bg-panel"),
+    cursor:              cssVar("--r0-terminal-cursor"),
+    cursorAccent:        cssVar("--r0-terminal-background"),
     selectionBackground: cssVar("--r0-terminal-selection"),
     black:               cssVar("--r0-terminal-black"),
     red:                 cssVar("--r0-terminal-red"),
@@ -55,6 +56,7 @@ function buildTheme() {
 
 export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdChange, onShellState }: Props) {
   const { theme } = useTheme();
+  const { settings: typography } = useTypography();
   const containerRef    = useRef<HTMLDivElement>(null);
   const xtermRef        = useRef<XTerm | null>(null);
   const cwdRef          = useRef(cwd);
@@ -115,9 +117,9 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
     if (!containerRef.current) return;
 
     const xterm = new XTerm({
-      fontFamily: "'Geist Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
-      fontSize: 13,
-      lineHeight: 1.2,
+      fontFamily: typography.terminalFontFamily,
+      fontSize: typography.terminalFontSize,
+      lineHeight: typography.terminalLineHeight,
       theme: buildTheme(),
       cursorBlink: true,
       scrollback: 10000,
@@ -238,6 +240,20 @@ export default function Terminal({ cwd, active, clearKey, pendingInput, onCwdCha
       xtermRef.current.options.theme = buildTheme();
     }
   }, [theme]);
+
+  useEffect(() => {
+    const xterm = xtermRef.current;
+    if (!xterm) return;
+    xterm.options.fontFamily = typography.terminalFontFamily;
+    xterm.options.fontSize = typography.terminalFontSize;
+    xterm.options.lineHeight = typography.terminalLineHeight;
+    fitAddonRef.current?.fit();
+    const dimensions = fitAddonRef.current?.proposeDimensions();
+    if (termIdRef.current !== null && dimensions) {
+      terminalResize(termIdRef.current, dimensions.cols, dimensions.rows)
+        .catch(error => console.error("Could not resize terminal after typography change:", error));
+    }
+  }, [typography.terminalFontFamily, typography.terminalFontSize, typography.terminalLineHeight]);
 
   // Re-fit when this tab becomes active (dimensions may have changed while hidden)
   useEffect(() => {
