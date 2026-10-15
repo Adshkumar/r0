@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
@@ -26,7 +28,7 @@ import { streamText } from "ai";
 import { buildLanguageModel } from "./lib/agent/providers";
 import { loadApiKey } from "./lib/secrets";
 import type { AiCompletionFn } from "./lib/aiAutocomplete";
-import { getBranch, type GitChangedFile, type GitCommitDetails, type StatusFile } from "./lib/git";
+import { getBranch, notifyGitFilesystemChanged, onGitRepositoryChanged, type GitChangedFile, type GitCommitDetails, type StatusFile } from "./lib/git";
 import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { languageLabel } from "./components/editor/languageSupport";
@@ -50,8 +52,17 @@ import {
 } from "./lib/session";
 import { readDir } from "./lib/fs";
 
+function isPathWithinRoot(path: string, root: string): boolean {
+  const normalizedPath = path.replace(/\\/g, '/').replace(/\/+$/, '');
+  const normalizedRoot = root.replace(/\\/g, '/').replace(/\/+$/, '');
+  const windowsPath = /^[a-z]:\//i.test(normalizedRoot);
+  const candidate = windowsPath ? normalizedPath.toLowerCase() : normalizedPath;
+  const base = windowsPath ? normalizedRoot.toLowerCase() : normalizedRoot;
+  return candidate === base || candidate.startsWith(`${base}/`);
+}
+
 function App() {
-  const { folderPath, setFolderPath } = useWorkspace();
+  const { folderPath, setFolderPath, workspaceRoots, setWorkspaceRoots, addWorkspaceRoot } = useWorkspace();
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem('r0-onboarding') === 'true'
   );
@@ -63,6 +74,8 @@ function App() {
     fileErrors,
     jumpRequest,
     fileTreeVersion,
+    refreshFileTree,
+    refreshExternalFile,
     activeTabRef,
     fileContentsRef,
     openTab, openTabAtLine, closeTab, handlePathRenamed,
@@ -167,14 +180,16 @@ function App() {
         restoredSessionRef.current = savedSession;
         sessionRevisionRef.current = savedSession?.revision ?? 0;
 
-        const requestedWorkspace = restore
-          ? savedSession?.workspacePath || configuredWorkspace || folderPath
-          : null;
-        let usableWorkspace: string | null = null;
-        if (requestedWorkspace) {
+        const requestedWorkspaces = restore
+          ? savedSession?.workspacePaths?.length
+            ? savedSession.workspacePaths
+            : [savedSession?.workspacePath || configuredWorkspace || folderPath].filter((path): path is string => Boolean(path))
+          : [];
+        const usableWorkspaces: string[] = [];
+        for (const requestedWorkspace of requestedWorkspaces) {
           try {
             await readDir(requestedWorkspace);
-            usableWorkspace = requestedWorkspace;
+            usableWorkspaces.push(requestedWorkspace);
           } catch {
             showToast(`The previous workspace is unavailable: ${requestedWorkspace}`, 'error', {
               label: 'Choose Folder',
@@ -182,7 +197,8 @@ function App() {
             });
           }
         }
-        setFolderPath(usableWorkspace);
+        setWorkspaceRoots(usableWorkspaces);
+        const usableWorkspace = usableWorkspaces[0] ?? null;
 
         if (restore && savedSession) {
           setSidebarOpen(savedSession.layout.sidebarOpen);
@@ -208,10 +224,12 @@ function App() {
             showToast(`Could not load unsaved recovery data; recovery files were kept: ${String(error)}`, 'error');
           }
         }
-        const recoveryWorkspace = savedSession?.workspacePath ?? usableWorkspace;
+        const recoveryWorkspaces = savedSession?.workspacePaths?.length
+          ? savedSession.workspacePaths
+          : [savedSession?.workspacePath ?? usableWorkspace].filter((path): path is string => Boolean(path));
         const relevantRecoveries = recoveries.filter(record =>
-          record.workspacePath === recoveryWorkspace
-          || (!record.workspacePath && !recoveryWorkspace),
+          recoveryWorkspaces.includes(record.workspacePath ?? '')
+          || (!record.workspacePath && recoveryWorkspaces.length === 0),
         );
         if (restore) {
           const paths = restoreTabs ? [...(savedSession?.tabs ?? [])] : [];
@@ -245,6 +263,7 @@ function App() {
   sessionSnapshotRef.current = {
     version: 1,
     workspacePath: sessionWorkspacePath,
+    workspacePaths: workspaceRoots,
     tabs: tabs.filter(tab => !tab.path.startsWith('__')).map(tab => tab.path),
     activeTab: activeTab && !activeTab.startsWith('__') ? activeTab : null,
     editorStates,
@@ -260,8 +279,8 @@ function App() {
     },
   };
 
-  async function persistCurrentSession() {
-    if (!sessionOptionsRef.current.restore || !sessionSnapshotRef.current) return;
+  async function persistCurrentSession(): Promise<boolean> {
+    if (!sessionOptionsRef.current.restore || !sessionSnapshotRef.current) return true;
     const next = {
       ...sessionSnapshotRef.current,
       revision: ++sessionRevisionRef.current,
@@ -269,8 +288,10 @@ function App() {
     try {
       await savePersistedSession(next);
       restoredSessionRef.current = next;
+      return true;
     } catch (error) {
       showToast(`Could not save the current session: ${String(error)}`, 'error');
+      return false;
     }
   }
 
@@ -312,6 +333,21 @@ function App() {
     await Promise.all(writes);
   }
 
+  async function handleSafeReload() {
+    const hasDirtyDocuments = tabsRef.current.some(tab => tab.isDirty && !tab.path.startsWith('__'));
+    if (hasDirtyDocuments && (!sessionOptionsRef.current.restore || !sessionOptionsRef.current.recoverUnsaved)) {
+      showToast('Save your changes or enable session recovery before reloading', 'error');
+      return;
+    }
+    try {
+      await persistDirtyDocuments();
+      if (!(await persistCurrentSession())) return;
+      window.location.reload();
+    } catch (error) {
+      showToast(`Could not safely reload the window: ${String(error)}`, 'error');
+    }
+  }
+
   useEffect(() => {
     if (!restoreReady) return;
     if (sessionTimerRef.current !== null) window.clearTimeout(sessionTimerRef.current);
@@ -328,7 +364,7 @@ function App() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshots use current refs and state dependencies listed here.
   }, [
-    restoreReady, sessionOptions.restore, folderPath, tabOrderKey, activeTab,
+    restoreReady, sessionOptions.restore, folderPath, workspaceRoots, tabOrderKey, activeTab,
     editorStates, expandedFolders, sidebarOpen, aiPanelOpen, terminalOpen,
     terminalHeight, activeSidebarPanel, sidebarWidth,
   ]);
@@ -393,7 +429,7 @@ function App() {
         window.clearTimeout(sessionTimerRef.current);
         sessionTimerRef.current = null;
       }
-      localStorage.removeItem('r0-workspace-folder');
+      setWorkspaceRoots([]);
     };
     const onOptionChanged = (event: Event) => {
       const detail = (event as CustomEvent<{ key: string; value: boolean }>).detail;
@@ -412,7 +448,7 @@ function App() {
       window.removeEventListener('r0-session-cleared', onSessionCleared);
       window.removeEventListener('r0-session-option-changed', onOptionChanged);
     };
-  }, [restoreReady]);
+  }, [restoreReady, setWorkspaceRoots]);
 
   useEffect(() => {
     if (!restoreReady) return;
@@ -462,7 +498,7 @@ function App() {
       recoveryTimers.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- close handler reads latest session snapshot and uses bounded flush.
-  }, [restoreReady, sessionOptions.restore, sessionOptions.recoverUnsaved, showToast]);
+  }, [restoreReady, sessionOptions.restore, sessionOptions.recoverUnsaved, setWorkspaceRoots, showToast]);
 
   useEffect(() => {
     if (!restoreReady) return;
@@ -470,6 +506,44 @@ function App() {
       showToast(`Could not save the workspace path: ${String(error)}`, 'error');
     });
   }, [restoreReady, folderPath, showToast]);
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    void invoke('watch_workspace_roots', { roots: workspaceRoots }).catch(error => {
+      showToast(`Could not watch workspace folders: ${String(error)}`, 'error');
+    });
+  }, [restoreReady, workspaceRoots, showToast]);
+
+  useEffect(() => {
+    if (!restoreReady) return;
+    let active = true;
+    let timer: number | null = null;
+    let pendingPaths = new Set<string>();
+    let unlisten: (() => void) | undefined;
+    listen<string[]>('workspace-fs-changed', event => {
+      for (const path of event.payload) pendingPaths.add(path);
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        timer = null;
+        const changedPaths = [...pendingPaths];
+        pendingPaths = new Set<string>();
+        refreshFileTree();
+        for (const path of changedPaths) void refreshExternalFile(path);
+        for (const root of workspaceRoots) {
+          if (changedPaths.some(path => isPathWithinRoot(path, root))) notifyGitFilesystemChanged(root);
+        }
+      }, 120);
+    }).then(stop => {
+      if (active) unlisten = stop;
+      else stop();
+    }).catch(error => showToast(`Could not subscribe to workspace changes: ${String(error)}`, 'error'));
+    return () => {
+      active = false;
+      unlisten?.();
+      if (timer !== null) window.clearTimeout(timer);
+      pendingPaths.clear();
+    };
+  }, [restoreReady, refreshFileTree, refreshExternalFile, showToast, workspaceRoots]);
 
   const handleFolderExpansionChange = useCallback((path: string, expanded: boolean) => {
     setExpandedFolders(current => {
@@ -482,7 +556,9 @@ function App() {
   const [gitBranch,      setGitBranch]     = useState<string | null>(null);
   const [selectedCommit, setSelectedCommit] = useState<{ rootPath: string; hash: string } | null>(null);
   const [paletteOpen,    setPaletteOpen]   = useState(false);
+  const [paletteInitialQuery, setPaletteInitialQuery] = useState('>');
   const [settingsOpen,   setSettingsOpen]  = useState(false);
+  const [settingsInitialSection, setSettingsInitialSection] = useState<'general' | 'keybindings'>('general');
   const [aboutOpen,      setAboutOpen]     = useState(false);
   const [htmlPreviewTarget, setHtmlPreviewTarget] = useState<{ path: string; rootPath: string | null } | null>(null);
   const [htmlPreviewRefresh, setHtmlPreviewRefresh] = useState(0);
@@ -594,6 +670,14 @@ function App() {
     getBranch(folderPath).then(setGitBranch).catch(() => setGitBranch(null));
   }, [folderPath, restoreReady]);
 
+  useEffect(() => onGitRepositoryChanged(({ path }) => {
+    if (!folderPath || path.toLowerCase() !== folderPath.toLowerCase()) return;
+    refreshFileTree();
+    void getBranch(folderPath)
+      .then(setGitBranch)
+      .catch(error => showToast(`Could not refresh Git branch: ${String(error)}`, 'error'));
+  }), [folderPath, refreshFileTree, showToast]);
+
   // Poke CodeMirror + xterm to re-measure after window geometry changes
   useEffect(() => {
     const unlisteners: Array<() => void> = [];
@@ -669,6 +753,9 @@ function App() {
     saveActive:        () => { if (activeTab) void saveAndRefreshPreview(activeTab); },
     toggleTerminal:    () => setTerminalOpen(v => !v),
     togglePalette:     () => setPaletteOpen(v => !v),
+    openCommandPalette: () => { setPaletteInitialQuery('>'); setPaletteOpen(true); },
+    quickOpen:         () => { setPaletteInitialQuery('@'); setPaletteOpen(true); },
+    selectSidebarPanel: panel => { setSidebarOpen(true); setActiveSidebarPanel(panel); },
     toggleSettings:    () => setSettingsOpen(v => !v),
     newFile:           () => handleNewFile(),
     openFile:          () => handleOpenFile(),
@@ -683,6 +770,7 @@ function App() {
     stepInto:          () => debugCtx.stepIn?.(),
     stepOut:           () => debugCtx.stepOut?.(),
     formatDocument:    () => { void editorRef.current?.formatDocument(); },
+    reloadWindow:      () => { void handleSafeReload(); },
   });
 
   async function completeOnboarding() {
@@ -705,6 +793,27 @@ function App() {
       setFolderPath(path);
     } catch (error) {
       showToast(`Could not open folder: ${String(error)}`, 'error');
+    }
+  }
+
+  async function handleAddFolderToWorkspace() {
+    try {
+      const result = await open({ directory: true, multiple: false });
+      if (!result) return;
+      const path = result as string;
+      await readDir(path);
+      if (!addWorkspaceRoot(path)) {
+        showToast('That folder is already in this workspace', 'info');
+        return;
+      }
+      const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+      try {
+        await pushRecentProject({ path, name });
+      } catch (error) {
+        showToast(`Could not save recent project: ${String(error)}`, 'error');
+      }
+    } catch (error) {
+      showToast(`Could not add folder to workspace: ${String(error)}`, 'error');
     }
   }
 
@@ -805,11 +914,10 @@ function App() {
 
   function handleAbout() { setAboutOpen(true); }
 
-  const handleOpenCommit = useCallback((hash: string) => {
-    if (!folderPath) return;
-    setSelectedCommit({ rootPath: folderPath, hash });
-    openGitCommitTab(folderPath, hash);
-  }, [folderPath, openGitCommitTab]);
+  const handleOpenCommit = useCallback((hash: string, rootPath: string) => {
+    setSelectedCommit({ rootPath, hash });
+    openGitCommitTab(rootPath, hash);
+  }, [openGitCommitTab]);
 
   const handleOpenCommitFile = useCallback((rootPath: string, file: GitChangedFile, details: GitCommitDetails) => {
     const oldFilePath = file.old_path ?? file.path;
@@ -828,13 +936,12 @@ function App() {
     });
   }, [openGitDiffTab]);
 
-  const handleOpenWorkingDiff = useCallback((file: StatusFile) => {
-    if (!folderPath) return;
+  const handleOpenWorkingDiff = useCallback((file: StatusFile, rootPath: string) => {
     const status = file.status.replace(/\s/g, '');
     const oldIsEmpty = status === '??' || status.includes('A');
     const newIsEmpty = status.includes('D');
     openGitDiffTab({
-      rootPath: folderPath,
+      rootPath,
       key: `working_${encodeURIComponent(file.path)}`,
       oldRevision: oldIsEmpty ? null : 'HEAD',
       newRevision: null,
@@ -846,7 +953,7 @@ function App() {
       oldLabel: oldIsEmpty ? 'empty' : 'HEAD',
       newLabel: newIsEmpty ? 'deleted' : 'Working Tree',
     });
-  }, [folderPath, openGitDiffTab]);
+  }, [openGitDiffTab]);
 
   const commands = {
     sidebarOpen, onToggleSidebar: () => setSidebarOpen(v => !v),
@@ -854,10 +961,12 @@ function App() {
     aiPanelOpen, onToggleAiPanel: () => setAiPanelOpen(v => !v),
     isFullscreen, onToggleFullscreen: toggleFullscreen,
     onOpenFolder: handleOpenFolder,
+    onAddFolderToWorkspace: handleAddFolderToWorkspace,
     onOpenFile: handleOpenFile,
     onNewFile: handleNewFile,
     onNewWindow: handleNewWindow,
-    onOpenPalette: () => setPaletteOpen(true),
+    onOpenPalette: () => { setPaletteInitialQuery('>'); setPaletteOpen(true); },
+    onOpenKeyboardShortcuts: () => { setSettingsInitialSection('keybindings'); setSettingsOpen(true); },
     gitBranch,
     dirtyCount: tabs.filter(t => t.isDirty).length,
     hasActiveTab: !!activeTab && !activeTab.startsWith('__diff__'),
@@ -918,7 +1027,7 @@ function App() {
                 fileTreeKey={fileTreeVersion}
                 onOpenCommit={handleOpenCommit}
                 onOpenWorkingDiff={handleOpenWorkingDiff}
-                selectedCommitHash={selectedCommit?.rootPath === folderPath ? selectedCommit.hash : null}
+                selectedCommitHash={selectedCommit?.hash ?? null}
                 expandedFolders={expandedFolders}
                 onFolderExpansionChange={handleFolderExpansionChange}
                 activePanel={activeSidebarPanel}
@@ -1108,16 +1217,24 @@ function App() {
       )}
       {paletteOpen && (
         <CommandPalette
+          initialQuery={paletteInitialQuery}
           tabs={tabs}
           onFileOpen={openTab}
           onFileOpenAtLine={(path, line) => { setPaletteOpen(false); openTabAtLine(path, line, 0); }}
           onClose={() => setPaletteOpen(false)}
           onNewFile={() => { setPaletteOpen(false); handleNewFile(); }}
           onOpenFolder={() => { setPaletteOpen(false); handleOpenFolder(); }}
+          onAddFolderToWorkspace={() => { setPaletteOpen(false); handleAddFolderToWorkspace(); }}
+          onReloadWindow={() => { void handleSafeReload(); }}
           onOpenFile={() => { setPaletteOpen(false); handleOpenFile(); }}
           onToggleSidebar={() => { setPaletteOpen(false); setSidebarOpen(v => !v); }}
           onToggleTerminal={() => { setPaletteOpen(false); setTerminalOpen(v => !v); }}
-          onOpenSettings={() => { setPaletteOpen(false); setSettingsOpen(true); }}
+          onOpenSettings={() => { setPaletteOpen(false); setSettingsInitialSection('general'); setSettingsOpen(true); }}
+          onOpenKeyboardShortcuts={() => { setPaletteOpen(false); setSettingsInitialSection('keybindings'); setSettingsOpen(true); }}
+          onSave={() => { if (activeTab) void saveAndRefreshPreview(activeTab); }}
+          onSaveAll={() => { void saveAllAndRefreshPreview(); }}
+          onCloseEditor={() => { if (activeTab) closeTab(activeTab); }}
+          onSelectSidebarPanel={panel => { setSidebarOpen(true); setActiveSidebarPanel(panel); }}
           activeFilePath={activeTab}
           onOpenHtmlPreview={handleOpenHtmlPreview}
           onFormatDocument={() => { void editorRef.current?.formatDocument(); }}
@@ -1125,7 +1242,7 @@ function App() {
           sidebarOpen={sidebarOpen}
         />
       )}
-      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} initialSection={settingsInitialSection} />}
       {aboutOpen && (
         <div
           style={{

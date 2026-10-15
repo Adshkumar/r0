@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Search, File, Terminal, FolderOpen, FilePlus, PanelLeft,
   FileInput, GripHorizontal, Sun, Moon, Settings, Loader, AlignLeft, Globe,
+  Save, SaveAll, X, RefreshCw,
 } from 'lucide-react';
 import { readDir, type FsEntry } from '../../lib/fs';
 import { fileColor } from '../../lib/fileColors';
@@ -36,6 +37,16 @@ async function walkDir(
       : e.path;
     acc.push({ name: e.name, path: e.path, rel });
   }));
+}
+
+function relativeToWorkspace(path: string, roots: string[]): string {
+  const root = [...roots]
+    .sort((a, b) => b.length - a.length)
+    .find(candidate => path.toLowerCase().startsWith(candidate.toLowerCase().replace(/[/\\]+$/, '') + '\\')
+      || path.toLowerCase().startsWith(candidate.toLowerCase().replace(/[/\\]+$/, '') + '/'));
+  if (!root) return path;
+  const rootName = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+  return `${rootName}/${path.slice(root.length).replace(/^[/\\]/, '').replace(/\\/g, '/')}`;
 }
 
 // ── fuzzy ────────────────────────────────────────────────────────────────────
@@ -88,16 +99,24 @@ interface PaletteItem {
 // ── props ────────────────────────────────────────────────────────────────────
 
 export interface CommandPaletteProps {
+  initialQuery?: string;
   tabs: Tab[];
   onFileOpen: (path: string) => void;
   onFileOpenAtLine: (path: string, line: number) => void;
   onClose: () => void;
   onNewFile: () => void;
   onOpenFolder: () => void;
+  onAddFolderToWorkspace: () => void;
+  onReloadWindow: () => void;
   onOpenFile: () => void;
   onToggleSidebar: () => void;
   onToggleTerminal: () => void;
   onOpenSettings: () => void;
+  onOpenKeyboardShortcuts: () => void;
+  onSave: () => void;
+  onSaveAll: () => void;
+  onCloseEditor: () => void;
+  onSelectSidebarPanel: (panel: 'search' | 'sourcetree' | 'extensions') => void;
   activeFilePath: string | null;
   onOpenHtmlPreview: (path: string) => void;
   onFormatDocument: () => void;
@@ -110,15 +129,19 @@ export interface CommandPaletteProps {
 const PALETTE_W = 560;
 
 export default function CommandPalette({
+  initialQuery = '',
   tabs, onFileOpen, onFileOpenAtLine, onClose,
-  onNewFile, onOpenFolder, onOpenFile,
+  onNewFile, onOpenFolder, onAddFolderToWorkspace, onReloadWindow, onOpenFile,
   onToggleSidebar, onToggleTerminal, onOpenSettings,
+  onOpenKeyboardShortcuts, onSave, onSaveAll, onCloseEditor, onSelectSidebarPanel,
   activeFilePath, onOpenHtmlPreview, onFormatDocument,
   terminalOpen, sidebarOpen,
 }: CommandPaletteProps) {
-  const { folderPath } = useWorkspace();
+  const { workspaceRoots } = useWorkspace();
+  const rootKey = workspaceRoots.join('\u0000');
+  const roots = useMemo(() => rootKey ? rootKey.split('\u0000') : [], [rootKey]);
   const { theme, themes, setTheme } = useTheme();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [selected, setSelected] = useState(0);
   const [wsFiles, setWsFiles] = useState<WorkspaceFile[]>([]);
   const [textResults, setTextResults] = useState<SearchMatch[]>([]);
@@ -133,17 +156,22 @@ export default function CommandPalette({
   const paletteRef = useRef<HTMLDivElement>(null);
   const dragRef    = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
-  // Walk workspace once for file search
+  // Walk all workspace roots once for file search.
   useEffect(() => {
-    if (!folderPath) return;
-    const acc: WorkspaceFile[] = [];
-    walkDir(folderPath, folderPath, 0, acc).then(() => setWsFiles(acc));
-  }, [folderPath]);
+    let current = true;
+    Promise.all(roots.map(async root => {
+      const files: WorkspaceFile[] = [];
+      await walkDir(root, root, 0, files);
+      const rootName = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+      return files.map(file => ({ ...file, rel: `${rootName}/${file.rel}` }));
+    })).then(groups => { if (current) setWsFiles(groups.flat()); });
+    return () => { current = false; };
+  }, [roots]);
 
   // Text search — fires when query starts with '%'
   useEffect(() => {
     const isTextMode = query.startsWith('%');
-    if (!isTextMode || !folderPath) {
+    if (!isTextMode || roots.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset when not in text-search mode
       setTextResults([]);
       setTextLoading(false);
@@ -156,18 +184,28 @@ export default function CommandPalette({
       return;
     }
     setTextLoading(true);
+    let current = true;
     const timer = setTimeout(async () => {
       try {
-        const results = await searchInFiles(folderPath, textQuery);
-        setTextResults(results);
-      } catch {
-        setTextResults([]);
+        const results = await Promise.allSettled(roots.map(root => searchInFiles(root, textQuery)));
+        if (current) {
+          for (const failure of results.filter(result => result.status === 'rejected')) {
+            console.error('Could not search a workspace root:', failure.reason);
+          }
+          setTextResults(results.flatMap(result => result.status === 'fulfilled' ? result.value : []));
+        }
+      } catch (error) {
+        console.error('Could not search workspace files:', error);
+        if (current) setTextResults([]);
       } finally {
-        setTextLoading(false);
+        if (current) setTextLoading(false);
       }
     }, 250);
-    return () => clearTimeout(timer);
-  }, [query, folderPath]);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [query, roots]);
 
   // Auto-focus input
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -206,7 +244,8 @@ export default function CommandPalette({
 
   const isTextMode = query.startsWith('%');
   const isFileMode = query.startsWith('@');
-  const q = (isTextMode || isFileMode) ? '' : query.trim();
+  const isCommandMode = query.startsWith('>');
+  const q = (isTextMode || isFileMode) ? '' : query.replace(/^>/, '').trim();
   const textQuery = isTextMode ? query.slice(1).trim() : '';
   const fileQuery = isFileMode ? query.slice(1).trim() : '';
 
@@ -217,8 +256,7 @@ export default function CommandPalette({
     for (const tab of tabs) {
       const score = fuzzyScore(fileQuery, tab.name);
       if (score === null) continue;
-      const rel = folderPath && tab.path.startsWith(folderPath)
-        ? tab.path.slice(folderPath.length).replace(/^[/\\]/, '').replace(/\\/g, '/') : tab.path;
+      const rel = relativeToWorkspace(tab.path, roots);
       result.push({
         id: `open:${tab.path}`, kind: 'open-file', label: tab.name, detail: rel,
         icon: <File size={14} style={{ color: fileColor(tab.name), flexShrink: 0 }} />,
@@ -240,7 +278,7 @@ export default function CommandPalette({
     }
     result.sort((a, b) => a.score - b.score);
     return result.slice(0, 60);
-  }, [isFileMode, fileQuery, tabs, wsFiles, folderPath, onFileOpen, onClose]);
+  }, [isFileMode, fileQuery, tabs, wsFiles, roots, onFileOpen, onClose]);
 
   const items = useMemo<PaletteItem[]>(() => {
     if (isTextMode || isFileMode) return [];
@@ -248,11 +286,10 @@ export default function CommandPalette({
     const openPaths = new Set(tabs.map(t => t.path));
 
     // Open tabs
-    for (const tab of tabs) {
+    for (const tab of isCommandMode ? [] : tabs) {
       const score = fuzzyScore(q, tab.name);
       if (score === null) continue;
-      const rel = folderPath && tab.path.startsWith(folderPath)
-        ? tab.path.slice(folderPath.length).replace(/^[/\\]/, '').replace(/\\/g, '/') : tab.path;
+      const rel = relativeToWorkspace(tab.path, roots);
       result.push({
         id: `open:${tab.path}`, kind: 'open-file', label: tab.name, detail: rel,
         icon: <File size={14} style={{ color: fileColor(tab.name), flexShrink: 0 }} />,
@@ -263,7 +300,7 @@ export default function CommandPalette({
     }
 
     // Workspace files (only when searching)
-    if (q) {
+    if (q && !isCommandMode) {
       for (const f of wsFiles) {
         if (openPaths.has(f.path)) continue;
         const score = fuzzyScore(q, f.name);
@@ -281,7 +318,12 @@ export default function CommandPalette({
     const cmds = [
       { label: 'New File',            tokens: 'new create untitled',        detail: 'Create a new untitled file',          icon: <FilePlus  size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+N',   action: () => { onNewFile();       onClose(); } },
       { label: 'Open Folder…',        tokens: 'open folder workspace',       detail: 'Open a project folder',               icon: <FolderOpen size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+K O', action: () => { onOpenFolder();    onClose(); } },
+      { label: 'Add Folder to Workspace…', tokens: 'add folder workspace multi root', detail: 'Add another project folder to this workspace', icon: <FolderOpen size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: undefined as string | undefined, action: () => { onAddFolderToWorkspace(); onClose(); } },
       { label: 'Open File…',          tokens: 'open file browse disk',       detail: 'Open a file from disk',               icon: <FileInput  size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+O',   action: () => { onOpenFile();      onClose(); } },
+      { label: 'Save',                tokens: 'write save active document',   detail: 'Save the active document',            icon: <Save size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+S', action: () => { onSave(); onClose(); } },
+      { label: 'Save All',            tokens: 'write save every document',    detail: 'Save all modified documents',         icon: <SaveAll size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: undefined as string | undefined, action: () => { onSaveAll(); onClose(); } },
+      { label: 'Close Editor',        tokens: 'close active file tab',       detail: 'Close the active editor tab',         icon: <X size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+W', action: () => { onCloseEditor(); onClose(); } },
+      { label: 'Reload Window',       tokens: 'reload restart refresh',       detail: 'Reload the IDE window safely',         icon: <RefreshCw size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+R', action: () => { onReloadWindow(); onClose(); } },
       ...(activeFilePath && /\.html?$/i.test(activeFilePath)
         ? [{ label: 'Open Active HTML in Live Preview', tokens: 'html browser preview web', detail: 'Open a local HTML preview at the bottom', icon: <Globe size={14} style={{ flexShrink: 0, color: 'var(--r0-accent-blue)' }} />, shortcut: undefined as string | undefined, action: () => { onOpenHtmlPreview(activeFilePath); onClose(); } }]
         : []),
@@ -289,7 +331,11 @@ export default function CommandPalette({
         ? [{ label: 'Format Document', tokens: 'format prettier code document', detail: 'Format the active document', icon: <AlignLeft size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Shift+Alt+F', action: () => { onFormatDocument(); onClose(); } }]
         : []),
       { label: 'Open Settings',       tokens: 'settings preferences config', detail: 'Manage API keys, themes and more',    icon: <Settings   size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+,',   action: () => { onOpenSettings();  onClose(); } },
-      { label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', tokens: 'terminal toggle panel', detail: terminalOpen ? 'Close the terminal panel' : 'Open the terminal panel', icon: <Terminal size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+`', action: () => { onToggleTerminal(); onClose(); } },
+      { label: 'Keyboard Shortcuts',  tokens: 'keybindings customize keys',   detail: 'View and customize keyboard shortcuts', icon: <Settings size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: undefined as string | undefined, action: () => { onOpenKeyboardShortcuts(); onClose(); } },
+      { label: 'Search Files',        tokens: 'search files in workspace',    detail: 'Search file contents',                 icon: <Search size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+Shift+F', action: () => { onSelectSidebarPanel('search'); onClose(); } },
+      { label: 'Source Control',      tokens: 'git changes source control',   detail: 'Open changes, history, and graph',     icon: <AlignLeft size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+Shift+G', action: () => { onSelectSidebarPanel('sourcetree'); onClose(); } },
+      { label: 'Extensions',          tokens: 'extensions install manage',    detail: 'Browse installed extensions',          icon: <Globe size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+Shift+X', action: () => { onSelectSidebarPanel('extensions'); onClose(); } },
+      { label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', tokens: 'terminal toggle panel', detail: terminalOpen ? 'Close the terminal panel' : 'Open the terminal panel', icon: <Terminal size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: 'Ctrl+J', action: () => { onToggleTerminal(); onClose(); } },
       { label: sidebarOpen  ? 'Hide Sidebar'  : 'Show Sidebar',  tokens: 'sidebar toggle explorer', detail: sidebarOpen ? 'Close the file explorer' : 'Open the file explorer', icon: <PanelLeft size={14} style={{ flexShrink: 0, color: 'var(--r0-fg-muted)' }} />, shortcut: undefined, action: () => { onToggleSidebar(); onClose(); } },
       ...themes.filter(t => t.name !== theme.name).map(t => ({
         label: `Switch to ${t.name}`,
@@ -310,8 +356,10 @@ export default function CommandPalette({
 
     result.sort((a, b) => a.score - b.score);
     return result.slice(0, 60);
-  }, [isTextMode, isFileMode, q, tabs, wsFiles, folderPath, terminalOpen, sidebarOpen, theme, themes, setTheme,
-      onFileOpen, onClose, onNewFile, onOpenFolder, onOpenFile, onToggleSidebar, onToggleTerminal, onOpenSettings, activeFilePath, onOpenHtmlPreview, onFormatDocument]);
+  }, [isTextMode, isFileMode, isCommandMode, q, tabs, wsFiles, roots, terminalOpen, sidebarOpen, theme, themes, setTheme,
+      onFileOpen, onClose, onNewFile, onOpenFolder, onAddFolderToWorkspace, onReloadWindow, onOpenFile, onToggleSidebar, onToggleTerminal, onOpenSettings,
+      onOpenKeyboardShortcuts, onSave, onSaveAll, onCloseEditor, onSelectSidebarPanel,
+      activeFilePath, onOpenHtmlPreview, onFormatDocument]);
 
   const textItems = useMemo<PaletteItem[]>(() =>
     textResults.map(r => {
@@ -332,9 +380,9 @@ export default function CommandPalette({
   const wsGroup   = items.filter(i => i.kind === 'workspace-file');
   const cmdGroup  = items.filter(i => i.kind === 'command');
   const flat      = useMemo<PaletteItem[]>(
-    () => isTextMode ? textItems : isFileMode ? fileItems : [...openGroup, ...wsGroup, ...cmdGroup],
+    () => isTextMode ? textItems : isFileMode ? fileItems : isCommandMode ? cmdGroup : [...openGroup, ...wsGroup, ...cmdGroup],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openGroup/wsGroup/cmdGroup are derived synchronously from `items`
-    [isTextMode, isFileMode, textItems, fileItems, items],
+    [isTextMode, isFileMode, isCommandMode, textItems, fileItems, items],
   );
   const idxOf     = (item: PaletteItem) => flat.findIndex(i => i.id === item.id);
 
@@ -359,7 +407,7 @@ export default function CommandPalette({
   }, [selected]);
 
   const isLoading = isTextMode && textLoading;
-  const activeQuery = isTextMode ? textQuery : isFileMode ? fileQuery : q;
+  const activeQuery = isTextMode ? textQuery : isFileMode ? fileQuery : isCommandMode ? (q || '>') : q;
 
   return createPortal(
     <div
@@ -406,7 +454,7 @@ export default function CommandPalette({
           ref={inputRef}
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Go to file or command… (@ files · % text)"
+          placeholder={isCommandMode ? "Type a command…" : "Go to file or command… (@ files · % text · > commands)"}
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
             fontSize: '14px', lineHeight: '1.4',

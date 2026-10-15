@@ -13,10 +13,12 @@ export interface AppCommands {
   onToggleFullscreen: () => void;
   // Navigation
   onOpenFolder: () => void;
+  onAddFolderToWorkspace: () => void;
   onOpenFile: () => void;
   onNewFile: () => void;
   onNewWindow: () => void;
   onOpenPalette: () => void;
+  onOpenKeyboardShortcuts: () => void;
   // Status
   gitBranch: string | null;
   dirtyCount: number;
@@ -58,7 +60,7 @@ const defaults: AppCommands = {
   sidebarOpen: false, terminalOpen: false, aiPanelOpen: false,
   onToggleSidebar: noop, onToggleTerminal: noop, onToggleAiPanel: noop,
   isFullscreen: false, onToggleFullscreen: noop,
-  onOpenFolder: noop, onOpenFile: noop, onNewFile: noop, onNewWindow: noop, onOpenPalette: noop,
+  onOpenFolder: noop, onAddFolderToWorkspace: noop, onOpenFile: noop, onNewFile: noop, onNewWindow: noop, onOpenPalette: noop, onOpenKeyboardShortcuts: noop,
   gitBranch: null, dirtyCount: 0, hasActiveTab: false, hasFolderOpen: false,
   onSave: noop, onSaveAs: noop, onSaveAll: noop, onCloseEditor: noop, onCloseFolder: noop,
   onEditorUndo: noop, onEditorRedo: noop, onEditorCut: noop, onEditorCopy: noop,

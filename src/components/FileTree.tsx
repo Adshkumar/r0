@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import {
   ChevronRight, ChevronDown, File,
-  FilePlus, FolderPlus, Pencil, Trash2, Copy, ExternalLink,
+  FilePlus, FolderPlus, Pencil, Trash2, Copy, ExternalLink, X,
 } from "lucide-react";
 import { readDir, writeFile, renamePath, deletePath, createDirCmd, revealInExplorer, type FsEntry } from "../lib/fs";
 import { resolveFileIcon } from "../lib/fileIcons";
@@ -289,10 +289,13 @@ interface Props {
   refreshKey?: number;
   expandedFolders?: Set<string>;
   onFolderExpansionChange?: (path: string, expanded: boolean) => void;
+  rootPath?: string;
+  embedded?: boolean;
 }
 
-export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, refreshKey, expandedFolders = new Set(), onFolderExpansionChange = () => {} }: Props) {
-  const { folderPath } = useWorkspace();
+export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, selectedFilePath, refreshKey, expandedFolders = new Set(), onFolderExpansionChange = () => {}, rootPath, embedded = false }: Props) {
+  const { folderPath: activeWorkspacePath, workspaceRoots, removeWorkspaceRoot } = useWorkspace();
+  const folderPath = rootPath ?? activeWorkspacePath;
   const fileIconTheme = useFileIconTheme();
   const [rootEntries, setRootEntries] = useState<FsEntry[]>([]);
   const rootName = folderPath?.split(/[\\/]/).filter(Boolean).pop() ?? '';
@@ -413,15 +416,28 @@ export default function FileTree({ onFileOpen, onPreviewOpen, onPathRenamed, sel
       onFolderExpansionChange,
     }}>
       <div
-        className="flex-1 flex flex-col overflow-y-auto"
+        className={embedded ? "flex flex-col" : "flex-1 flex flex-col overflow-y-auto"}
+        style={embedded ? { flex: "0 0 auto" } : undefined}
         onContextMenu={e => { e.preventDefault(); openContextMenu(e.clientX, e.clientY, null); }}
       >
         <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '10px 12px 6px', fontSize: 11, fontWeight: 600,
           letterSpacing: '0.8px', textTransform: 'uppercase', color: 'var(--r0-fg-muted)',
           userSelect: 'none',
         }}>
           {rootName}
+          {embedded && workspaceRoots.length > 1 && (
+            <button
+              type="button"
+              aria-label={`Remove ${rootName} from workspace`}
+              title="Remove Folder from Workspace"
+              onClick={() => removeWorkspaceRoot(folderPath)}
+              style={{ border: 0, background: 'transparent', color: 'var(--r0-fg-subtle)', cursor: 'pointer', display: 'flex', padding: 2 }}
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
 
         <div style={{ flex: 1 }}>

@@ -91,7 +91,7 @@ export default function TitleBar() {
     sidebarOpen, terminalOpen, aiPanelOpen,
     onToggleSidebar, onToggleTerminal, onToggleAiPanel,
     isFullscreen, onToggleFullscreen,
-    onOpenFolder, onOpenFile, onNewFile, onNewWindow, onOpenPalette,
+    onOpenFolder, onAddFolderToWorkspace, onOpenFile, onNewFile, onNewWindow, onOpenPalette, onOpenKeyboardShortcuts,
     gitBranch, dirtyCount, hasActiveTab, hasFolderOpen,
     onSave, onSaveAs, onSaveAll, onCloseEditor, onCloseFolder,
     onEditorUndo, onEditorRedo, onEditorCut, onEditorCopy, onEditorPaste, onEditorSelectAll, onEditorFind,
@@ -116,6 +116,7 @@ export default function TitleBar() {
     { type: 'item', label: 'New Window',    shortcut: 'Ctrl+Shift+N',  onClick: onNewWindow },
     { type: 'separator' },
     { type: 'item', label: 'Open Folder…', shortcut: 'Ctrl+K Ctrl+O', onClick: onOpenFolder },
+    { type: 'item', label: 'Add Folder to Workspace…', onClick: onAddFolderToWorkspace },
     { type: 'item', label: 'Open File…',   shortcut: 'Ctrl+O',        onClick: onOpenFile },
     { type: 'separator' },
     { type: 'item', label: 'Save',         shortcut: 'Ctrl+S',        disabled: !hasActiveTab, onClick: () => { close(); onSave?.(); } },
@@ -143,10 +144,10 @@ export default function TitleBar() {
   ];
 
   const viewEntries: MenuEntry[] = [
-    { type: 'item', label: 'Command Palette', shortcut: 'Ctrl+P', onClick: () => { close(); onOpenPalette(); } },
+    { type: 'item', label: 'Command Palette', shortcut: 'Ctrl+Shift+P', onClick: () => { close(); onOpenPalette(); } },
     { type: 'separator' },
     { type: 'item', label: sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar', onClick: () => { close(); onToggleSidebar(); } },
-    { type: 'item', label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', shortcut: 'Ctrl+`', onClick: () => { close(); onToggleTerminal(); } },
+    { type: 'item', label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', shortcut: 'Ctrl+J', onClick: () => { close(); onToggleTerminal(); } },
     { type: 'item', label: isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen', shortcut: 'F11', onClick: () => { close(); onToggleFullscreen(); } },
     { type: 'separator' },
     { type: 'item', label: 'Zoom In',    shortcut: 'Ctrl+=', onClick: () => { close(); onZoomIn?.(); } },
@@ -160,7 +161,7 @@ export default function TitleBar() {
   ];
 
   const terminalEntries: MenuEntry[] = [
-    { type: 'item', label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', shortcut: 'Ctrl+`', onClick: () => { close(); onToggleTerminal(); } },
+    { type: 'item', label: terminalOpen ? 'Hide Terminal' : 'Show Terminal', shortcut: 'Ctrl+J', onClick: () => { close(); onToggleTerminal(); } },
     { type: 'separator' },
     { type: 'item', label: 'New Terminal Tab', onClick: () => { close(); onNewTerminalTab?.(); } },
     { type: 'item', label: 'Clear Terminal',   disabled: !terminalOpen, onClick: () => { close(); onClearTerminal?.(); } },
@@ -169,7 +170,7 @@ export default function TitleBar() {
 
   const repo = 'https://github.com/r0-AI-IDE/r0';
   const helpEntries: MenuEntry[] = [
-    { type: 'item', label: 'Keyboard Shortcuts', shortcut: 'Ctrl+P', onClick: () => { close(); onOpenPalette(); } },
+    { type: 'item', label: 'Keyboard Shortcuts', shortcut: undefined, onClick: () => { close(); onOpenKeyboardShortcuts(); } },
     { type: 'separator' },
     { type: 'item', label: 'Documentation',    onClick: () => { close(); openUrl(`${repo}#readme`); } },
     { type: 'item', label: 'Report an Issue',  onClick: () => { close(); openUrl(`${repo}/issues/new`); } },
@@ -254,7 +255,7 @@ export default function TitleBar() {
         </IconBtn>
         <IconBtn
           label="Toggle Bottom Panel"
-          tooltip="Toggle Terminal (Ctrl+`)"
+          tooltip="Toggle Terminal (Ctrl+J)"
           active={terminalOpen}
           onClick={onToggleTerminal}
         >

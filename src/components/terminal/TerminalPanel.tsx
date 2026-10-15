@@ -465,7 +465,7 @@ const TerminalPanel = forwardRef<TerminalPanelHandle, Props>(function TerminalPa
         </PanelBtn>
 
         {/* Close panel */}
-        <PanelBtn onClick={onClose} title="Close Terminal (Ctrl+`)">
+        <PanelBtn onClick={onClose} title="Close Terminal (Ctrl+J)">
           <X size={12} />
         </PanelBtn>
       </div>

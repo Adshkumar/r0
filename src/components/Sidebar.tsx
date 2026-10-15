@@ -6,6 +6,7 @@ import SourceTreePanel from "./SourceTreePanel";
 import DebugPanel from "./DebugPanel";
 import ExtensionsPanel from "./extensions/ExtensionsPanel";
 import type { StatusFile } from "../lib/git";
+import { useWorkspace } from "../context/WorkspaceContext";
 
 const MIN_WIDTH = 180;
 const MAX_WIDTH = 500;
@@ -18,8 +19,8 @@ interface Props {
   selectedFilePath: string | null;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
-  onOpenCommit: (hash: string) => void;
-  onOpenWorkingDiff: (file: StatusFile) => void;
+  onOpenCommit: (hash: string, rootPath: string) => void;
+  onOpenWorkingDiff: (file: StatusFile, rootPath: string) => void;
   selectedCommitHash: string | null;
   expandedFolders: Set<string>;
   onFolderExpansionChange: (path: string, expanded: boolean) => void;
@@ -37,14 +38,21 @@ function ActivePanel({ id, onFileOpen, onPreviewOpen, onPathRenamed, selectedFil
   selectedFilePath: string | null;
   onFileOpenAtLine: (path: string, line: number, col: number) => void;
   fileTreeKey?: number;
-  onOpenCommit: (hash: string) => void;
-  onOpenWorkingDiff: (file: StatusFile) => void;
+  onOpenCommit: (hash: string, rootPath: string) => void;
+  onOpenWorkingDiff: (file: StatusFile, rootPath: string) => void;
   selectedCommitHash: string | null;
   expandedFolders: Set<string>;
   onFolderExpansionChange: (path: string, expanded: boolean) => void;
 }) {
+  const { workspaceRoots } = useWorkspace();
   switch (id) {
-    case "explorer":   return <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} expandedFolders={expandedFolders} onFolderExpansionChange={onFolderExpansionChange} />;
+    case "explorer":   return workspaceRoots.length > 0 ? (
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {workspaceRoots.map(rootPath => (
+          <FileTree key={rootPath} rootPath={rootPath} embedded onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} expandedFolders={expandedFolders} onFolderExpansionChange={onFolderExpansionChange} />
+        ))}
+      </div>
+    ) : <FileTree onFileOpen={onFileOpen} onPreviewOpen={onPreviewOpen} onPathRenamed={onPathRenamed} selectedFilePath={selectedFilePath} refreshKey={fileTreeKey} expandedFolders={expandedFolders} onFolderExpansionChange={onFolderExpansionChange} />;
     case "search":     return <SearchPanel onFileOpenAtLine={onFileOpenAtLine} />;
     case "sourcetree": return <SourceTreePanel onOpenCommit={onOpenCommit} onOpenWorkingDiff={onOpenWorkingDiff} selectedCommitHash={selectedCommitHash} />;
     case "debug":      return <DebugPanel onFileOpenAtLine={onFileOpenAtLine} />;

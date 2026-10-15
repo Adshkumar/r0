@@ -11,6 +11,7 @@ mod session;
 mod system;
 mod terminal;
 mod tree;
+mod workspace_watch;
 
 use dpi::{LogicalPosition, LogicalSize};
 use tauri::{AppHandle, Manager, WebviewBuilder, WebviewUrl};
@@ -176,6 +177,7 @@ pub fn run() {
         .manage(lsp::LspState::new())
         .manage(dap::DapState::new())
         .manage(html_preview::HtmlPreviewState::default())
+        .manage(workspace_watch::WorkspaceWatchState::default())
         .invoke_handler(tauri::generate_handler![
             keychain::set_secret,
             keychain::get_secret,
@@ -226,6 +228,7 @@ pub fn run() {
             session::session_clear,
             tree::get_file_tree,
             tree::get_import_edges,
+            workspace_watch::watch_workspace_roots,
             ai::agent_bash_run,
             ai::ai_stream_proxy,
             ai::fetch_text,

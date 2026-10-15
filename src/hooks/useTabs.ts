@@ -19,9 +19,12 @@ export function useTabs() {
 
   // Always-current snapshots used by callbacks that fire before re-render
   const activeTabRef      = useRef<string | null>(activeTab);
+  const tabsRef           = useRef<Tab[]>(tabs);
   const fileContentsRef   = useRef<Record<string, string>>(fileContents);
   // eslint-disable-next-line react-hooks/refs -- stable ref pattern: keep current values visible to pre-render callbacks
   activeTabRef.current    = activeTab;
+  // eslint-disable-next-line react-hooks/refs -- stable ref pattern for async filesystem callbacks
+  tabsRef.current         = tabs;
   // eslint-disable-next-line react-hooks/refs -- stable ref pattern: keep current values visible to pre-render callbacks
   fileContentsRef.current = fileContents;
 
@@ -52,6 +55,34 @@ export function useTabs() {
     setTabs(prev => prev.find(t => t.path === path) ? prev : [...prev, { path, name, isDirty: false }]);
     setActiveTab(path);
   }
+
+  const refreshFileTree = useCallback(() => {
+    setFileTreeVersion(version => version + 1);
+  }, []);
+
+  const refreshExternalFile = useCallback(async (path: string) => {
+    const tab = tabsRef.current.find(current => current.path === path);
+    if (!tab) return;
+    try {
+      const diskContent = await readFile(path);
+      const currentContent = fileContentsRef.current[path];
+      const latestTab = tabsRef.current.find(current => current.path === path);
+      if (diskContent === currentContent) return;
+      if (latestTab?.isDirty) {
+        showToast(`The file changed on disk; your unsaved edits were preserved: ${path}`, 'info');
+        return;
+      }
+      setFileContents(current => ({ ...current, [path]: diskContent }));
+      setFileErrors(current => {
+        if (!(path in current)) return current;
+        const next = { ...current };
+        delete next[path];
+        return next;
+      });
+    } catch (error) {
+      showToast(`Could not reload externally changed file ${path}: ${String(error)}`, 'error');
+    }
+  }, [showToast]);
 
   const restoreSessionTabs = useCallback(async (
     paths: string[],
@@ -323,6 +354,8 @@ export function useTabs() {
     fileErrors,
     jumpRequest,
     fileTreeVersion,
+    refreshFileTree,
+    refreshExternalFile,
     activeTabRef,
     fileContentsRef,
     openTab, openTabAtLine, closeTab,

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, File } from 'lucide-react';
 import { searchInFiles, type SearchMatch } from '../lib/search';
 import { fileColor } from '../lib/fileColors';
@@ -15,12 +15,16 @@ interface Group {
   matches: SearchMatch[];
 }
 
-function groupResults(matches: SearchMatch[], base: string | null): Group[] {
+function groupResults(matches: SearchMatch[], roots: string[]): Group[] {
   const map = new Map<string, Group>();
   for (const m of matches) {
     if (!map.has(m.path)) {
       const name = m.path.split(/[/\\]/).pop() ?? m.path;
-      const rel = base && m.path.startsWith(base)
+      const base = [...roots].sort((a, b) => b.length - a.length).find(root =>
+        m.path.toLowerCase().startsWith(root.toLowerCase().replace(/[/\\]+$/, '') + '\\')
+        || m.path.toLowerCase().startsWith(root.toLowerCase().replace(/[/\\]+$/, '') + '/'),
+      );
+      const rel = base
         ? m.path.slice(base.length).replace(/^[/\\]/, '').replace(/\\/g, '/')
         : m.path;
       map.set(m.path, { path: m.path, name, rel, matches: [] });
@@ -76,15 +80,19 @@ function MatchLine({ match, query, onOpen }: { match: SearchMatch; query: string
 }
 
 export default function SearchPanel({ onFileOpenAtLine }: Props) {
-  const { folderPath } = useWorkspace();
+  const { workspaceRoots } = useWorkspace();
+  const rootKey = workspaceRoots.join('\u0000');
+  const roots = useMemo(() => rootKey ? rootKey.split('\u0000') : [], [rootKey]);
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState<SearchMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRevisionRef = useRef(0);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim() || !folderPath) {
+    const revision = ++searchRevisionRef.current;
+    if (!query.trim() || roots.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard reset when query/folder is empty
       setResults([]);
       setLoading(false);
@@ -92,14 +100,19 @@ export default function SearchPanel({ onFileOpenAtLine }: Props) {
     }
     setLoading(true);
     timerRef.current = setTimeout(() => {
-      searchInFiles(folderPath, query)
-        .then(r => { setResults(r); setLoading(false); })
-        .catch(() => setLoading(false));
+      Promise.allSettled(roots.map(root => searchInFiles(root, query)))
+        .then(resultsByRoot => {
+          if (revision !== searchRevisionRef.current) return;
+          const failures = resultsByRoot.filter(result => result.status === 'rejected');
+          for (const failure of failures) console.error('Could not search a workspace root:', failure.reason);
+          setResults(resultsByRoot.flatMap(result => result.status === 'fulfilled' ? result.value : []));
+          setLoading(false);
+        })
     }, 350);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [query, folderPath]);
+  }, [query, rootKey, roots]);
 
-  const groups = groupResults(results, folderPath);
+  const groups = groupResults(results, roots);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -161,13 +174,13 @@ export default function SearchPanel({ onFileOpenAtLine }: Props) {
 
       {/* Result list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {!folderPath && (
+        {roots.length === 0 && (
           <div style={{ padding: '20px 12px', fontSize: 12, color: 'var(--r0-fg-subtle)', textAlign: 'center' }}>
             Open a folder to search
           </div>
         )}
 
-        {folderPath && query.trim() && !loading && results.length === 0 && (
+        {roots.length > 0 && query.trim() && !loading && results.length === 0 && (
           <div style={{ padding: '20px 12px', fontSize: 12, color: 'var(--r0-fg-subtle)', textAlign: 'center' }}>
             No results for "{query}"
           </div>

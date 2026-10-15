@@ -326,6 +326,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
 ) {
   const containerRef   = useRef<HTMLDivElement>(null);
   const viewRef        = useRef<EditorView | null>(null);
+  const externalContentSyncRef = useRef(false);
   const onChangeRef    = useRef(onChange);
   onChangeRef.current  = onChange;
   const onCursorRef    = useRef(onCursorChange);
@@ -629,7 +630,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         r0BaseTheme,
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
-            onChangeRef.current?.(update.state.doc.toString());
+            if (!externalContentSyncRef.current) onChangeRef.current?.(update.state.doc.toString());
           }
           if (update.docChanged || update.selectionSet) {
             const pos  = update.state.selection.main.head;
@@ -711,6 +712,19 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || view.state.doc.toString() === content) return;
+    externalContentSyncRef.current = true;
+    try {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: content },
+      });
+    } finally {
+      externalContentSyncRef.current = false;
+    }
+  }, [content]);
 
   // Jump to line when triggered from search results
   useEffect(() => {

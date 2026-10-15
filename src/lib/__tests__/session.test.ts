@@ -18,6 +18,7 @@ const session: PersistedSession = {
   version: 1,
   revision: 7,
   workspacePath: 'C:\\work\\app',
+  workspacePaths: ['C:\\work\\app', 'C:\\work\\shared'],
   tabs: ['C:\\work\\app\\src\\main.ts'],
   activeTab: 'C:\\work\\app\\src\\main.ts',
   editorStates: {},

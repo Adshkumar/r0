@@ -15,6 +15,7 @@ export interface PersistedSession {
   version: 1;
   revision: number;
   workspacePath: string | null;
+  workspacePaths?: string[];
   tabs: string[];
   activeTab: string | null;
   editorStates: Record<string, PersistedEditorState>;
@@ -54,6 +55,8 @@ export async function loadPersistedSession(): Promise<PersistedSession | null> {
     session.version !== 1 ||
     typeof session.revision !== 'number' ||
     !Array.isArray(session.tabs) ||
+    (session.workspacePaths !== undefined &&
+      (!Array.isArray(session.workspacePaths) || !session.workspacePaths.every(path => typeof path === 'string'))) ||
     !session.editorStates ||
     !session.layout
   ) {

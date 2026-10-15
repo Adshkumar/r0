@@ -7,6 +7,9 @@ export interface GlobalHandlers {
   saveActive:     () => void;
   toggleTerminal: () => void;
   togglePalette:  () => void;
+  openCommandPalette?: () => void;
+  quickOpen?: () => void;
+  selectSidebarPanel?: (panel: "explorer" | "search" | "sourcetree" | "extensions") => void;
   toggleSettings: () => void;
   // Optional — wired when available in App.tsx
   newFile?:          () => void;
@@ -23,6 +26,7 @@ export interface GlobalHandlers {
   stepOut?:          () => void;
   toggleBreakpoint?: () => void;
   formatDocument?:   () => void;
+  reloadWindow?:     () => void;
 }
 
 export function useGlobalKeybindings(handlers: GlobalHandlers) {
@@ -59,6 +63,23 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.defaultPrevented) return;
+      if (
+        e.key === "F1" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        !e.altKey
+      ) {
+        e.preventDefault();
+        (h.current.openCommandPalette ?? h.current.togglePalette)();
+        return;
+      }
+      const target = e.target;
+      const isTextEntry = target instanceof HTMLElement && (
+        target.isContentEditable ||
+        target.matches("input, textarea, select") ||
+        !!target.closest(".xterm")
+      );
       // Read the live keymap on every event so custom bindings apply immediately
       // without a page reload (localStorage is synchronous).
       const km = getCommandKeyMap();
@@ -67,9 +88,15 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
       const dispatch: Record<string, (() => void) | undefined> = {
         "r0.save":             () => h.current.saveActive(),
         "r0.toggleTerminal":   () => h.current.toggleTerminal(),
-        "r0.togglePalette":    () => h.current.togglePalette(),
+        "r0.togglePalette":    () => (h.current.openCommandPalette ?? h.current.togglePalette)(),
+        "r0.quickOpen":        () => h.current.quickOpen?.(),
         "r0.toggleSettings":   () => h.current.toggleSettings(),
+        "r0.showExplorer":     () => h.current.selectSidebarPanel?.("explorer"),
+        "r0.showSearch":       () => h.current.selectSidebarPanel?.("search"),
+        "r0.showSourceControl":() => h.current.selectSidebarPanel?.("sourcetree"),
+        "r0.showExtensions":   () => h.current.selectSidebarPanel?.("extensions"),
         "r0.toggleFullscreen": () => toggleFullscreen(),
+        "r0.reloadWindow":    () => h.current.reloadWindow?.(),
         "r0.newFile":          () => h.current.newFile?.(),
         "r0.openFile":         () => h.current.openFile?.(),
         "r0.closeTab":         () => h.current.closeTab?.(),
@@ -91,6 +118,7 @@ export function useGlobalKeybindings(handlers: GlobalHandlers) {
         const handler = dispatch[cmdId];
         if (!handler) continue;
         if (matchesEvent(e, keyStr)) {
+          if (isTextEntry && cmdId !== "r0.togglePalette") continue;
           if (
             cmdId === "r0.formatDocument" &&
             !(e.target instanceof HTMLElement && e.target.closest(".cm-editor"))

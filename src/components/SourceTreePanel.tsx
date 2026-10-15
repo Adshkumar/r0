@@ -7,7 +7,7 @@ import {
   getGitCommitDetails,
   getGitHubCommitAuthorAvatar,
   getGitRemoteUrl,
-  getStatusFiles, getGitHistory, gitCommit, gitCommitPush, invalidateGitCache,
+  getStatusFiles, getGitHistory, gitCommit, gitCommitPush, invalidateGitCache, onGitRepositoryChanged,
   type GitCommitDetails, type GitHubCommitAuthorAvatar, type StatusFile, type GitHistoryCommit,
 } from '../lib/git';
 import { calculatePopoverPosition, getGitHubAvatarUrl } from '../lib/githubAvatar';
@@ -156,13 +156,15 @@ function graphPositions(commits: GitHistoryCommit[]): { positions: Map<string, G
 }
 
 interface Props {
-  onOpenCommit: (hash: string) => void;
-  onOpenWorkingDiff: (file: StatusFile) => void;
+  onOpenCommit: (hash: string, rootPath: string) => void;
+  onOpenWorkingDiff: (file: StatusFile, rootPath: string) => void;
   selectedCommitHash: string | null;
 }
 
 export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selectedCommitHash }: Props) {
-  const { folderPath } = useWorkspace();
+  const { folderPath: defaultRoot, workspaceRoots } = useWorkspace();
+  const [selectedRoot, setSelectedRoot] = useState(defaultRoot);
+  const folderPath = selectedRoot && workspaceRoots.includes(selectedRoot) ? selectedRoot : defaultRoot;
   const [repositoryState, setRepositoryState] = useState<{
     rootPath: string;
     files: StatusFile[];
@@ -194,6 +196,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
   const hoverTargetRef = useRef<HTMLButtonElement | null>(null);
   const hoverRowActiveRef = useRef(false);
   const hoverCardActiveRef = useRef(false);
+  const loadRevisionRef = useRef(0);
   const currentRepository = repositoryState?.rootPath === folderPath ? repositoryState : null;
   const files = currentRepository?.files ?? [];
   const history = currentRepository?.history ?? EMPTY_HISTORY;
@@ -205,48 +208,42 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
 
   const load = useCallback(async () => {
     if (!folderPath) return { files: [], history: [] as GitHistoryCommit[] };
+    const revision = ++loadRevisionRef.current;
+    const rootPath = folderPath;
     const [f, h] = await Promise.all([
       getStatusFiles(folderPath),
       getGitHistory(folderPath, 0, HISTORY_PAGE_SIZE),
     ]);
-    setRepositoryState({
-      rootPath: folderPath,
-      files: f,
-      history: h,
-      hasOlderHistory: h.length === HISTORY_PAGE_SIZE,
-      error: null,
-    });
-    setSelectedDate(date => date && h.some(commit => localDay(commit.author_time) === date) ? date : null);
-    return { files: f, history: h };
-  }, [folderPath]);
-
-  useEffect(() => {
-    let current = true;
-    if (!folderPath) return;
-    Promise.all([
-      getStatusFiles(folderPath),
-      getGitHistory(folderPath, 0, HISTORY_PAGE_SIZE),
-    ]).then(([f, h]) => {
-      if (!current) return;
+    if (revision === loadRevisionRef.current) {
       setRepositoryState({
-        rootPath: folderPath,
+        rootPath,
         files: f,
         history: h,
         hasOlderHistory: h.length === HISTORY_PAGE_SIZE,
         error: null,
       });
       setSelectedDate(date => date && h.some(commit => localDay(commit.author_time) === date) ? date : null);
-    }).catch(reason => {
-      if (current) setRepositoryState({
-        rootPath: folderPath,
-        files: [],
-        history: [],
-        hasOlderHistory: false,
-        error: String(reason),
-      });
+    }
+    return { files: f, history: h };
+  }, [folderPath]);
+
+  useEffect(() => {
+    let current = true;
+    if (!folderPath) return;
+    void load().catch(reason => {
+      if (current) setRepositoryState(previous => previous?.rootPath === folderPath
+        ? { ...previous, error: String(reason) }
+        : { rootPath: folderPath, files: [], history: [], hasOlderHistory: false, error: String(reason) });
     });
     return () => { current = false; };
-  }, [folderPath]);
+  }, [folderPath, load]);
+
+  useEffect(() => onGitRepositoryChanged(event => {
+    if (event.path.toLowerCase() !== folderPath?.toLowerCase()) return;
+    void load().catch(reason => {
+      showToast(`Git operation completed, but repository state could not be refreshed: ${String(reason)}`, 'error');
+    });
+  }), [folderPath, load, showToast]);
 
   async function refresh() {
     if (!folderPath || refreshing) return;
@@ -494,6 +491,20 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}>
+      {workspaceRoots.length > 1 && (
+        <div style={{ padding: '8px 8px 0' }}>
+          <select
+            value={folderPath ?? ''}
+            onChange={event => setSelectedRoot(event.target.value)}
+            aria-label="Git repository"
+            style={{ width: '100%', padding: '4px 6px', background: 'var(--r0-bg-base)', color: 'var(--r0-fg-default)', border: '1px solid var(--r0-border-default)', borderRadius: 4, fontSize: 11 }}
+          >
+            {workspaceRoots.map(root => (
+              <option key={root} value={root}>{root.split(/[\\/]/).filter(Boolean).pop() ?? root}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* ── Top half: commit form + changes ─────────────────────────────────── */}
       <div style={{ flex: '0 0 50%', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
@@ -596,7 +607,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
           files.map((f, i) => (
             <button
               key={`${f.path}:${i}`}
-              onClick={() => onOpenWorkingDiff(f)}
+              onClick={() => onOpenWorkingDiff(f, folderPath)}
               title={`Open working-tree diff for ${f.path}`}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px', width: '100%', border: 0, textAlign: 'left', background: 'transparent', cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--r0-bg-hover)'; }}
@@ -777,7 +788,7 @@ export default function SourceTreePanel({ onOpenCommit, onOpenWorkingDiff, selec
                   {commits.map(commit => (
                     <button
                       key={commit.hash}
-                      onClick={() => onOpenCommit(commit.hash)}
+                      onClick={() => onOpenCommit(commit.hash, folderPath)}
                       aria-label={`${commit.subject || '(no subject)'}, ${commit.hash}`}
                       style={{ height: 48, width: '100%', display: 'flex', alignItems: 'center', padding: `0 7px 0 ${graphWidth + 5}px`, position: 'relative', zIndex: 1, border: 0, borderBottom: '1px solid color-mix(in srgb, var(--r0-border-default) 45%, transparent)', background: selectedCommitHash === commit.hash ? 'var(--r0-bg-active)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}
                       onMouseEnter={e => {

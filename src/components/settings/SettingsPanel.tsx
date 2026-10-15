@@ -1147,10 +1147,11 @@ const suggestionInputStyle: React.CSSProperties = {
 
 interface SettingsPanelProps {
   onClose: () => void;
+  initialSection?: Section;
 }
 
-export default function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const [section, setSection] = useState<Section>("general");
+export default function SettingsPanel({ onClose, initialSection = "general" }: SettingsPanelProps) {
+  const [section, setSection] = useState<Section>(initialSection);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

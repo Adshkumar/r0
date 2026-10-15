@@ -52,6 +52,32 @@ export function getGitHubCommitAuthorAvatar(
 export interface CommitEntry { hash: string; msg: string; }
 export interface GitChanges { files: number; commits_ahead: number; log: CommitEntry[]; }
 
+export interface GitRepositoryChangedEvent {
+  path: string;
+  operation: 'commit' | 'commit-push' | 'filesystem-change';
+}
+
+const GIT_REPOSITORY_CHANGED = 'r0:git-repository-changed';
+
+function notifyGitRepositoryChanged(detail: GitRepositoryChangedEvent): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<GitRepositoryChangedEvent>(GIT_REPOSITORY_CHANGED, { detail }));
+  }
+}
+
+export function onGitRepositoryChanged(
+  listener: (event: GitRepositoryChangedEvent) => void,
+): () => void {
+  const handler = (event: Event) => listener((event as CustomEvent<GitRepositoryChangedEvent>).detail);
+  window.addEventListener(GIT_REPOSITORY_CHANGED, handler);
+  return () => window.removeEventListener(GIT_REPOSITORY_CHANGED, handler);
+}
+
+export function notifyGitFilesystemChanged(path: string): void {
+  invalidateGitCache(path);
+  notifyGitRepositoryChanged({ path, operation: 'filesystem-change' });
+}
+
 export async function getGitChanges(path: string): Promise<GitChanges | null> {
   try {
     return await invoke<GitChanges | null>('git_changes', { path });
@@ -288,6 +314,7 @@ export async function getGitLogFull(path: string): Promise<FullCommitEntry[]> {
 export async function gitCommit(path: string, title: string, description: string): Promise<void> {
   await invoke('git_commit', { path, title, description });
   invalidateGitCache(path);
+  notifyGitRepositoryChanged({ path, operation: 'commit' });
 }
 
 export async function gitCommitPush(path: string, title: string, description: string): Promise<void> {
@@ -295,5 +322,6 @@ export async function gitCommitPush(path: string, title: string, description: st
     await invoke('git_commit_push', { path, title, description });
   } finally {
     invalidateGitCache(path);
+    notifyGitRepositoryChanged({ path, operation: 'commit-push' });
   }
 }
