@@ -16,7 +16,7 @@ import {
 import { useSettingsStore } from "../stores/settings.store";
 import { useWhatsNewStore } from "../stores/whats-new.store";
 
-const DOWNLOAD_PAGE_URL = "https://adshkumar.is-a.dev/";
+const DOWNLOAD_PAGE_URL = "https://github.com/Adshkumar/r0/releases/latest";
 
 let appUpdateMode: Promise<AppUpdateMode> | null = null;
 
