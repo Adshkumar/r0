@@ -1,0 +1,21 @@
+{
+  "productName": "R0 Smoke",
+  "identifier": "com.code.r0.smoke",
+  "bundle": {
+    "createUpdaterArtifacts": false,
+    "resources": null,
+    "macOS": {
+      "signingIdentity": null
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["r0-smoke"]
+      }
+    },
+    "updater": {
+      "active": false
+    }
+  }
+}

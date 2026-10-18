@@ -1,0 +1,24 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.dart",
+  "name": "Dart",
+  "displayName": "Dart",
+  "version": "1.0.0",
+  "description": "Dart language support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "dart",
+      "extensions": [".dart"],
+      "aliases": ["Dart"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "dart",
+      "runtime": "binary",
+      "args": ["language-server", "--protocol=lsp"]
+    }
+  }
+}

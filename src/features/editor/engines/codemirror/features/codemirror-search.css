@@ -1,0 +1,19 @@
+.cm-editor .cm-panels.cm-panels-top:has(> .cm-r0-search) {
+  position: absolute;
+  top: var(--r0-chrome-gap-loose);
+  right: calc(var(--r0-chrome-gap-loose) + 12px);
+  left: auto;
+  z-index: 30;
+  border: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.cm-editor .cm-panels-top .cm-panel.cm-r0-search {
+  padding: 0;
+  pointer-events: auto;
+}
+
+.cm-editor .cm-panels-top .cm-panel.cm-r0-search :is(input, button, label) {
+  margin: 0;
+}

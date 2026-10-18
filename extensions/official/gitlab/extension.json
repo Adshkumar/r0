@@ -1,0 +1,32 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.gitlab",
+  "name": "gitlab",
+  "displayName": "GitLab",
+  "description": "Review merge requests, issues, and pipelines for the current GitLab repository.",
+  "version": "1.0.0",
+  "publisher": "R0",
+  "categories": ["Integration"],
+  "integrations": [
+    {
+      "id": "gitlab",
+      "name": "GitLab",
+      "description": "GitLab projects, merge requests, issues, and pipelines",
+      "kind": "code-host",
+      "icon": "gitlab"
+    }
+  ],
+  "main": "main.js",
+  "permissions": {
+    "network": ["https://*", "http://localhost:*", "http://127.0.0.1:*"],
+    "secrets": true,
+    "workspace": "read",
+    "openExternal": true
+  },
+  "icon": "icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Adshkumar/r0"
+  }
+}

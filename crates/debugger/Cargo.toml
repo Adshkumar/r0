@@ -1,0 +1,17 @@
+[package]
+name = "r0-debugger"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+r0-runtime = { path = "../runtime" }
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json"] }
+tauri = { version = "2.12", default-features = false }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+[lints]
+workspace = true

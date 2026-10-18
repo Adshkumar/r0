@@ -1,0 +1,25 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.agent.gemini-cli",
+  "name": "Gemini CLI",
+  "displayName": "Gemini CLI",
+  "description": "Google's Gemini CLI with ACP support for enterprise, Google Cloud, and paid API-key access.",
+  "version": "1.0.0",
+  "publisher": "Google",
+  "categories": ["Agent"],
+  "agents": [
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI",
+      "binaryName": "gemini",
+      "description": "Google's Gemini CLI for enterprise, Google Cloud, and paid API-key users.",
+      "args": ["--acp"],
+      "install": {
+        "runtime": "node",
+        "package": "@google/gemini-cli@0.58.0",
+        "version": "0.58.0",
+        "command": "gemini"
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+import { openExternalUrl } from "@/utils/external-url";
+import { getServiceUrls } from "@/config/services";
+import { getHostedUsageState } from "@/features/ai/services/hosted-usage";
+import { useProFeature } from "@/features/auth/hooks/use-pro-feature";
+import { useSubscriptionRefresh } from "@/features/auth/hooks/use-subscription-refresh";
+import { useAuthStore } from "@/features/auth/stores/auth.store";
+import { Button } from "@/ui/button";
+import { SparkleIcon } from "@/ui/icons";
+import { R0UsageIndicator } from "../r0-usage-indicator";
+import { SidebarIconButton } from "@/ui/sidebar";
+
+const USAGE_REFRESH_INTERVAL_MS = 3 * 60 * 1000;
+
+/**
+ * The bottom of the agents sidebar: on Pro, a usage ring whose card shows this period's included
+ * r0 AI credit and the pay-as-you-go balance on hover or click; otherwise an upgrade prompt.
+ */
+export function AgentsPlanFooter() {
+  useSubscriptionRefresh({ intervalMs: USAGE_REFRESH_INTERVAL_MS });
+  const { hasIntelligence } = useProFeature();
+  const credits = useAuthStore((state) => state.subscription?.intelligence?.credits ?? null);
+  const services = getServiceUrls();
+  const usage = getHostedUsageState(credits);
+
+  if (!hasIntelligence) {
+    return (
+      <div className="shrink-0 px-chrome-inline py-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          width="full"
+          align="start"
+          onClick={() => void openExternalUrl(services.pricingUrl)}
+        >
+          <SparkleIcon />
+          <span>Upgrade to Pro</span>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!usage) {
+    return (
+      <div className="shrink-0 px-chrome-inline py-2">
+        <SidebarIconButton
+          tooltip="r0 AI usage"
+          aria-label="Open r0 AI usage"
+          onClick={() => void openExternalUrl(services.dashboardBillingUrl)}
+        >
+          <SparkleIcon />
+        </SidebarIconButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="shrink-0 px-chrome-inline py-2">
+      <R0UsageIndicator placement="sidebar" />
+    </div>
+  );
+}

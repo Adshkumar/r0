@@ -1,0 +1,258 @@
+use crate::git::{IntoStringError, RepositoryHost, describe_failure};
+use anyhow::{Context, Result, bail};
+use git2::{ErrorCode, Repository};
+use std::path::Path;
+
+pub fn git_add(repo_path: String, file_path: String) -> Result<(), String> {
+   _git_add(repo_path, file_path).into_string_error()
+}
+
+fn _git_add(repo_path: String, file_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      host
+         .git()
+         .args(["add", "-A", "--", &file_path])
+         .run("add")?;
+      return Ok(());
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+   let mut index = repo.index().context("Failed to get index")?;
+
+   let relative_path = Path::new(&file_path);
+   let absolute_path = Path::new(&repo_path).join(relative_path);
+
+   if absolute_path.is_dir() {
+      index
+         .add_all(
+            [file_path.as_str()].iter(),
+            git2::IndexAddOption::DEFAULT,
+            None,
+         )
+         .with_context(|| format!("Failed to add directory {}", file_path))?;
+   } else {
+      match index.add_path(relative_path) {
+         Ok(_) => {}
+         Err(err) => {
+            if err.code() == ErrorCode::NotFound {
+               index
+                  .add_all(
+                     [file_path.as_str()].iter(),
+                     git2::IndexAddOption::DEFAULT,
+                     None,
+                  )
+                  .with_context(|| format!("Failed to add path {}", file_path))?;
+            } else {
+               return Err(err).with_context(|| format!("Failed to add file {}", file_path));
+            }
+         }
+      }
+   }
+
+   index.write().context("Failed to write index")?;
+
+   Ok(())
+}
+
+pub fn git_reset(repo_path: String, file_path: String) -> Result<(), String> {
+   _git_reset(repo_path, file_path).into_string_error()
+}
+
+fn _git_reset(repo_path: String, file_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      host
+         .git()
+         .args(["reset", "-q", "--", &file_path])
+         .run("reset")?;
+      return Ok(());
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+
+   let head_tree = head_tree(&repo)?;
+   let mut index = repo.index().context("Failed to get index")?;
+
+   let path = Path::new(&file_path);
+   match head_tree.as_ref().map(|tree| tree.get_path(path)) {
+      Some(Ok(entry)) => {
+         let object = entry.to_object(&repo).context("Failed to get object")?;
+         let blob = object.as_blob().context("Object is not a blob")?;
+
+         let index_entry = git2::IndexEntry {
+            ctime: git2::IndexTime::new(0, 0),
+            mtime: git2::IndexTime::new(0, 0),
+            dev: 0,
+            ino: 0,
+            mode: entry.filemode() as u32,
+            uid: 0,
+            gid: 0,
+            file_size: blob.size() as u32,
+            id: entry.id(),
+            flags: 0,
+            flags_extended: 0,
+            path: file_path.as_bytes().to_vec(),
+         };
+
+         index.add(&index_entry).context("Failed to update index")?;
+      }
+      Some(Err(_)) | None => {
+         index
+            .remove_path(path)
+            .context("Failed to remove from index")?;
+      }
+   }
+
+   index.write().context("Failed to write index")?;
+   Ok(())
+}
+
+/// The tree of the HEAD commit, or `None` when HEAD is still unborn because
+/// nothing has been committed yet.
+fn head_tree(repo: &Repository) -> Result<Option<git2::Tree<'_>>> {
+   match repo.head() {
+      Ok(head) => Ok(Some(
+         head.peel_to_tree().context("Failed to get HEAD tree")?,
+      )),
+      Err(error) if error.code() == ErrorCode::UnbornBranch => Ok(None),
+      Err(error) => Err(error).context("Failed to get HEAD"),
+   }
+}
+
+pub fn git_add_all(repo_path: String) -> Result<(), String> {
+   _git_add_all(repo_path).into_string_error()
+}
+
+fn _git_add_all(repo_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      host.git().args(["add", "-A"]).run("add all")?;
+      return Ok(());
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+   let mut index = repo.index().context("Failed to get index")?;
+
+   index
+      .add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
+      .context("Failed to add all files")?;
+   index.write().context("Failed to write index")?;
+
+   Ok(())
+}
+
+pub fn git_reset_all(repo_path: String) -> Result<(), String> {
+   _git_reset_all(repo_path).into_string_error()
+}
+
+fn _git_reset_all(repo_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      host.git().args(["reset", "-q"]).run("reset all")?;
+      return Ok(());
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+
+   let mut index = repo.index().context("Failed to get index")?;
+
+   match head_tree(&repo)? {
+      Some(tree) => index
+         .read_tree(&tree)
+         .context("Failed to reset index to HEAD")?,
+      None => index.clear().context("Failed to clear index")?,
+   }
+   index.write().context("Failed to write index")?;
+
+   Ok(())
+}
+
+pub fn git_discard_file_changes(repo_path: String, file_path: String) -> Result<(), String> {
+   _git_discard_file_changes(repo_path, file_path).into_string_error()
+}
+
+fn _git_discard_file_changes(repo_path: String, file_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      return discard_file_changes_with_cli(&host, &file_path);
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+
+   let head = repo
+      .head()
+      .context("Failed to get HEAD")?
+      .peel_to_tree()
+      .context("Failed to get HEAD tree")?;
+
+   let mut checkout_opts = git2::build::CheckoutBuilder::new();
+   checkout_opts.force().update_index(true).path(&file_path);
+
+   repo
+      .checkout_tree(head.as_object(), Some(&mut checkout_opts))
+      .context("Failed to checkout file")?;
+
+   Ok(())
+}
+
+pub fn git_discard_all_changes(repo_path: String) -> Result<(), String> {
+   _git_discard_all_changes(repo_path).into_string_error()
+}
+
+/// Mirrors the libgit2 checkout above: a tracked file goes back to HEAD, a
+/// file that only exists in the index is dropped from the index and the
+/// working tree, and an untracked file is left alone.
+fn discard_file_changes_with_cli(host: &RepositoryHost, file_path: &str) -> Result<()> {
+   let checkout = host
+      .git()
+      .args(["checkout", "-q", "HEAD", "--", file_path])
+      .output()?;
+   if checkout.status.success() {
+      return Ok(());
+   }
+
+   let details = describe_failure(&checkout);
+   if !details.contains("did not match") {
+      bail!("Git checkout failed: {details}");
+   }
+
+   let tracked = host
+      .git()
+      .args(["ls-files", "--error-unmatch", "--", file_path])
+      .output()?;
+   if !tracked.status.success() {
+      return Ok(());
+   }
+
+   host
+      .git()
+      .args(["rm", "-q", "-f", "--", file_path])
+      .run("rm")?;
+   Ok(())
+}
+
+fn _git_discard_all_changes(repo_path: String) -> Result<()> {
+   let host = RepositoryHost::detect(&repo_path);
+   if host.uses_distro_git() {
+      host
+         .git()
+         .args(["reset", "-q", "--hard"])
+         .run("reset --hard")?;
+      return Ok(());
+   }
+
+   let repo = Repository::open(&repo_path).context("Failed to open repository")?;
+
+   let head = repo
+      .head()
+      .context("Failed to get HEAD")?
+      .peel_to_commit()
+      .context("Failed to get HEAD commit")?;
+
+   repo
+      .reset(head.as_object(), git2::ResetType::Hard, None)
+      .context("Failed to reset to HEAD")?;
+
+   Ok(())
+}

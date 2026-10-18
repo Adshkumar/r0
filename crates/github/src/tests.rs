@@ -1,0 +1,230 @@
+use crate::{IssueComment, IssueDetails, PullRequest, PullRequestComment, PullRequestDetails};
+use serde_json::json;
+
+#[test]
+fn parses_pull_request_list_items_with_nullish_fields() {
+   let payload = json!({
+      "number": 570,
+      "title": null,
+      "state": "OPEN",
+      "author": null,
+      "createdAt": null,
+      "updatedAt": "2026-03-27T10:00:00Z",
+      "isDraft": null,
+      "reviewDecision": null,
+      "url": "https://github.com/Adshkumar/r0/pull/570",
+      "headRefName": null,
+      "baseRefName": "master",
+      "additions": null,
+      "deletions": 4
+   });
+
+   let pr: PullRequest = serde_json::from_value(payload).expect("PR list item should deserialize");
+
+   assert_eq!(pr.title, "");
+   assert_eq!(pr.author.login, "unknown");
+   assert_eq!(pr.created_at, "");
+   assert!(!pr.is_draft);
+   assert_eq!(pr.head_ref, "");
+   assert_eq!(pr.base_ref, "master");
+   assert_eq!(pr.additions, 0);
+   assert_eq!(pr.deletions, 4);
+}
+
+#[test]
+fn parses_pull_request_details_with_sparse_fields() {
+   let payload = json!({
+      "number": 568,
+      "title": "Example",
+      "body": null,
+      "state": "OPEN",
+      "author": {"login": null, "avatarUrl": null},
+      "createdAt": "2026-03-10T20:16:17Z",
+      "updatedAt": null,
+      "isDraft": false,
+      "reviewDecision": null,
+      "url": null,
+      "headRefName": "fix/example",
+      "baseRefName": null,
+      "additions": 5,
+      "deletions": null,
+      "changedFiles": null,
+      "commits": null,
+      "statusCheckRollup": null,
+      "reviewRequests": null,
+      "mergeStateStatus": null,
+      "mergeable": null,
+      "labels": null,
+      "assignees": null
+   });
+
+   let details: PullRequestDetails =
+      serde_json::from_value(payload).expect("PR details should deserialize");
+
+   assert_eq!(details.body, "");
+   assert_eq!(details.author.login, "");
+   assert_eq!(details.updated_at, "");
+   assert_eq!(details.url, "");
+   assert_eq!(details.base_ref, "");
+   assert_eq!(details.deletions, 0);
+   assert_eq!(details.changed_files, 0);
+   assert!(details.commits.is_empty());
+   assert!(details.status_checks.is_empty());
+   assert!(details.review_requests.is_empty());
+   assert!(details.labels.is_empty());
+   assert!(details.assignees.is_empty());
+}
+
+#[test]
+fn parses_pull_request_status_check_urls() {
+   let payload = json!({
+      "number": 568,
+      "title": "Example",
+      "state": "OPEN",
+      "statusCheckRollup": {
+         "contexts": {
+            "nodes": [
+               {
+                  "name": "test",
+                  "status": "COMPLETED",
+                  "conclusion": "SUCCESS",
+                  "workflowName": "CI",
+                  "detailsUrl": "https://github.com/Adshkumar/r0/actions/runs/1/job/2"
+               },
+               {
+                  "name": "terraform",
+                  "status": "COMPLETED",
+                  "conclusion": "SUCCESS",
+                  "targetUrl": "https://app.terraform.io/status"
+               }
+            ]
+         }
+      }
+   });
+
+   let details: PullRequestDetails =
+      serde_json::from_value(payload).expect("PR status checks should deserialize");
+
+   assert_eq!(
+      details.status_checks[0].details_url.as_deref(),
+      Some("https://github.com/Adshkumar/r0/actions/runs/1/job/2")
+   );
+   assert_eq!(
+      details.status_checks[1].details_url.as_deref(),
+      Some("https://app.terraform.io/status")
+   );
+}
+
+#[test]
+fn parses_pull_request_comments_with_missing_author_or_body() {
+   let payload = json!({
+      "author": null,
+      "body": null,
+      "createdAt": null
+   });
+
+   let comment: PullRequestComment =
+      serde_json::from_value(payload).expect("PR comment should deserialize");
+
+   assert_eq!(comment.author.login, "unknown");
+   assert_eq!(comment.body, "");
+   assert_eq!(comment.created_at, "");
+}
+
+#[test]
+fn parses_issue_details_with_missing_nested_data() {
+   let payload = json!({
+      "number": 570,
+      "title": null,
+      "body": null,
+      "state": null,
+      "author": null,
+      "createdAt": null,
+      "updatedAt": null,
+      "url": null,
+      "labels": null,
+      "assignees": null,
+      "comments": null
+   });
+
+   let issue: IssueDetails =
+      serde_json::from_value(payload).expect("Issue details should deserialize");
+
+   assert_eq!(issue.title, "");
+   assert_eq!(issue.body, "");
+   assert_eq!(issue.state, "");
+   assert_eq!(issue.author.login, "unknown");
+   assert_eq!(issue.created_at, "");
+   assert_eq!(issue.updated_at, "");
+   assert_eq!(issue.url, "");
+   assert!(issue.labels.is_empty());
+   assert!(issue.assignees.is_empty());
+   assert!(issue.comments.is_empty());
+   assert!(issue.state_reason.is_none());
+   assert!(!issue.locked);
+   assert!(issue.milestone.is_none());
+   assert!(issue.issue_type.is_none());
+}
+
+#[test]
+fn parses_issue_comment_identity_and_edit_metadata() {
+   let payload = json!({
+      "id": 123,
+      "author": { "login": "octocat" },
+      "body": "Updated comment",
+      "createdAt": "2026-08-01T10:00:00Z",
+      "updatedAt": "2026-08-02T10:00:00Z",
+      "url": "https://github.com/Adshkumar/r0/issues/1#issuecomment-123"
+   });
+
+   let comment: IssueComment =
+      serde_json::from_value(payload).expect("Issue comment should deserialize");
+
+   assert_eq!(comment.id, 123);
+   assert_eq!(comment.author.login, "octocat");
+   assert_eq!(comment.updated_at, "2026-08-02T10:00:00Z");
+   assert!(comment.url.ends_with("issuecomment-123"));
+}
+
+#[test]
+fn collapses_reviews_to_latest_verdict_per_reviewer() {
+   use crate::api::{RestReview, RestUser, collapse_reviews, review_decision};
+
+   let review = |login: &str, state: &str| RestReview {
+      user: Some(RestUser {
+         login: login.to_string(),
+         avatar_url: None,
+      }),
+      state: Some(state.to_string()),
+      body: None,
+      submitted_at: None,
+   };
+   let reviews = collapse_reviews(vec![
+      review("ada", "CHANGES_REQUESTED"),
+      review("bob", "COMMENTED"),
+      review("ada", "COMMENTED"),
+      review("ada", "APPROVED"),
+      review("eve", "PENDING"),
+      RestReview {
+         user: None,
+         state: Some("APPROVED".to_string()),
+         body: None,
+         submitted_at: None,
+      },
+   ]);
+
+   assert_eq!(reviews.len(), 2);
+   assert_eq!(reviews[0].login, "ada");
+   assert_eq!(reviews[0].state, "APPROVED");
+   assert_eq!(reviews[1].login, "bob");
+   assert_eq!(reviews[1].state, "COMMENTED");
+   assert_eq!(review_decision(&reviews, &[]).as_deref(), Some("APPROVED"));
+
+   let mut blocked = reviews.clone();
+   blocked[1].state = "CHANGES_REQUESTED".to_string();
+   assert_eq!(
+      review_decision(&blocked, &[]).as_deref(),
+      Some("CHANGES_REQUESTED")
+   );
+   assert_eq!(review_decision(&[], &[]), None);
+}

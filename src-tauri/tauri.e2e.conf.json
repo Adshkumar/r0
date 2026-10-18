@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "com.code.r0.e2e",
+  "app": {
+    "appDirectoriesOverride": "./e2e-app-data"
+  },
+  "bundle": {
+    "createUpdaterArtifacts": false,
+    "macOS": {
+      "signingIdentity": null
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["r0-e2e"]
+      }
+    },
+    "updater": {
+      "active": false
+    }
+  }
+}

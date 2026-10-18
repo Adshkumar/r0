@@ -1,0 +1,24 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.ocaml",
+  "name": "OCaml",
+  "displayName": "OCaml",
+  "version": "1.0.0",
+  "description": "OCaml language support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "ocaml",
+      "extensions": [".ml", ".mli"],
+      "aliases": ["OCaml"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "ocamllsp",
+      "runtime": "system",
+      "args": []
+    }
+  }
+}

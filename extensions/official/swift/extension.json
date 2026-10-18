@@ -1,0 +1,24 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.swift",
+  "name": "Swift",
+  "displayName": "Swift",
+  "version": "1.0.0",
+  "description": "Swift language support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "swift",
+      "extensions": [".swift"],
+      "aliases": ["Swift"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "sourcekit-lsp",
+      "runtime": "system",
+      "args": []
+    }
+  }
+}

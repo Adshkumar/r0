@@ -1,0 +1,36 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.markdown",
+  "name": "Markdown",
+  "displayName": "Markdown",
+  "version": "1.0.0",
+  "description": "Markdown language support with LSP and formatting",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "markdown",
+      "extensions": [".md", ".markdown", ".mdx"],
+      "aliases": ["Markdown", "md"]
+    },
+    {
+      "id": "rmarkdown",
+      "extensions": [".Rmd", ".rmd"],
+      "aliases": ["R Markdown", "Rmd", "rmarkdown"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "marksman",
+      "runtime": "binary",
+      "downloadUrl": "https://adshkumar.is-a.dev/extensions/markdown/markdown-${os}-${arch}.tar.gz",
+      "args": ["server"]
+    },
+    "formatter": {
+      "name": "prettier",
+      "runtime": "bun",
+      "package": "prettier",
+      "args": ["--stdin-filepath", "${file}"]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+export const CONTENT_SEARCH_PAGE_SIZE = 140;
+export const CONTENT_SEARCH_INITIAL_RENDER_LIMIT = 40;
+export const CONTENT_SEARCH_RENDER_INCREMENT = 40;
+
+// Debounce delays (ms)
+export const SEARCH_DEBOUNCE_DELAY = 200;

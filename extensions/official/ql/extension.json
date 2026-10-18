@@ -1,0 +1,17 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.ql",
+  "name": "QL",
+  "displayName": "QL",
+  "version": "1.0.0",
+  "description": "QL language support",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "ql",
+      "extensions": [".ql", ".qll"],
+      "aliases": ["QL", "CodeQL"]
+    }
+  ]
+}

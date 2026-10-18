@@ -1,0 +1,15 @@
+# R0 shell integration bootstrap for zsh.
+# ZDOTDIR points here so the login files below run first; each one hands
+# control back to the user's own dotfiles before adding R0 hooks.
+if [[ -z "${R0_USER_ZDOTDIR-}" ]]; then
+  R0_USER_ZDOTDIR="$HOME"
+fi
+R0_ZDOTDIR="$ZDOTDIR"
+ZDOTDIR="$R0_USER_ZDOTDIR"
+if [[ -f "$ZDOTDIR/.zshenv" ]]; then
+  builtin source "$ZDOTDIR/.zshenv"
+fi
+if [[ "$ZDOTDIR" != "$R0_USER_ZDOTDIR" ]]; then
+  R0_USER_ZDOTDIR="$ZDOTDIR"
+fi
+ZDOTDIR="$R0_ZDOTDIR"

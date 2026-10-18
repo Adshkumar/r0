@@ -1,0 +1,17 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.tlaplus",
+  "name": "TLAPLUS",
+  "displayName": "TLA+",
+  "version": "1.0.0",
+  "description": "TLA+ language support",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "tlaplus",
+      "extensions": [".tla"],
+      "aliases": ["TLA+", "TLAPLUS", "tlaplus"]
+    }
+  ]
+}

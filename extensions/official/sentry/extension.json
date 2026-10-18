@@ -1,0 +1,32 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.sentry",
+  "name": "sentry",
+  "displayName": "Sentry",
+  "description": "Inspect unresolved Sentry issues for a project without leaving R0.",
+  "version": "1.0.0",
+  "publisher": "R0",
+  "categories": ["Integration"],
+  "integrations": [
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "description": "Sentry errors and issue activity",
+      "kind": "observability",
+      "icon": "sentry"
+    }
+  ],
+  "main": "main.js",
+  "permissions": {
+    "network": ["https://*", "http://localhost:*", "http://127.0.0.1:*"],
+    "secrets": true,
+    "openExternal": true,
+    "clipboardWrite": true
+  },
+  "icon": "icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Adshkumar/r0"
+  }
+}

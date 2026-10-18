@@ -1,0 +1,64 @@
+import { describe, expect, it } from "vite-plus/test";
+import {
+  canUseIntelligenceProvider,
+  canUseProviderWithoutApiKey,
+} from "@/features/ai/services/provider-access";
+import type { SubscriptionInfo } from "@/features/auth/services/auth-api";
+
+const subscription: SubscriptionInfo = {
+  status: "pro",
+  subscription: { plan: "pro", renews_at: null, ends_at: null },
+  capabilities: {
+    intelligence: true,
+    hostedAi: true,
+    settingsSync: true,
+    cloudWorkspaces: true,
+    cloudAgents: false,
+    previews: false,
+    collaboration: true,
+    enterprisePolicy: false,
+  },
+  enterprise: { has_access: false, is_admin: false, policy: null },
+};
+
+describe("provider access", () => {
+  it("allows signed-in free users to access the prepaid R0 provider", () => {
+    expect(
+      canUseProviderWithoutApiKey({
+        providerId: "r0",
+        subscription: {
+          ...subscription,
+          status: "free",
+          capabilities: { ...subscription.capabilities!, intelligence: false },
+        },
+        hasStoredKey: false,
+        requiresApiKey: false,
+      }),
+    ).toBe(true);
+    expect(
+      canUseProviderWithoutApiKey({
+        providerId: "r0",
+        subscription: null,
+        hasStoredKey: false,
+        requiresApiKey: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps managed Intelligence separate from personal provider keys", () => {
+    expect(canUseIntelligenceProvider("r0", subscription)).toBe(true);
+    expect(canUseIntelligenceProvider("openrouter", subscription)).toBe(false);
+    expect(canUseIntelligenceProvider("anthropic", subscription)).toBe(false);
+  });
+
+  it("does not treat Pro as a provider credential for R0 Agent", () => {
+    expect(
+      canUseProviderWithoutApiKey({
+        providerId: "openrouter",
+        subscription,
+        hasStoredKey: false,
+        requiresApiKey: true,
+      }),
+    ).toBe(false);
+  });
+});

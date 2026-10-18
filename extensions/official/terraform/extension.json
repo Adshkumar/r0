@@ -1,0 +1,24 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.terraform",
+  "name": "Terraform",
+  "displayName": "Terraform",
+  "version": "1.0.0",
+  "description": "Terraform and HCL language support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "terraform",
+      "extensions": [".tf", ".tfvars"],
+      "aliases": ["Terraform", "HCL", "hcl"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "terraform-ls",
+      "runtime": "binary",
+      "args": ["serve"]
+    }
+  }
+}

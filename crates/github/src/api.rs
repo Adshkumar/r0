@@ -1,0 +1,2423 @@
+pub mod delivery;
+#[cfg(test)]
+mod http_tests;
+#[cfg(test)]
+pub(crate) mod mock_github;
+use crate::models::{
+   GitHubNotification, IssueComment, IssueDetails, IssueListItem, IssueMilestone, IssueType, Label,
+   PullRequest, PullRequestAuthor, PullRequestComment, PullRequestDetails, PullRequestFile,
+   PullRequestReview, ReviewRequest, StatusCheck, WorkflowListItem, WorkflowRunDetails,
+   WorkflowRunJob, WorkflowRunListItem, WorkflowRunStep,
+};
+use git2::Repository;
+use reqwest::{
+   blocking::{Client, RequestBuilder, Response},
+   header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue, USER_AGENT},
+};
+use serde::{Deserialize, Serialize};
+use std::{
+   path::Path,
+   process::Command,
+   sync::{LazyLock, Mutex},
+   thread,
+   time::{Duration, Instant},
+};
+
+const GITHUB_API_BASE: &str = "https://api.github.com";
+const GITHUB_UPLOADS_BASE: &str = "https://uploads.github.com";
+const GITHUB_API_VERSION: &str = "2022-11-28";
+const GITHUB_JSON_ACCEPT: &str = "application/vnd.github+json";
+const GITHUB_WORKFLOW_JOB_LOGS_ACCEPT: &str = GITHUB_JSON_ACCEPT;
+const WORKFLOW_JOB_LOGS_UNAVAILABLE_MESSAGE: &str =
+   "GitHub Actions logs are not available yet. Try again after the job finishes.";
+const USER_AGENT_VALUE: &str = "R0";
+// Tests talk to a local mock server, so they skip the pacing meant for api.github.com.
+const GITHUB_REQUEST_INTERVAL: Duration = if cfg!(test) {
+   Duration::ZERO
+} else {
+   Duration::from_millis(200)
+};
+
+static GITHUB_REQUEST_GATE: LazyLock<Mutex<Instant>> = LazyLock::new(|| Mutex::new(Instant::now()));
+
+#[derive(Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum GitHubAuthStatus {
+   Authenticated,
+   NotAuthenticated,
+}
+
+/// The account behind the active GitHub token, surfaced in settings.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitHubTokenIdentity {
+   pub login: String,
+   /// Space-or-comma separated OAuth scopes; `None` for fine-grained tokens.
+   pub scopes: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct RepoSlug {
+   owner: String,
+   name: String,
+}
+
+struct RepoRemote {
+   slug: RepoSlug,
+   remote_name: String,
+}
+
+struct GitHubApi {
+   client: Client,
+   github_token: Option<String>,
+   api_base: String,
+   uploads_base: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub(crate) struct RestUser {
+   pub(crate) login: String,
+   pub(crate) avatar_url: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestLabel {
+   name: Option<String>,
+   color: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestBranchRef {
+   #[serde(rename = "ref")]
+   ref_name: Option<String>,
+   sha: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestPullRequest {
+   number: i64,
+   title: Option<String>,
+   state: Option<String>,
+   user: Option<RestUser>,
+   created_at: Option<String>,
+   updated_at: Option<String>,
+   draft: Option<bool>,
+   html_url: Option<String>,
+   head: Option<RestBranchRef>,
+   base: Option<RestBranchRef>,
+   additions: Option<i64>,
+   deletions: Option<i64>,
+   changed_files: Option<i64>,
+   body: Option<String>,
+   mergeable: Option<bool>,
+   mergeable_state: Option<String>,
+   merged_at: Option<String>,
+   merged_by: Option<RestUser>,
+   closed_at: Option<String>,
+   labels: Option<Vec<RestLabel>>,
+   assignees: Option<Vec<RestUser>>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct RestReview {
+   pub(crate) user: Option<RestUser>,
+   pub(crate) state: Option<String>,
+   pub(crate) body: Option<String>,
+   pub(crate) submitted_at: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestIssue {
+   number: i64,
+   title: Option<String>,
+   state: Option<String>,
+   user: Option<RestUser>,
+   created_at: Option<String>,
+   updated_at: Option<String>,
+   html_url: Option<String>,
+   body: Option<String>,
+   labels: Option<Vec<RestLabel>>,
+   assignees: Option<Vec<RestUser>>,
+   state_reason: Option<String>,
+   locked: Option<bool>,
+   active_lock_reason: Option<String>,
+   milestone: Option<RestMilestone>,
+   #[serde(rename = "type")]
+   issue_type: Option<RestIssueType>,
+   closed_at: Option<String>,
+   closed_by: Option<RestUser>,
+   pull_request: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize)]
+struct RestMilestone {
+   number: i64,
+   title: Option<String>,
+   state: Option<String>,
+   due_on: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestIssueType {
+   id: i64,
+   name: Option<String>,
+   description: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestNotificationRepository {
+   full_name: Option<String>,
+   html_url: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestNotificationSubject {
+   title: Option<String>,
+   url: Option<String>,
+   #[serde(rename = "type")]
+   subject_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestNotification {
+   id: String,
+   unread: Option<bool>,
+   reason: Option<String>,
+   updated_at: Option<String>,
+   last_read_at: Option<String>,
+   repository: RestNotificationRepository,
+   subject: RestNotificationSubject,
+}
+
+#[derive(Deserialize)]
+struct RestComment {
+   id: Option<i64>,
+   user: Option<RestUser>,
+   body: Option<String>,
+   created_at: Option<String>,
+   updated_at: Option<String>,
+   html_url: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestPullRequestFile {
+   filename: Option<String>,
+   additions: Option<i64>,
+   deletions: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct ReviewRequestsResponse {
+   users: Option<Vec<RestUser>>,
+   teams: Option<Vec<RestTeam>>,
+}
+
+#[derive(Deserialize)]
+struct RestTeam {
+   slug: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SearchIssuesResponse {
+   items: Vec<RestIssue>,
+}
+
+#[derive(Deserialize)]
+struct WorkflowRunsResponse {
+   workflow_runs: Vec<RestWorkflowRun>,
+}
+
+#[derive(Deserialize)]
+struct WorkflowsResponse {
+   workflows: Vec<RestWorkflow>,
+}
+
+#[derive(Deserialize)]
+struct RestWorkflow {
+   id: i64,
+   name: Option<String>,
+   path: Option<String>,
+   state: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct WorkflowJobsResponse {
+   jobs: Vec<RestWorkflowJob>,
+}
+
+#[derive(Deserialize)]
+struct CheckRunsResponse {
+   check_runs: Vec<RestCheckRun>,
+}
+
+#[derive(Deserialize)]
+struct RestCheckRun {
+   id: Option<i64>,
+   name: Option<String>,
+   status: Option<String>,
+   conclusion: Option<String>,
+   html_url: Option<String>,
+   check_suite: Option<RestCheckSuite>,
+}
+
+#[derive(Deserialize)]
+struct RestCheckSuite {
+   app: Option<RestCheckApp>,
+}
+
+#[derive(Deserialize)]
+struct RestCheckApp {
+   name: Option<String>,
+}
+
+#[derive(Clone, Deserialize)]
+struct RestWorkflowRun {
+   id: i64,
+   check_suite_id: Option<i64>,
+   name: Option<String>,
+   display_title: Option<String>,
+   event: Option<String>,
+   status: Option<String>,
+   conclusion: Option<String>,
+   created_at: Option<String>,
+   updated_at: Option<String>,
+   run_started_at: Option<String>,
+   run_number: Option<i64>,
+   run_attempt: Option<i64>,
+   workflow_id: Option<i64>,
+   actor: Option<RestUser>,
+   triggering_actor: Option<RestUser>,
+   #[serde(default)]
+   pull_requests: Vec<RestWorkflowPullRequest>,
+   head_commit: Option<RestHeadCommit>,
+   html_url: Option<String>,
+   head_branch: Option<String>,
+   head_sha: Option<String>,
+}
+
+#[derive(Clone, Deserialize)]
+struct RestWorkflowPullRequest {
+   number: i64,
+}
+
+#[derive(Clone, Deserialize)]
+struct RestHeadCommit {
+   message: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct RestWorkflowJob {
+   id: Option<i64>,
+   name: Option<String>,
+   status: Option<String>,
+   conclusion: Option<String>,
+   started_at: Option<String>,
+   completed_at: Option<String>,
+   html_url: Option<String>,
+   runner_name: Option<String>,
+   labels: Option<Vec<String>>,
+   steps: Option<Vec<RestWorkflowStep>>,
+}
+
+#[derive(Deserialize)]
+struct RestWorkflowStep {
+   name: Option<String>,
+   status: Option<String>,
+   conclusion: Option<String>,
+   number: Option<i64>,
+   started_at: Option<String>,
+   completed_at: Option<String>,
+}
+
+impl GitHubApi {
+   fn new(github_token: Option<String>) -> Result<Self, String> {
+      let client = Client::builder()
+         .timeout(Duration::from_secs(30))
+         .user_agent(USER_AGENT_VALUE)
+         .build()
+         .map_err(|e| format!("Failed to create GitHub API client: {e}"))?;
+
+      let (api_base, uploads_base) = api_bases();
+      Ok(Self {
+         client,
+         github_token: github_token.filter(|token| !token.trim().is_empty()),
+         api_base,
+         uploads_base,
+      })
+   }
+
+   fn new_authenticated(github_token: Option<String>) -> Result<Self, String> {
+      if github_token
+         .as_deref()
+         .is_none_or(|token| token.trim().is_empty())
+      {
+         return Err("GitHub account required. Connect GitHub in R0 and try again.".to_string());
+      }
+
+      Self::new(github_token)
+   }
+
+   fn get(&self, path: &str, accept: &str) -> RequestBuilder {
+      self.apply_headers(self.client.get(self.url(path)), accept)
+   }
+
+   fn get_json<T>(&self, path: &str) -> Result<T, String>
+   where
+      T: for<'de> Deserialize<'de>,
+   {
+      self.get_json_with_query(path, &[])
+   }
+
+   fn get_json_with_query<T>(&self, path: &str, query: &[(&str, String)]) -> Result<T, String>
+   where
+      T: for<'de> Deserialize<'de>,
+   {
+      let mut request = self.get(path, GITHUB_JSON_ACCEPT);
+      if !query.is_empty() {
+         request = request.query(query);
+      }
+
+      let response = send_github_request(request)?;
+      response
+         .json::<T>()
+         .map_err(|e| format!("Failed to parse GitHub API response: {e}"))
+   }
+
+   fn get_all_pages_json<T>(&self, path: &str) -> Result<Vec<T>, String>
+   where
+      T: for<'de> Deserialize<'de>,
+   {
+      let mut items = Vec::new();
+      let mut page = 1;
+
+      loop {
+         let page_items: Vec<T> = self.get_json_with_query(
+            path,
+            &[("per_page", "100".to_string()), ("page", page.to_string())],
+         )?;
+         let page_len = page_items.len();
+         items.extend(page_items);
+         if page_len < 100 {
+            return Ok(items);
+         }
+         page += 1;
+      }
+   }
+
+   fn get_text(&self, path: &str, accept: &str) -> Result<String, String> {
+      let response = send_github_request(self.get(path, accept))?;
+      response
+         .text()
+         .map_err(|e| format!("Failed to read GitHub API response: {e}"))
+   }
+
+   fn post_json<T, B>(&self, path: &str, body: &B) -> Result<T, String>
+   where
+      T: for<'de> Deserialize<'de>,
+      B: Serialize + ?Sized,
+   {
+      let response = send_github_request(
+         self
+            .apply_headers(self.client.post(self.url(path)), GITHUB_JSON_ACCEPT)
+            .json(body),
+      )?;
+      response
+         .json::<T>()
+         .map_err(|e| format!("Failed to parse GitHub API response: {e}"))
+   }
+
+   fn post_empty<B>(&self, path: &str, body: &B) -> Result<(), String>
+   where
+      B: Serialize + ?Sized,
+   {
+      send_github_request(
+         self
+            .apply_headers(self.client.post(self.url(path)), GITHUB_JSON_ACCEPT)
+            .json(body),
+      )?;
+      Ok(())
+   }
+
+   fn put_json<T, B>(&self, path: &str, body: &B) -> Result<T, String>
+   where
+      T: for<'de> Deserialize<'de>,
+      B: Serialize + ?Sized,
+   {
+      let response = send_github_request(
+         self
+            .apply_headers(self.client.put(self.url(path)), GITHUB_JSON_ACCEPT)
+            .json(body),
+      )?;
+      response
+         .json::<T>()
+         .map_err(|e| format!("Failed to parse GitHub API response: {e}"))
+   }
+
+   fn put_empty<B>(&self, path: &str, body: &B) -> Result<(), String>
+   where
+      B: Serialize + ?Sized,
+   {
+      send_github_request(
+         self
+            .apply_headers(self.client.put(self.url(path)), GITHUB_JSON_ACCEPT)
+            .json(body),
+      )?;
+      Ok(())
+   }
+
+   fn delete_empty(&self, path: &str) -> Result<(), String> {
+      send_github_request(
+         self.apply_headers(self.client.delete(self.url(path)), GITHUB_JSON_ACCEPT),
+      )?;
+      Ok(())
+   }
+
+   fn patch_json<T, B>(&self, path: &str, body: &B) -> Result<T, String>
+   where
+      T: for<'de> Deserialize<'de>,
+      B: Serialize + ?Sized,
+   {
+      let response = send_github_request(
+         self
+            .apply_headers(self.client.patch(self.url(path)), GITHUB_JSON_ACCEPT)
+            .json(body),
+      )?;
+      response
+         .json::<T>()
+         .map_err(|e| format!("Failed to parse GitHub API response: {e}"))
+   }
+
+   fn url(&self, path: &str) -> String {
+      format!("{}{path}", self.api_base)
+   }
+
+   fn apply_headers(&self, request: RequestBuilder, accept: &str) -> RequestBuilder {
+      let mut headers = HeaderMap::new();
+      headers.insert(USER_AGENT, HeaderValue::from_static(USER_AGENT_VALUE));
+      headers.insert(
+         "X-GitHub-Api-Version",
+         HeaderValue::from_static(GITHUB_API_VERSION),
+      );
+      headers.insert(
+         ACCEPT,
+         HeaderValue::from_str(accept).unwrap_or_else(|_| HeaderValue::from_static("*/*")),
+      );
+
+      let request = request.headers(headers);
+      if let Some(token) = &self.github_token {
+         request.header(AUTHORIZATION, format!("Bearer {}", token.trim()))
+      } else {
+         request
+      }
+   }
+}
+
+/// The REST and upload hosts. Tests point both at the mock server they started on this thread.
+fn api_bases() -> (String, String) {
+   #[cfg(test)]
+   if let Some(base) = mock_github::base_url() {
+      return (base.clone(), base);
+   }
+   (GITHUB_API_BASE.to_string(), GITHUB_UPLOADS_BASE.to_string())
+}
+
+fn send_github_request(request: RequestBuilder) -> Result<Response, String> {
+   let mut next_allowed_request_at = GITHUB_REQUEST_GATE
+      .lock()
+      .map_err(|_| "GitHub API request queue failed.".to_string())?;
+
+   let now = Instant::now();
+   if *next_allowed_request_at > now {
+      thread::sleep(*next_allowed_request_at - now);
+   }
+
+   *next_allowed_request_at = Instant::now() + GITHUB_REQUEST_INTERVAL;
+   drop(next_allowed_request_at);
+
+   let response = request
+      .send()
+      .map_err(|e| format!("Failed to call GitHub API: {e}"))?;
+
+   if response.status().is_success() {
+      return Ok(response);
+   }
+
+   let status = response.status();
+   let rate_remaining = response
+      .headers()
+      .get("x-ratelimit-remaining")
+      .and_then(|value| value.to_str().ok())
+      .map(ToOwned::to_owned);
+   let retry_after = response
+      .headers()
+      .get("retry-after")
+      .and_then(|value| value.to_str().ok())
+      .map(ToOwned::to_owned);
+   let rate_reset = response
+      .headers()
+      .get("x-ratelimit-reset")
+      .and_then(|value| value.to_str().ok())
+      .map(ToOwned::to_owned);
+   let body = response.text().unwrap_or_default();
+   let parsed_message = parse_github_error_message(&body).unwrap_or_else(|| body.clone());
+   let normalized_message = parsed_message.to_lowercase();
+
+   if status.as_u16() == 401 {
+      return Err(
+         "GitHub authentication failed. Connect GitHub in R0 and try again.".to_string(),
+      );
+   }
+
+   if status.as_u16() == 403 && rate_remaining.as_deref() == Some("0") {
+      let reset_suffix = rate_reset
+         .as_deref()
+         .map(|reset| format!(" Reset epoch: {reset}."))
+         .unwrap_or_default();
+      return Err(format!(
+         "GitHub API rate limit reached. Try again after the limit resets.{reset_suffix}"
+      ));
+   }
+
+   if status.as_u16() == 429
+      || retry_after.is_some()
+      || (status.as_u16() == 403
+         && (normalized_message.contains("secondary rate limit")
+            || normalized_message.contains("abuse detection")
+            || normalized_message.contains("rate limit")))
+   {
+      let retry_suffix = retry_after
+         .as_deref()
+         .map(|seconds| format!(" Retry after {seconds} seconds."))
+         .unwrap_or_default();
+      return Err(format!(
+         "GitHub API temporarily rate limited the request. Try again shortly.{retry_suffix}"
+      ));
+   }
+
+   Err(format!(
+      "GitHub API request failed ({status}): {parsed_message}"
+   ))
+}
+
+fn parse_github_error_message(body: &str) -> Option<String> {
+   if body.contains("<Code>BlobNotFound</Code>") {
+      return Some(WORKFLOW_JOB_LOGS_UNAVAILABLE_MESSAGE.to_string());
+   }
+
+   serde_json::from_str::<serde_json::Value>(body)
+      .ok()
+      .and_then(|value| {
+         value
+            .get("message")
+            .and_then(|message| message.as_str())
+            .map(String::from)
+      })
+}
+
+fn resolve_repo_slug(repo_path: &str) -> Result<RepoSlug, String> {
+   parse_github_repository_ref(repo_path)
+      .map(Ok)
+      .unwrap_or_else(|| resolve_repo_remote(repo_path).map(|remote| remote.slug))
+}
+
+fn parse_github_repository_ref(value: &str) -> Option<RepoSlug> {
+   let path = value.strip_prefix("github://")?;
+   parse_github_repository_full_name(path)
+}
+
+fn parse_github_repository_full_name(value: &str) -> Option<RepoSlug> {
+   let mut parts = value.split('/');
+   let owner = parts.next()?.to_string();
+   let name = parts.next()?.to_string();
+
+   if parts.next().is_some() || !is_valid_repo_part(&owner) || !is_valid_repo_part(&name) {
+      return None;
+   }
+
+   Some(RepoSlug { owner, name })
+}
+
+fn resolve_repo_remote(repo_path: &str) -> Result<RepoRemote, String> {
+   let repository = Repository::discover(repo_path)
+      .map_err(|_| "Repository is not a Git repository".to_string())?;
+
+   let remote_names = repository
+      .remotes()
+      .map_err(|e| format!("Failed to read repository remotes: {e}"))?
+      .iter()
+      .flatten()
+      .map(ToOwned::to_owned)
+      .collect::<Vec<_>>();
+
+   for remote_name in
+      order_remote_names(remote_names, current_branch_remote(&repository).as_deref())
+   {
+      if let Ok(remote) = repository.find_remote(&remote_name)
+         && let Some(url) = remote.url()
+         && let Some(slug) = parse_github_remote_url(url)
+      {
+         return Ok(RepoRemote { slug, remote_name });
+      }
+   }
+
+   Err("No github.com remote found for this repository".to_string())
+}
+
+fn current_branch_remote(repository: &Repository) -> Option<String> {
+   let head = repository.head().ok()?;
+   if !head.is_branch() {
+      return None;
+   }
+
+   let branch_name = head.shorthand()?;
+   repository
+      .config()
+      .ok()?
+      .get_string(&format!("branch.{branch_name}.remote"))
+      .ok()
+      .filter(|remote| !remote.trim().is_empty())
+}
+
+fn order_remote_names(remote_names: Vec<String>, upstream_remote: Option<&str>) -> Vec<String> {
+   let mut ordered = Vec::with_capacity(remote_names.len());
+
+   if let Some(upstream_remote) = upstream_remote
+      && remote_names.iter().any(|name| name == upstream_remote)
+   {
+      ordered.push(upstream_remote.to_string());
+   }
+
+   if remote_names.iter().any(|name| name == "origin")
+      && !ordered.iter().any(|name| name == "origin")
+   {
+      ordered.push("origin".to_string());
+   }
+
+   for remote_name in remote_names {
+      if !ordered.iter().any(|name| name == &remote_name) {
+         ordered.push(remote_name);
+      }
+   }
+
+   ordered
+}
+
+fn parse_github_remote_url(url: &str) -> Option<RepoSlug> {
+   let trimmed = url.trim().trim_end_matches(".git");
+   let path = trimmed
+      .strip_prefix("git@github.com:")
+      .or_else(|| trimmed.strip_prefix("ssh://git@github.com/"))
+      .or_else(|| trimmed.strip_prefix("https://github.com/"))
+      .or_else(|| trimmed.strip_prefix("http://github.com/"))
+      .or_else(|| trimmed.strip_prefix("https://www.github.com/"))
+      .or_else(|| trimmed.strip_prefix("http://www.github.com/"))?;
+
+   let mut parts = path.split('/');
+   let owner = parts.next()?.to_string();
+   let name = parts.next()?.to_string();
+   if parts.next().is_some() || !is_valid_repo_part(&owner) || !is_valid_repo_part(&name) {
+      return None;
+   }
+
+   Some(RepoSlug { owner, name })
+}
+
+fn is_valid_repo_part(value: &str) -> bool {
+   !value.is_empty()
+      && value != "."
+      && value != ".."
+      && value
+         .bytes()
+         .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+}
+
+fn repo_path(slug: &RepoSlug, suffix: &str) -> String {
+   format!(
+      "/repos/{}/{}/{}",
+      slug.owner,
+      slug.name,
+      suffix.trim_start_matches('/')
+   )
+}
+
+fn user_to_author(user: Option<RestUser>) -> PullRequestAuthor {
+   user
+      .map(|user| PullRequestAuthor {
+         login: user.login,
+         avatar_url: user.avatar_url,
+      })
+      .unwrap_or_default()
+}
+
+fn labels_from_rest(labels: Option<Vec<RestLabel>>) -> Vec<Label> {
+   labels
+      .unwrap_or_default()
+      .into_iter()
+      .map(|label| Label {
+         name: label.name.unwrap_or_default(),
+         color: label.color.unwrap_or_default(),
+      })
+      .collect()
+}
+
+fn users_to_authors(users: Option<Vec<RestUser>>) -> Vec<PullRequestAuthor> {
+   users
+      .unwrap_or_default()
+      .into_iter()
+      .map(|user| PullRequestAuthor {
+         login: user.login,
+         avatar_url: user.avatar_url,
+      })
+      .collect()
+}
+
+fn pr_from_rest(pr: RestPullRequest) -> PullRequest {
+   PullRequest {
+      number: pr.number,
+      title: pr.title.unwrap_or_default(),
+      state: pr.state.unwrap_or_default().to_uppercase(),
+      author: user_to_author(pr.user),
+      created_at: pr.created_at.unwrap_or_default(),
+      updated_at: pr.updated_at.unwrap_or_default(),
+      is_draft: pr.draft.unwrap_or_default(),
+      review_decision: None,
+      url: pr.html_url.unwrap_or_default(),
+      head_ref: pr.head.and_then(|head| head.ref_name).unwrap_or_default(),
+      base_ref: pr.base.and_then(|base| base.ref_name).unwrap_or_default(),
+      additions: pr.additions.unwrap_or_default(),
+      deletions: pr.deletions.unwrap_or_default(),
+   }
+}
+
+pub(crate) fn review_decision(
+   reviews: &[PullRequestReview],
+   review_requests: &[ReviewRequest],
+) -> Option<String> {
+   if reviews
+      .iter()
+      .any(|review| review.state == "CHANGES_REQUESTED")
+   {
+      return Some("CHANGES_REQUESTED".to_string());
+   }
+   if reviews.iter().any(|review| review.state == "APPROVED") {
+      return Some("APPROVED".to_string());
+   }
+   if !review_requests.is_empty() {
+      return Some("REVIEW_REQUIRED".to_string());
+   }
+   None
+}
+
+fn pr_details_from_rest(
+   pr: RestPullRequest,
+   commits: Vec<serde_json::Value>,
+   review_requests: Vec<ReviewRequest>,
+   status_checks: Vec<StatusCheck>,
+   reviews: Vec<PullRequestReview>,
+) -> PullRequestDetails {
+   let review_decision = review_decision(&reviews, &review_requests);
+   PullRequestDetails {
+      number: pr.number,
+      title: pr.title.unwrap_or_default(),
+      body: pr.body.unwrap_or_default(),
+      state: pr.state.unwrap_or_default().to_uppercase(),
+      author: user_to_author(pr.user),
+      created_at: pr.created_at.unwrap_or_default(),
+      updated_at: pr.updated_at.unwrap_or_default(),
+      is_draft: pr.draft.unwrap_or_default(),
+      review_decision,
+      url: pr.html_url.unwrap_or_default(),
+      head_ref: pr.head.and_then(|head| head.ref_name).unwrap_or_default(),
+      base_ref: pr.base.and_then(|base| base.ref_name).unwrap_or_default(),
+      additions: pr.additions.unwrap_or_default(),
+      deletions: pr.deletions.unwrap_or_default(),
+      changed_files: pr.changed_files.unwrap_or_default(),
+      commits,
+      status_checks,
+      linked_issues: Vec::new(),
+      review_requests,
+      merge_state_status: pr.mergeable_state,
+      mergeable: pr.mergeable.map(|value| value.to_string()),
+      merged_at: pr.merged_at,
+      merged_by: pr.merged_by.map(|user| PullRequestAuthor {
+         login: user.login,
+         avatar_url: user.avatar_url,
+      }),
+      closed_at: pr.closed_at,
+      reviews,
+      labels: labels_from_rest(pr.labels),
+      assignees: users_to_authors(pr.assignees),
+   }
+}
+
+fn issue_from_rest(issue: RestIssue) -> IssueListItem {
+   IssueListItem {
+      number: issue.number,
+      title: issue.title.unwrap_or_default(),
+      state: issue.state.unwrap_or_default().to_uppercase(),
+      author: user_to_author(issue.user),
+      updated_at: issue.updated_at.unwrap_or_default(),
+      url: issue.html_url.unwrap_or_default(),
+      labels: labels_from_rest(issue.labels),
+   }
+}
+
+fn issue_details_from_rest(issue: RestIssue, comments: Vec<IssueComment>) -> IssueDetails {
+   IssueDetails {
+      number: issue.number,
+      title: issue.title.unwrap_or_default(),
+      body: issue.body.unwrap_or_default(),
+      state: issue.state.unwrap_or_default().to_uppercase(),
+      author: user_to_author(issue.user),
+      created_at: issue.created_at.unwrap_or_default(),
+      updated_at: issue.updated_at.unwrap_or_default(),
+      url: issue.html_url.unwrap_or_default(),
+      labels: labels_from_rest(issue.labels),
+      assignees: users_to_authors(issue.assignees),
+      state_reason: issue.state_reason,
+      locked: issue.locked.unwrap_or_default(),
+      active_lock_reason: issue.active_lock_reason,
+      milestone: issue.milestone.map(|milestone| IssueMilestone {
+         number: milestone.number,
+         title: milestone.title.unwrap_or_default(),
+         state: milestone.state.unwrap_or_default(),
+         due_on: milestone.due_on,
+      }),
+      issue_type: issue.issue_type.map(|issue_type| IssueType {
+         id: issue_type.id,
+         name: issue_type.name.unwrap_or_default(),
+         description: issue_type.description,
+      }),
+      closed_at: issue.closed_at,
+      closed_by: issue.closed_by.map(|user| user_to_author(Some(user))),
+      comments,
+   }
+}
+
+fn pr_file_from_rest(file: RestPullRequestFile) -> PullRequestFile {
+   PullRequestFile {
+      path: file.filename.unwrap_or_default(),
+      additions: file.additions.unwrap_or_default(),
+      deletions: file.deletions.unwrap_or_default(),
+   }
+}
+
+fn pr_comment_from_rest(comment: RestComment) -> PullRequestComment {
+   PullRequestComment {
+      id: comment.id.unwrap_or_default(),
+      author: user_to_author(comment.user),
+      body: comment.body.unwrap_or_default(),
+      created_at: comment.created_at.unwrap_or_default(),
+      updated_at: comment.updated_at.unwrap_or_default(),
+      url: comment.html_url.unwrap_or_default(),
+   }
+}
+
+fn issue_comment_from_rest(comment: RestComment) -> IssueComment {
+   IssueComment {
+      id: comment.id.unwrap_or_default(),
+      author: user_to_author(comment.user),
+      body: comment.body.unwrap_or_default(),
+      created_at: comment.created_at.unwrap_or_default(),
+      updated_at: comment.updated_at.unwrap_or_default(),
+      url: comment.html_url.unwrap_or_default(),
+   }
+}
+
+fn issue_milestone_from_rest(milestone: RestMilestone) -> IssueMilestone {
+   IssueMilestone {
+      number: milestone.number,
+      title: milestone.title.unwrap_or_default(),
+      state: milestone.state.unwrap_or_default(),
+      due_on: milestone.due_on,
+   }
+}
+
+fn issue_type_from_rest(issue_type: RestIssueType) -> IssueType {
+   IssueType {
+      id: issue_type.id,
+      name: issue_type.name.unwrap_or_default(),
+      description: issue_type.description,
+   }
+}
+
+fn load_issue_details(
+   api: &GitHubApi,
+   slug: &RepoSlug,
+   issue_number: i64,
+) -> Result<IssueDetails, String> {
+   let issue: RestIssue = api.get_json(&repo_path(slug, &format!("issues/{issue_number}")))?;
+   let comments: Vec<RestComment> =
+      api.get_all_pages_json(&repo_path(slug, &format!("issues/{issue_number}/comments")))?;
+
+   Ok(issue_details_from_rest(
+      issue,
+      comments.into_iter().map(issue_comment_from_rest).collect(),
+   ))
+}
+
+fn head_commit_summary(commit: Option<RestHeadCommit>) -> Option<String> {
+   commit
+      .and_then(|commit| commit.message)
+      .map(|message| {
+         message
+            .lines()
+            .next()
+            .unwrap_or_default()
+            .trim()
+            .to_string()
+      })
+      .filter(|summary| !summary.is_empty())
+}
+
+fn workflow_run_from_rest(run: RestWorkflowRun) -> WorkflowRunListItem {
+   WorkflowRunListItem {
+      database_id: run.id,
+      display_title: run.display_title,
+      name: run.name.clone(),
+      workflow_name: run.name,
+      event: run.event,
+      status: run.status,
+      conclusion: run.conclusion,
+      updated_at: run.updated_at,
+      created_at: run.created_at,
+      run_started_at: run.run_started_at,
+      run_number: run.run_number,
+      run_attempt: run.run_attempt,
+      workflow_id: run.workflow_id,
+      actor: run.actor.map(|actor| user_to_author(Some(actor))),
+      triggering_actor: run
+         .triggering_actor
+         .map(|actor| user_to_author(Some(actor))),
+      pull_request_numbers: run.pull_requests.into_iter().map(|pr| pr.number).collect(),
+      head_commit_message: head_commit_summary(run.head_commit),
+      url: run.html_url.unwrap_or_default(),
+      head_branch: run.head_branch,
+      head_sha: run.head_sha,
+   }
+}
+
+fn workflow_from_rest(workflow: RestWorkflow) -> WorkflowListItem {
+   WorkflowListItem {
+      id: workflow.id,
+      name: workflow.name.unwrap_or_default(),
+      path: workflow.path.unwrap_or_default(),
+      state: workflow.state.unwrap_or_default(),
+   }
+}
+
+fn workflow_details_from_rest(
+   run: RestWorkflowRun,
+   jobs: Vec<WorkflowRunJob>,
+) -> WorkflowRunDetails {
+   WorkflowRunDetails {
+      database_id: run.id,
+      name: run.name.clone(),
+      display_title: run.display_title,
+      workflow_name: run.name,
+      event: run.event,
+      status: run.status,
+      conclusion: run.conclusion,
+      created_at: run.created_at,
+      updated_at: run.updated_at,
+      run_started_at: run.run_started_at,
+      run_number: run.run_number,
+      run_attempt: run.run_attempt,
+      workflow_id: run.workflow_id,
+      actor: run.actor.map(|actor| user_to_author(Some(actor))),
+      head_commit_message: head_commit_summary(run.head_commit),
+      url: run.html_url.unwrap_or_default(),
+      head_branch: run.head_branch,
+      head_sha: run.head_sha,
+      jobs,
+   }
+}
+
+fn workflow_job_from_rest(job: RestWorkflowJob) -> WorkflowRunJob {
+   WorkflowRunJob {
+      id: job.id,
+      name: job.name.unwrap_or_default(),
+      status: job.status,
+      conclusion: job.conclusion,
+      started_at: job.started_at,
+      completed_at: job.completed_at,
+      url: job.html_url,
+      runner_name: job.runner_name,
+      labels: job.labels.unwrap_or_default(),
+      steps: job
+         .steps
+         .unwrap_or_default()
+         .into_iter()
+         .map(|step| WorkflowRunStep {
+            name: step.name.unwrap_or_default(),
+            status: step.status,
+            conclusion: step.conclusion,
+            number: step.number,
+            started_at: step.started_at,
+            completed_at: step.completed_at,
+         })
+         .collect(),
+   }
+}
+
+fn get_current_user(api: &GitHubApi) -> Result<String, String> {
+   let user: RestUser = api.get_json("/user")?;
+   Ok(user.login)
+}
+
+/// The account a token belongs to, plus the scopes GitHub reports for it.
+///
+/// Scopes come from the `X-OAuth-Scopes` response header, which is the only
+/// place GitHub exposes them. Fine-grained tokens omit the header entirely.
+fn get_token_identity(api: &GitHubApi) -> Result<(String, Option<String>), String> {
+   let response = send_github_request(api.get("/user", GITHUB_JSON_ACCEPT))?;
+   let scopes = response
+      .headers()
+      .get("x-oauth-scopes")
+      .and_then(|value| value.to_str().ok())
+      .map(str::trim)
+      .filter(|scopes| !scopes.is_empty())
+      .map(ToOwned::to_owned);
+   let user: RestUser = response
+      .json()
+      .map_err(|e| format!("Failed to parse GitHub API response: {e}"))?;
+
+   Ok((user.login, scopes))
+}
+
+/// Resolves the account and scopes for `github_token`, for the auth indicator.
+pub fn github_describe_token(
+   github_token: Option<String>,
+) -> Result<Option<GitHubTokenIdentity>, String> {
+   let Ok(api) = GitHubApi::new_authenticated(github_token) else {
+      return Ok(None);
+   };
+
+   match get_token_identity(&api) {
+      Ok((login, scopes)) => Ok(Some(GitHubTokenIdentity { login, scopes })),
+      Err(error) if is_github_authentication_error(&error) => Ok(None),
+      Err(error) => Err(error),
+   }
+}
+
+fn pr_details_from_current_rest(
+   api: &GitHubApi,
+   slug: &RepoSlug,
+   pr_number: i64,
+   pr: RestPullRequest,
+) -> Result<PullRequestDetails, String> {
+   let head_sha = pr.head.as_ref().and_then(|head| head.sha.clone());
+   let commits: Vec<serde_json::Value> =
+      api.get_json(&repo_path(slug, &format!("pulls/{pr_number}/commits")))?;
+   let commits = commits.into_iter().map(commit_value_from_rest).collect();
+   let review_requests = get_review_requests(api, slug, pr_number).unwrap_or_default();
+   let status_checks = head_sha
+      .as_deref()
+      .map(|sha| get_status_checks(api, slug, sha).unwrap_or_default())
+      .unwrap_or_default();
+   let reviews = get_reviews(api, slug, pr_number).unwrap_or_default();
+
+   Ok(pr_details_from_rest(
+      pr,
+      commits,
+      review_requests,
+      status_checks,
+      reviews,
+   ))
+}
+
+pub fn github_check_auth(github_token: Option<String>) -> Result<GitHubAuthStatus, String> {
+   if github_token
+      .as_deref()
+      .is_none_or(|token| token.trim().is_empty())
+   {
+      return Ok(GitHubAuthStatus::NotAuthenticated);
+   }
+
+   let api = GitHubApi::new_authenticated(github_token)?;
+   match get_current_user(&api) {
+      Ok(_) => Ok(GitHubAuthStatus::Authenticated),
+      Err(error) if is_github_authentication_error(&error) => {
+         log::warn!("GitHub authentication check failed: {error}");
+         Ok(GitHubAuthStatus::NotAuthenticated)
+      }
+      Err(error) => Err(error),
+   }
+}
+
+fn is_github_authentication_error(error: &str) -> bool {
+   error.starts_with("GitHub authentication failed.")
+}
+
+pub fn github_list_prs(
+   repo_path_value: String,
+   filter: String,
+   github_token: Option<String>,
+) -> Result<Vec<PullRequest>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+
+   if filter == "review-requests" {
+      let username = get_current_user(&api)?;
+      let query = format!(
+         "repo:{}/{} is:pr is:open review-requested:{username}",
+         slug.owner, slug.name
+      );
+      let response: SearchIssuesResponse = api.get_json_with_query(
+         "/search/issues",
+         &[
+            ("q", query),
+            ("sort", "updated".to_string()),
+            ("order", "desc".to_string()),
+            ("per_page", "30".to_string()),
+         ],
+      )?;
+      let prs = response
+         .items
+         .into_iter()
+         .take(30)
+         .map(|issue| {
+            api.get_json::<RestPullRequest>(&repo_path(&slug, &format!("pulls/{}", issue.number)))
+               .map(pr_from_rest)
+               .unwrap_or_else(|_| issue_to_pr_placeholder(issue))
+         })
+         .collect();
+      return Ok(prs);
+   }
+
+   let mut prs: Vec<RestPullRequest> = api.get_json_with_query(
+      &repo_path(&slug, "pulls"),
+      &[
+         ("state", "open".to_string()),
+         ("sort", "updated".to_string()),
+         ("direction", "desc".to_string()),
+         ("per_page", "50".to_string()),
+      ],
+   )?;
+
+   if filter == "my-prs" {
+      let username = get_current_user(&api)?;
+      prs.retain(|pr| pr.user.as_ref().is_some_and(|user| user.login == username));
+   }
+
+   Ok(prs.into_iter().map(pr_from_rest).collect())
+}
+
+fn issue_to_pr_placeholder(issue: RestIssue) -> PullRequest {
+   PullRequest {
+      number: issue.number,
+      title: issue.title.unwrap_or_default(),
+      state: issue.state.unwrap_or_default().to_uppercase(),
+      author: user_to_author(issue.user),
+      created_at: String::new(),
+      updated_at: issue.updated_at.unwrap_or_default(),
+      is_draft: false,
+      review_decision: None,
+      url: issue.html_url.unwrap_or_default(),
+      head_ref: String::new(),
+      base_ref: String::new(),
+      additions: 0,
+      deletions: 0,
+   }
+}
+
+fn commit_value_from_rest(value: serde_json::Value) -> serde_json::Value {
+   let commit = value.get("commit").unwrap_or(&serde_json::Value::Null);
+   let commit_author = commit.get("author").unwrap_or(&serde_json::Value::Null);
+   let github_author = value.get("author").unwrap_or(&serde_json::Value::Null);
+
+   serde_json::json!({
+      "sha": value.get("sha").and_then(|value| value.as_str()).unwrap_or_default(),
+      "message": commit.get("message").and_then(|value| value.as_str()).unwrap_or_default(),
+      "authoredDate": commit_author.get("date").and_then(|value| value.as_str()).unwrap_or_default(),
+      "url": value.get("html_url").and_then(|value| value.as_str()).unwrap_or_default(),
+      "author": {
+         "login": github_author
+            .get("login")
+            .and_then(|value| value.as_str())
+            .or_else(|| commit_author.get("name").and_then(|value| value.as_str()))
+            .unwrap_or_default(),
+         "name": commit_author.get("name").and_then(|value| value.as_str()).unwrap_or_default(),
+         "email": commit_author.get("email").and_then(|value| value.as_str()).unwrap_or_default(),
+      }
+   })
+}
+
+pub fn github_get_current_user(github_token: Option<String>) -> Result<String, String> {
+   let api = GitHubApi::new_authenticated(github_token)?;
+   get_current_user(&api)
+}
+
+pub fn github_list_notifications(
+   github_token: Option<String>,
+) -> Result<Vec<GitHubNotification>, String> {
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let notifications: Vec<RestNotification> = api.get_json_with_query(
+      "/notifications",
+      &[
+         ("all", "false".to_string()),
+         ("participating", "false".to_string()),
+         ("per_page", "50".to_string()),
+      ],
+   )?;
+
+   Ok(notifications
+      .into_iter()
+      .map(notification_from_rest)
+      .collect())
+}
+
+fn notification_from_rest(notification: RestNotification) -> GitHubNotification {
+   let repository_url = notification.repository.html_url.unwrap_or_default();
+   let subject_url = notification.subject.url.unwrap_or_default();
+   let url = github_api_url_to_web_url(&subject_url).unwrap_or(repository_url);
+
+   GitHubNotification {
+      id: notification.id,
+      title: notification.subject.title.unwrap_or_default(),
+      subject_type: notification.subject.subject_type.unwrap_or_default(),
+      reason: notification.reason.unwrap_or_default(),
+      unread: notification.unread.unwrap_or(false),
+      updated_at: notification.updated_at.unwrap_or_default(),
+      last_read_at: notification.last_read_at,
+      repository_full_name: notification.repository.full_name.unwrap_or_default(),
+      url,
+      subject_url,
+   }
+}
+
+fn github_api_url_to_web_url(value: &str) -> Option<String> {
+   let path = value.strip_prefix("https://api.github.com/repos/")?;
+   let segments = path.split('/').collect::<Vec<_>>();
+   let [owner, repo, resource, remaining @ ..] = segments.as_slice() else {
+      return None;
+   };
+
+   if owner.is_empty() || repo.is_empty() {
+      return None;
+   }
+
+   if resource == &"actions"
+      && remaining.first() == Some(&"runs")
+      && let Some(run_id) = remaining.get(1).filter(|value| !value.is_empty())
+   {
+      return Some(format!(
+         "https://github.com/{owner}/{repo}/actions/runs/{run_id}"
+      ));
+   }
+
+   let id = remaining.first().filter(|value| !value.is_empty())?;
+   let web_resource = match *resource {
+      "pulls" => "pull",
+      "issues" => "issues",
+      "commits" => "commit",
+      "discussions" => "discussions",
+      _ => return None,
+   };
+
+   Some(format!(
+      "https://github.com/{owner}/{repo}/{web_resource}/{id}"
+   ))
+}
+
+pub fn github_resolve_notification_workflow_run(
+   repository_full_name: String,
+   check_suite_id: Option<i64>,
+   notification_title: String,
+   notification_updated_at: String,
+   github_token: Option<String>,
+) -> Result<Option<WorkflowRunListItem>, String> {
+   let slug = parse_github_repository_full_name(&repository_full_name)
+      .ok_or_else(|| "Invalid GitHub repository name".to_string())?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let response: WorkflowRunsResponse = api.get_json_with_query(
+      &repo_path(&slug, "actions/runs"),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(resolve_notification_workflow_run(
+      &response.workflow_runs,
+      check_suite_id,
+      &notification_title,
+      &notification_updated_at,
+   )
+   .cloned()
+   .map(workflow_run_from_rest))
+}
+
+fn resolve_notification_workflow_run<'a>(
+   runs: &'a [RestWorkflowRun],
+   check_suite_id: Option<i64>,
+   notification_title: &str,
+   notification_updated_at: &str,
+) -> Option<&'a RestWorkflowRun> {
+   if let Some(check_suite_id) = check_suite_id
+      && let Some(run) = runs
+         .iter()
+         .find(|run| run.check_suite_id == Some(check_suite_id))
+   {
+      return Some(run);
+   }
+
+   let (workflow_name, result, branch) = parse_workflow_notification_title(notification_title)?;
+   let mut matching_runs = runs.iter().filter(|run| {
+      run.name.as_deref().is_some_and(|name| {
+         name.eq_ignore_ascii_case(workflow_name)
+            && run
+               .head_branch
+               .as_deref()
+               .is_some_and(|head_branch| head_branch == branch)
+            && workflow_notification_result_matches(run, result)
+      })
+   });
+   let first_match = matching_runs.next()?;
+
+   if notification_updated_at.is_empty()
+      || first_match
+         .updated_at
+         .as_deref()
+         .is_some_and(|updated_at| updated_at <= notification_updated_at)
+   {
+      return Some(first_match);
+   }
+
+   matching_runs
+      .find(|run| {
+         run.updated_at
+            .as_deref()
+            .is_some_and(|updated_at| updated_at <= notification_updated_at)
+      })
+      .or(Some(first_match))
+}
+
+fn parse_workflow_notification_title(value: &str) -> Option<(&str, &str, &str)> {
+   let (workflow_name, remainder) = value.split_once(" workflow run ")?;
+   let (result, branch) = remainder.split_once(" for ")?;
+   let branch = branch.strip_suffix(" branch")?;
+
+   if workflow_name.is_empty() || result.is_empty() || branch.is_empty() {
+      return None;
+   }
+
+   Some((workflow_name, result, branch))
+}
+
+fn workflow_notification_result_matches(run: &RestWorkflowRun, result: &str) -> bool {
+   let expected = match result {
+      "succeeded" => "success",
+      "failed" => "failure",
+      "timed out" => "timed_out",
+      "in progress" => "in_progress",
+      other => other,
+   };
+
+   run.conclusion
+      .as_deref()
+      .or(run.status.as_deref())
+      .is_some_and(|actual| actual.replace(' ', "_").eq_ignore_ascii_case(expected))
+}
+
+pub fn github_list_issues(
+   repo_path_value: String,
+   state: String,
+   github_token: Option<String>,
+) -> Result<Vec<IssueListItem>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let state = match state.as_str() {
+      "closed" => "closed",
+      "all" => "all",
+      _ => "open",
+   };
+   let issues: Vec<RestIssue> = api.get_json_with_query(
+      &repo_path(&slug, "issues"),
+      &[
+         ("state", state.to_string()),
+         ("sort", "updated".to_string()),
+         ("direction", "desc".to_string()),
+         ("per_page", "50".to_string()),
+      ],
+   )?;
+
+   Ok(issues
+      .into_iter()
+      .filter(|issue| issue.pull_request.is_none())
+      .map(issue_from_rest)
+      .collect())
+}
+
+pub fn github_list_workflow_runs(
+   repo_path_value: String,
+   github_token: Option<String>,
+) -> Result<Vec<WorkflowRunListItem>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let response: WorkflowRunsResponse = api.get_json_with_query(
+      &repo_path(&slug, "actions/runs"),
+      &[("per_page", "50".to_string())],
+   )?;
+
+   Ok(response
+      .workflow_runs
+      .into_iter()
+      .map(workflow_run_from_rest)
+      .collect())
+}
+
+pub fn github_list_workflows(
+   repo_path_value: String,
+   github_token: Option<String>,
+) -> Result<Vec<WorkflowListItem>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let response: WorkflowsResponse = api.get_json_with_query(
+      &repo_path(&slug, "actions/workflows"),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(response
+      .workflows
+      .into_iter()
+      .map(workflow_from_rest)
+      .collect())
+}
+
+pub fn github_list_labels(
+   repo_path_value: String,
+   github_token: Option<String>,
+) -> Result<Vec<Label>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let labels: Vec<RestLabel> = api.get_json_with_query(
+      &repo_path(&slug, "labels"),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(labels_from_rest(Some(labels)))
+}
+
+pub fn github_list_milestones(
+   repo_path_value: String,
+   github_token: Option<String>,
+) -> Result<Vec<IssueMilestone>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let milestones: Vec<RestMilestone> = api.get_json_with_query(
+      &repo_path(&slug, "milestones"),
+      &[
+         ("state", "all".to_string()),
+         ("per_page", "100".to_string()),
+      ],
+   )?;
+
+   Ok(milestones
+      .into_iter()
+      .map(issue_milestone_from_rest)
+      .collect())
+}
+
+pub fn github_list_issue_types(
+   repo_path_value: String,
+   github_token: Option<String>,
+) -> Result<Vec<IssueType>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let issue_types: Vec<RestIssueType> = api.get_json(&repo_path(&slug, "issue-types"))?;
+
+   Ok(issue_types.into_iter().map(issue_type_from_rest).collect())
+}
+
+pub fn github_create_issue(
+   repo_path_value: String,
+   title: String,
+   body: String,
+   labels: Vec<String>,
+   assignees: Vec<String>,
+   milestone: Option<i64>,
+   issue_type: Option<String>,
+   github_token: Option<String>,
+) -> Result<IssueListItem, String> {
+   let title = title.trim();
+   if title.is_empty() {
+      return Err("Issue title is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let mut payload = serde_json::json!({
+      "title": title,
+      "body": body.trim(),
+      "labels": labels,
+      "assignees": assignees,
+   });
+   if let Some(milestone) = milestone {
+      payload["milestone"] = serde_json::json!(milestone);
+   }
+   if let Some(issue_type) = issue_type.filter(|value| !value.trim().is_empty()) {
+      payload["type"] = serde_json::json!(issue_type);
+   }
+   let issue: RestIssue = api.post_json(&repo_path(&slug, "issues"), &payload)?;
+
+   Ok(issue_from_rest(issue))
+}
+
+pub fn github_update_issue(
+   repo_path_value: String,
+   issue_number: i64,
+   title: String,
+   body: String,
+   labels: Vec<String>,
+   assignees: Vec<String>,
+   milestone: Option<i64>,
+   issue_type: Option<String>,
+   github_token: Option<String>,
+) -> Result<IssueDetails, String> {
+   let title = title.trim();
+   if title.is_empty() {
+      return Err("Issue title is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let payload = serde_json::json!({
+      "title": title,
+      "body": body.trim(),
+      "labels": labels,
+      "assignees": assignees,
+      "milestone": milestone,
+      "type": issue_type.filter(|value| !value.trim().is_empty()),
+   });
+   let _: RestIssue = api.patch_json(
+      &repo_path(&slug, &format!("issues/{issue_number}")),
+      &payload,
+   )?;
+
+   load_issue_details(&api, &slug, issue_number)
+}
+
+pub fn github_update_issue_state(
+   repo_path_value: String,
+   issue_number: i64,
+   state: String,
+   state_reason: Option<String>,
+   github_token: Option<String>,
+) -> Result<IssueDetails, String> {
+   let state = state.to_lowercase();
+   if state != "open" && state != "closed" {
+      return Err("Issue state must be open or closed.".to_string());
+   }
+   let state_reason = state_reason.map(|value| value.to_lowercase());
+   let valid_reason = matches!(
+      (state.as_str(), state_reason.as_deref()),
+      ("open", None | Some("reopened"))
+         | ("closed", None | Some("completed") | Some("not_planned"))
+   );
+   if !valid_reason {
+      return Err("Unsupported issue state reason.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let _: RestIssue = api.patch_json(
+      &repo_path(&slug, &format!("issues/{issue_number}")),
+      &serde_json::json!({ "state": state, "state_reason": state_reason }),
+   )?;
+   load_issue_details(&api, &slug, issue_number)
+}
+
+pub fn github_add_issue_comment(
+   repo_path_value: String,
+   issue_number: i64,
+   body: String,
+   github_token: Option<String>,
+) -> Result<IssueComment, String> {
+   let body = body.trim();
+   if body.is_empty() {
+      return Err("Comment body is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let comment: RestComment = api.post_json(
+      &repo_path(&slug, &format!("issues/{issue_number}/comments")),
+      &serde_json::json!({ "body": body }),
+   )?;
+   Ok(issue_comment_from_rest(comment))
+}
+
+pub fn github_update_issue_comment(
+   repo_path_value: String,
+   comment_id: i64,
+   body: String,
+   github_token: Option<String>,
+) -> Result<IssueComment, String> {
+   let body = body.trim();
+   if body.is_empty() {
+      return Err("Comment body is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let comment: RestComment = api.patch_json(
+      &repo_path(&slug, &format!("issues/comments/{comment_id}")),
+      &serde_json::json!({ "body": body }),
+   )?;
+   Ok(issue_comment_from_rest(comment))
+}
+
+pub fn github_delete_issue_comment(
+   repo_path_value: String,
+   comment_id: i64,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.delete_empty(&repo_path(&slug, &format!("issues/comments/{comment_id}")))
+}
+
+pub fn github_lock_issue(
+   repo_path_value: String,
+   issue_number: i64,
+   lock_reason: Option<String>,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let reason = lock_reason.map(|value| value.to_lowercase());
+   if !matches!(
+      reason.as_deref(),
+      None | Some("off-topic") | Some("too heated") | Some("resolved") | Some("spam")
+   ) {
+      return Err("Unsupported issue lock reason.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.put_empty(
+      &repo_path(&slug, &format!("issues/{issue_number}/lock")),
+      &serde_json::json!({ "lock_reason": reason }),
+   )
+}
+
+pub fn github_unlock_issue(
+   repo_path_value: String,
+   issue_number: i64,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.delete_empty(&repo_path(&slug, &format!("issues/{issue_number}/lock")))
+}
+
+pub fn github_create_pull_request(
+   repo_path_value: String,
+   title: String,
+   body: String,
+   head: String,
+   base: String,
+   draft: bool,
+   labels: Vec<String>,
+   assignees: Vec<String>,
+   github_token: Option<String>,
+) -> Result<PullRequest, String> {
+   let title = title.trim();
+   let head = head.trim();
+   let base = base.trim();
+
+   if title.is_empty() {
+      return Err("Pull request title is required.".to_string());
+   }
+   if head.is_empty() {
+      return Err("Pull request head branch is required.".to_string());
+   }
+   if base.is_empty() {
+      return Err("Pull request base branch is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let pr: RestPullRequest = api.post_json(
+      &repo_path(&slug, "pulls"),
+      &serde_json::json!({
+         "title": title,
+         "body": body.trim(),
+         "head": head,
+         "base": base,
+         "draft": draft,
+         "maintainer_can_modify": true,
+      }),
+   )?;
+
+   let pr_number = pr.number;
+   if !labels.is_empty() || !assignees.is_empty() {
+      let _: RestIssue = api.patch_json(
+         &repo_path(&slug, &format!("issues/{pr_number}")),
+         &serde_json::json!({
+            "labels": labels,
+            "assignees": assignees,
+         }),
+      )?;
+   }
+
+   Ok(pr_from_rest(pr))
+}
+
+pub fn github_update_pull_request(
+   repo_path_value: String,
+   pr_number: i64,
+   title: String,
+   body: String,
+   labels: Vec<String>,
+   assignees: Vec<String>,
+   github_token: Option<String>,
+) -> Result<PullRequestDetails, String> {
+   let title = title.trim();
+   if title.is_empty() {
+      return Err("Pull request title is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let _: RestPullRequest = api.patch_json(
+      &repo_path(&slug, &format!("pulls/{pr_number}")),
+      &serde_json::json!({
+         "title": title,
+         "body": body.trim(),
+      }),
+   )?;
+
+   let _: RestIssue = api.patch_json(
+      &repo_path(&slug, &format!("issues/{pr_number}")),
+      &serde_json::json!({
+         "labels": labels,
+         "assignees": assignees,
+      }),
+   )?;
+   let pr: RestPullRequest = api.get_json(&repo_path(&slug, &format!("pulls/{pr_number}")))?;
+
+   pr_details_from_current_rest(&api, &slug, pr_number, pr)
+}
+
+pub fn github_add_pr_comment(
+   repo_path_value: String,
+   pr_number: i64,
+   body: String,
+   github_token: Option<String>,
+) -> Result<PullRequestComment, String> {
+   let body = body.trim();
+   if body.is_empty() {
+      return Err("Comment body is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let comment: RestComment = api.post_json(
+      &repo_path(&slug, &format!("issues/{pr_number}/comments")),
+      &serde_json::json!({ "body": body }),
+   )?;
+
+   Ok(pr_comment_from_rest(comment))
+}
+
+pub fn github_submit_pr_review(
+   repo_path_value: String,
+   pr_number: i64,
+   event: String,
+   body: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let event = match event.as_str() {
+      "APPROVE" => "APPROVE",
+      "REQUEST_CHANGES" => "REQUEST_CHANGES",
+      "COMMENT" => "COMMENT",
+      _ => return Err("Unsupported pull request review event.".to_string()),
+   };
+   let body = body.trim();
+   if (event == "REQUEST_CHANGES" || event == "COMMENT") && body.is_empty() {
+      return Err("Review body is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let payload = if body.is_empty() {
+      serde_json::json!({ "event": event })
+   } else {
+      serde_json::json!({ "event": event, "body": body })
+   };
+   let _: serde_json::Value = api.post_json(
+      &repo_path(&slug, &format!("pulls/{pr_number}/reviews")),
+      &payload,
+   )?;
+
+   Ok(())
+}
+
+pub fn github_merge_pull_request(
+   repo_path_value: String,
+   pr_number: i64,
+   method: String,
+   github_token: Option<String>,
+) -> Result<PullRequestDetails, String> {
+   let method = match method.as_str() {
+      "merge" => "merge",
+      "squash" => "squash",
+      "rebase" => "rebase",
+      _ => "squash",
+   };
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let _: serde_json::Value = api.put_json(
+      &repo_path(&slug, &format!("pulls/{pr_number}/merge")),
+      &serde_json::json!({ "merge_method": method }),
+   )?;
+   let pr: RestPullRequest = api.get_json(&repo_path(&slug, &format!("pulls/{pr_number}")))?;
+
+   pr_details_from_current_rest(&api, &slug, pr_number, pr)
+}
+
+pub fn github_close_pull_request(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<PullRequestDetails, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let pr: RestPullRequest = api.patch_json(
+      &repo_path(&slug, &format!("pulls/{pr_number}")),
+      &serde_json::json!({ "state": "closed" }),
+   )?;
+
+   pr_details_from_current_rest(&api, &slug, pr_number, pr)
+}
+
+pub fn github_dispatch_workflow(
+   repo_path_value: String,
+   workflow_id: i64,
+   reference: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let reference = reference.trim();
+   if workflow_id <= 0 {
+      return Err("Workflow is required.".to_string());
+   }
+   if reference.is_empty() {
+      return Err("Workflow ref is required.".to_string());
+   }
+
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.post_empty(
+      &repo_path(
+         &slug,
+         &format!("actions/workflows/{workflow_id}/dispatches"),
+      ),
+      &serde_json::json!({ "ref": reference }),
+   )
+}
+
+pub fn github_checkout_pr(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let resolved_remote = resolve_repo_remote(&repo_path_value)?;
+   let slug = resolved_remote.slug;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let _: RestPullRequest = api.get_json(&repo_path(&slug, &format!("pulls/{pr_number}")))?;
+
+   let branch = format!("pr-{pr_number}");
+   if git_branch_exists(Path::new(&repo_path_value), &branch) {
+      return run_git(Path::new(&repo_path_value), &["switch", &branch]);
+   }
+
+   let refspec = format!("refs/pull/{pr_number}/head:refs/heads/{branch}");
+   run_git(
+      Path::new(&repo_path_value),
+      &["fetch", &resolved_remote.remote_name, &refspec],
+   )?;
+   run_git(Path::new(&repo_path_value), &["switch", &branch])
+}
+
+fn run_git(repo_path: &Path, args: &[&str]) -> Result<(), String> {
+   let output = Command::new("git")
+      .current_dir(repo_path)
+      .args(args)
+      .output()
+      .map_err(|e| format!("Failed to execute git: {e}"))?;
+
+   if output.status.success() {
+      Ok(())
+   } else {
+      Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+   }
+}
+
+fn git_branch_exists(repo_path: &Path, branch: &str) -> bool {
+   Command::new("git")
+      .current_dir(repo_path)
+      .args(["rev-parse", "--verify", &format!("refs/heads/{branch}")])
+      .output()
+      .map(|output| output.status.success())
+      .unwrap_or(false)
+}
+
+pub fn github_get_pr_details(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<PullRequestDetails, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let pr: RestPullRequest = api.get_json(&repo_path(&slug, &format!("pulls/{pr_number}")))?;
+
+   pr_details_from_current_rest(&api, &slug, pr_number, pr)
+}
+
+fn get_review_requests(
+   api: &GitHubApi,
+   slug: &RepoSlug,
+   pr_number: i64,
+) -> Result<Vec<ReviewRequest>, String> {
+   let response: ReviewRequestsResponse = api.get_json(&repo_path(
+      slug,
+      &format!("pulls/{pr_number}/requested_reviewers"),
+   ))?;
+   let mut requests = response
+      .users
+      .unwrap_or_default()
+      .into_iter()
+      .map(|user| ReviewRequest {
+         login: user.login,
+         avatar_url: user.avatar_url,
+      })
+      .collect::<Vec<_>>();
+
+   requests.extend(
+      response
+         .teams
+         .unwrap_or_default()
+         .into_iter()
+         .filter_map(|team| {
+            team.slug.map(|slug| ReviewRequest {
+               login: slug,
+               avatar_url: None,
+            })
+         }),
+   );
+
+   Ok(requests)
+}
+
+fn get_reviews(
+   api: &GitHubApi,
+   slug: &RepoSlug,
+   pr_number: i64,
+) -> Result<Vec<PullRequestReview>, String> {
+   let response: Vec<RestReview> = api.get_json(&repo_path(
+      slug,
+      &format!("pulls/{pr_number}/reviews?per_page=100"),
+   ))?;
+   Ok(collapse_reviews(response))
+}
+
+/// GitHub returns reviews oldest first. Keep one row per reviewer: the latest
+/// approval or change request wins, and a plain comment only counts when the
+/// reviewer never gave a verdict.
+pub(crate) fn collapse_reviews(response: Vec<RestReview>) -> Vec<PullRequestReview> {
+   let mut reviews: Vec<PullRequestReview> = Vec::new();
+   for review in response {
+      let Some(user) = review.user else { continue };
+      let state = review.state.unwrap_or_default();
+      if state != "APPROVED" && state != "CHANGES_REQUESTED" && state != "COMMENTED" {
+         continue;
+      }
+      let next = PullRequestReview {
+         login: user.login,
+         avatar_url: user.avatar_url,
+         state,
+         body: review.body.unwrap_or_default(),
+         submitted_at: review.submitted_at,
+      };
+      match reviews
+         .iter_mut()
+         .find(|existing| existing.login == next.login)
+      {
+         Some(existing) => {
+            if next.state != "COMMENTED" || existing.state == "COMMENTED" {
+               *existing = next;
+            }
+         }
+         None => reviews.push(next),
+      }
+   }
+   reviews
+}
+
+fn get_status_checks(
+   api: &GitHubApi,
+   slug: &RepoSlug,
+   head_sha: &str,
+) -> Result<Vec<StatusCheck>, String> {
+   let response: CheckRunsResponse = api.get_json_with_query(
+      &repo_path(slug, &format!("commits/{head_sha}/check-runs")),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(response
+      .check_runs
+      .into_iter()
+      .map(|check| StatusCheck {
+         id: check.id,
+         name: check.name,
+         status: check.status.map(|status| status.to_uppercase()),
+         conclusion: check.conclusion.map(|conclusion| conclusion.to_uppercase()),
+         workflow_name: check
+            .check_suite
+            .and_then(|suite| suite.app)
+            .and_then(|app| app.name),
+         details_url: check.html_url,
+      })
+      .collect())
+}
+
+pub fn github_get_pr_diff(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<String, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.get_text(
+      &repo_path(&slug, &format!("pulls/{pr_number}")),
+      "application/vnd.github.v3.diff",
+   )
+}
+
+pub fn github_get_pr_files(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<Vec<PullRequestFile>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let files: Vec<RestPullRequestFile> = api.get_json_with_query(
+      &repo_path(&slug, &format!("pulls/{pr_number}/files")),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(files.into_iter().map(pr_file_from_rest).collect())
+}
+
+pub fn github_get_pr_comments(
+   repo_path_value: String,
+   pr_number: i64,
+   github_token: Option<String>,
+) -> Result<Vec<PullRequestComment>, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let comments: Vec<RestComment> = api.get_json_with_query(
+      &repo_path(&slug, &format!("issues/{pr_number}/comments")),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(comments.into_iter().map(pr_comment_from_rest).collect())
+}
+
+pub fn github_get_issue_details(
+   repo_path_value: String,
+   issue_number: i64,
+   github_token: Option<String>,
+) -> Result<IssueDetails, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   load_issue_details(&api, &slug, issue_number)
+}
+
+pub fn github_get_workflow_run_details(
+   repo_path_value: String,
+   run_id: i64,
+   github_token: Option<String>,
+) -> Result<WorkflowRunDetails, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let run: RestWorkflowRun = api.get_json(&repo_path(&slug, &format!("actions/runs/{run_id}")))?;
+   let response: WorkflowJobsResponse = api.get_json_with_query(
+      &repo_path(&slug, &format!("actions/runs/{run_id}/jobs")),
+      &[("per_page", "100".to_string())],
+   )?;
+
+   Ok(workflow_details_from_rest(
+      run,
+      response
+         .jobs
+         .into_iter()
+         .map(workflow_job_from_rest)
+         .collect(),
+   ))
+}
+
+pub fn github_rerun_workflow_run(
+   repo_path_value: String,
+   run_id: i64,
+   failed_jobs_only: bool,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   let action = if failed_jobs_only {
+      "rerun-failed-jobs"
+   } else {
+      "rerun"
+   };
+   api.post_empty(
+      &repo_path(&slug, &format!("actions/runs/{run_id}/{action}")),
+      &serde_json::json!({}),
+   )
+}
+
+pub fn github_cancel_workflow_run(
+   repo_path_value: String,
+   run_id: i64,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.post_empty(
+      &repo_path(&slug, &format!("actions/runs/{run_id}/cancel")),
+      &serde_json::json!({}),
+   )
+}
+
+pub fn github_get_workflow_job_logs(
+   repo_path_value: String,
+   job_id: i64,
+   github_token: Option<String>,
+) -> Result<String, String> {
+   let slug = resolve_repo_slug(&repo_path_value)?;
+   let api = GitHubApi::new_authenticated(github_token)?;
+   api.get_text(
+      &repo_path(&slug, &format!("actions/jobs/{job_id}/logs")),
+      GITHUB_WORKFLOW_JOB_LOGS_ACCEPT,
+   )
+}
+
+#[cfg(test)]
+mod api_tests {
+   use super::{
+      GITHUB_JSON_ACCEPT, GITHUB_WORKFLOW_JOB_LOGS_ACCEPT, GitHubApi, github_api_url_to_web_url,
+      order_remote_names, parse_github_remote_url, parse_github_repository_ref,
+      parse_workflow_notification_title, resolve_notification_workflow_run,
+   };
+
+   fn workflow_run(
+      id: i64,
+      check_suite_id: i64,
+      name: &str,
+      branch: &str,
+      conclusion: &str,
+      updated_at: &str,
+   ) -> super::RestWorkflowRun {
+      super::RestWorkflowRun {
+         id,
+         check_suite_id: Some(check_suite_id),
+         name: Some(name.to_string()),
+         display_title: None,
+         event: Some("push".to_string()),
+         status: Some("completed".to_string()),
+         conclusion: Some(conclusion.to_string()),
+         created_at: None,
+         updated_at: Some(updated_at.to_string()),
+         run_started_at: None,
+         run_number: None,
+         run_attempt: None,
+         workflow_id: None,
+         actor: None,
+         triggering_actor: None,
+         pull_requests: vec![],
+         head_commit: None,
+         html_url: None,
+         head_branch: Some(branch.to_string()),
+         head_sha: None,
+      }
+   }
+
+   #[test]
+   fn workflow_runs_preserve_notification_participants() {
+      let run: super::RestWorkflowRun = serde_json::from_value(serde_json::json!({
+         "id": 42,
+         "actor": { "login": "author" },
+         "triggering_actor": { "login": "reviewer" },
+         "pull_requests": [{ "number": 17 }, { "number": 19 }]
+      }))
+      .unwrap();
+      let run = super::workflow_run_from_rest(run);
+      assert_eq!(run.actor.unwrap().login, "author");
+      assert_eq!(run.triggering_actor.unwrap().login, "reviewer");
+      assert_eq!(run.pull_request_numbers, vec![17, 19]);
+   }
+
+   #[test]
+   fn parses_https_github_remote() {
+      let slug = parse_github_remote_url("https://github.com/Adshkumar/r0.git").unwrap();
+
+      assert_eq!(slug.owner, "Adshkumar");
+      assert_eq!(slug.name, "r0");
+   }
+
+   #[test]
+   fn parses_ssh_github_remote() {
+      let slug = parse_github_remote_url("git@github.com:Adshkumar/r0.git").unwrap();
+
+      assert_eq!(slug.owner, "Adshkumar");
+      assert_eq!(slug.name, "r0");
+   }
+
+   #[test]
+   fn rejects_non_github_remote() {
+      assert!(parse_github_remote_url("https://example.com/Adshkumar/r0.git").is_none());
+   }
+
+   #[test]
+   fn rejects_nested_or_invalid_remote_paths() {
+      assert!(parse_github_remote_url("https://github.com/Adshkumar/r0/extra.git").is_none());
+      assert!(parse_github_remote_url("https://github.com/Adshkumar/../r0.git").is_none());
+   }
+
+   #[test]
+   fn converts_notification_subject_api_urls_to_github_urls() {
+      assert_eq!(
+         github_api_url_to_web_url("https://api.github.com/repos/Adshkumar/r0/pulls/42")
+            .as_deref(),
+         Some("https://github.com/Adshkumar/r0/pull/42")
+      );
+      assert_eq!(
+         github_api_url_to_web_url("https://api.github.com/repos/Adshkumar/r0/issues/17")
+            .as_deref(),
+         Some("https://github.com/Adshkumar/r0/issues/17")
+      );
+      assert_eq!(
+         github_api_url_to_web_url(
+            "https://api.github.com/repos/Adshkumar/r0/actions/runs/30955072179"
+         )
+         .as_deref(),
+         Some("https://github.com/Adshkumar/r0/actions/runs/30955072179")
+      );
+   }
+
+   #[test]
+   fn parses_api_backed_github_repository_refs() {
+      let slug = parse_github_repository_ref("github://indent-com/neo").unwrap();
+
+      assert_eq!(slug.owner, "indent-com");
+      assert_eq!(slug.name, "neo");
+      assert!(parse_github_repository_ref("github://indent-com/neo/extra").is_none());
+      assert!(parse_github_repository_ref("github://../neo").is_none());
+   }
+
+   #[test]
+   fn parses_real_check_suite_notification_titles() {
+      assert_eq!(
+         parse_workflow_notification_title("CI workflow run succeeded for main branch"),
+         Some(("CI", "succeeded", "main"))
+      );
+      assert_eq!(
+         parse_workflow_notification_title(
+            "Check workflow run failed for mehmetozguldev/notification-routing branch"
+         ),
+         Some(("Check", "failed", "mehmetozguldev/notification-routing"))
+      );
+   }
+
+   #[test]
+   fn resolves_check_suite_notifications_to_the_matching_timed_workflow_run() {
+      let runs = vec![
+         workflow_run(30, 300, "CI", "main", "success", "2026-08-05T02:00:00Z"),
+         workflow_run(20, 200, "CI", "main", "success", "2026-08-04T23:47:00Z"),
+         workflow_run(10, 100, "CI", "main", "failure", "2026-08-04T22:00:00Z"),
+      ];
+
+      let run = resolve_notification_workflow_run(
+         &runs,
+         None,
+         "CI workflow run succeeded for main branch",
+         "2026-08-04T23:47:59Z",
+      )
+      .unwrap();
+
+      assert_eq!(run.id, 20);
+   }
+
+   #[test]
+   fn prefers_an_explicit_check_suite_id_when_available() {
+      let runs = vec![
+         workflow_run(30, 300, "CI", "main", "success", "2026-08-05T02:00:00Z"),
+         workflow_run(20, 200, "CI", "main", "success", "2026-08-04T23:47:00Z"),
+      ];
+
+      let run = resolve_notification_workflow_run(&runs, Some(300), "", "").unwrap();
+
+      assert_eq!(run.id, 30);
+   }
+
+   #[test]
+   fn rejects_missing_authenticated_token() {
+      assert!(GitHubApi::new_authenticated(None).is_err());
+      assert!(GitHubApi::new_authenticated(Some("   ".to_string())).is_err());
+   }
+
+   #[test]
+   fn workflow_job_logs_use_github_json_accept_header() {
+      assert_eq!(GITHUB_WORKFLOW_JOB_LOGS_ACCEPT, GITHUB_JSON_ACCEPT);
+      assert_ne!(GITHUB_WORKFLOW_JOB_LOGS_ACCEPT, "text/plain");
+   }
+
+   #[test]
+   fn parses_blob_not_found_log_response_as_unavailable_logs() {
+      let body = r#"<?xml version="1.0" encoding="utf-8"?><Error><Code>BlobNotFound</Code><Message>The specified blob does not exist.</Message></Error>"#;
+
+      assert_eq!(
+         super::parse_github_error_message(body).as_deref(),
+         Some(super::WORKFLOW_JOB_LOGS_UNAVAILABLE_MESSAGE)
+      );
+   }
+
+   #[test]
+   fn only_treats_explicit_github_authentication_failures_as_invalid_tokens() {
+      assert!(super::is_github_authentication_error(
+         "GitHub authentication failed. Connect GitHub in R0 and try again."
+      ));
+      assert!(!super::is_github_authentication_error(
+         "GitHub API request failed (503 Service Unavailable): unavailable"
+      ));
+      assert!(!super::is_github_authentication_error(
+         "Failed to call GitHub API: connection timed out"
+      ));
+   }
+
+   #[test]
+   fn orders_upstream_remote_before_origin_and_other_remotes() {
+      let ordered = order_remote_names(
+         vec![
+            "origin".to_string(),
+            "fork".to_string(),
+            "upstream".to_string(),
+         ],
+         Some("upstream"),
+      );
+
+      assert_eq!(ordered, vec!["upstream", "origin", "fork"]);
+   }
+
+   #[test]
+   fn orders_origin_before_other_remotes_without_upstream() {
+      let ordered = order_remote_names(
+         vec![
+            "fork".to_string(),
+            "origin".to_string(),
+            "upstream".to_string(),
+         ],
+         None,
+      );
+
+      assert_eq!(ordered, vec!["origin", "fork", "upstream"]);
+   }
+}

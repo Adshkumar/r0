@@ -1,0 +1,26 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.bash",
+  "name": "Bash",
+  "displayName": "Bash",
+  "version": "1.0.0",
+  "description": "Bash/Shell script support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "bash",
+      "extensions": [".sh", ".bash", ".zsh"],
+      "aliases": ["Bash", "Shell", "sh"],
+      "filenames": [".bashrc", ".zshrc", ".bash_profile", ".profile"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "bash-language-server",
+      "runtime": "bun",
+      "package": "bash-language-server",
+      "args": ["start"]
+    }
+  }
+}

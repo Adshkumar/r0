@@ -1,0 +1,17 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.protobuf",
+  "name": "Protobuf",
+  "displayName": "Protocol Buffers",
+  "version": "1.0.0",
+  "description": "Protocol Buffers language support with syntax highlighting",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "protobuf",
+      "extensions": [".proto"],
+      "aliases": ["Protocol Buffers", "Protobuf", "proto"]
+    }
+  ]
+}

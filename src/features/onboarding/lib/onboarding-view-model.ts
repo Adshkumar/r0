@@ -1,0 +1,31 @@
+import type { OnboardingContext } from "../services/onboarding-state";
+
+interface OnboardingViewModel {
+  title: string;
+  description: string;
+  showSettings: boolean;
+  primaryAction: "open-folder" | "finish";
+  primaryLabel: string;
+  secondaryLabel?: string;
+}
+
+export function buildOnboardingViewModel(context: OnboardingContext): OnboardingViewModel {
+  if (context.mode === "release-notes") {
+    return {
+      title: `What's new in r0 ${context.currentVersion}`,
+      description: "The latest changes, improvements, and fixes.",
+      showSettings: false,
+      primaryAction: "finish",
+      primaryLabel: "Done",
+    };
+  }
+
+  return {
+    title: "Welcome to r0",
+    description: `r0 ${context.currentVersion} Choose a few defaults before you start.`,
+    showSettings: true,
+    primaryAction: "open-folder",
+    primaryLabel: "Open Folder",
+    secondaryLabel: "Done",
+  };
+}

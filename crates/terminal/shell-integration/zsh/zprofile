@@ -1,0 +1,6 @@
+R0_ZDOTDIR="$ZDOTDIR"
+ZDOTDIR="$R0_USER_ZDOTDIR"
+if [[ -f "$ZDOTDIR/.zprofile" ]]; then
+  builtin source "$ZDOTDIR/.zprofile"
+fi
+ZDOTDIR="$R0_ZDOTDIR"

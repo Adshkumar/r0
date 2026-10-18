@@ -1,0 +1,7 @@
+R0_ZDOTDIR="$ZDOTDIR"
+ZDOTDIR="$R0_USER_ZDOTDIR"
+if [[ -f "$ZDOTDIR/.zshrc" ]]; then
+  builtin source "$ZDOTDIR/.zshrc"
+fi
+ZDOTDIR="$R0_ZDOTDIR"
+builtin source "$R0_ZDOTDIR/r0-shell-integration.zsh"

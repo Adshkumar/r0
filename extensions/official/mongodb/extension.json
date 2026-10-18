@@ -1,0 +1,33 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.database.mongodb",
+  "name": "MongoDB",
+  "displayName": "MongoDB Provider",
+  "version": "1.0.0",
+  "description": "MongoDB connection, collection, and document provider.",
+  "publisher": "R0",
+  "categories": ["Database"],
+  "activationEvents": ["onDatabase:mongodb"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Adshkumar/r0/tree/master/extensions/official/mongodb"
+  },
+  "icon": "icon.svg",
+  "databases": [
+    {
+      "id": "mongodb",
+      "label": "MongoDB",
+      "isFileBased": false,
+      "protocolVersion": 1,
+      "defaultPort": 27017,
+      "sidecar": {
+        "darwin-arm64": "bin/r0-db-mongodb",
+        "darwin-x64": "bin/r0-db-mongodb",
+        "linux-arm64": "bin/r0-db-mongodb",
+        "linux-x64": "bin/r0-db-mongodb",
+        "win32-x64": "bin/r0-db-mongodb.exe"
+      }
+    }
+  ]
+}

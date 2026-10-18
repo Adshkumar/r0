@@ -1,0 +1,17 @@
+pub mod config;
+pub mod connection;
+mod flatpak;
+pub mod manager;
+mod output_coalescer;
+pub mod protocol;
+pub mod shell;
+pub mod shell_integration;
+
+pub use config::TerminalConfig;
+pub use manager::TerminalManager;
+pub use protocol::{
+   TerminalChannelMessage, TerminalEvent, TerminalEventHandler, TerminalInput,
+   TerminalReaderControl, TerminalSize,
+};
+pub use shell::get_shells;
+pub use shell_integration::ensure_shell_integration_dir;

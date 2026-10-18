@@ -1,0 +1,106 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.java",
+  "name": "Java",
+  "displayName": "Java",
+  "version": "1.0.0",
+  "description": "Java language support with LSP",
+  "publisher": "R0",
+  "categories": ["Language"],
+  "languages": [
+    {
+      "id": "java",
+      "extensions": [".java"],
+      "aliases": ["Java"]
+    }
+  ],
+  "capabilities": {
+    "lsp": {
+      "name": "jdtls",
+      "runtime": "binary",
+      "args": [],
+      "initializationOptions": {
+        "settings": {
+          "java": {
+            "autobuild": {
+              "enabled": true
+            },
+            "completion": {
+              "favoriteStaticMembers": [
+                "org.junit.Assert.*",
+                "org.junit.Assume.*",
+                "org.junit.jupiter.api.Assertions.*",
+                "org.junit.jupiter.api.Assumptions.*",
+                "org.junit.jupiter.api.DynamicContainer.*",
+                "org.junit.jupiter.api.DynamicTest.*",
+                "org.mockito.Mockito.*",
+                "org.mockito.ArgumentMatchers.*",
+                "org.mockito.Answers.*"
+              ],
+              "guessMethodArguments": true,
+              "importOrder": ["#", "java", "javax", "org", "com", ""]
+            },
+            "configuration": {
+              "updateBuildConfiguration": "automatic"
+            },
+            "eclipse": {
+              "downloadSources": true
+            },
+            "format": {
+              "comments": {
+                "enabled": true
+              },
+              "enabled": true,
+              "onType": {
+                "enabled": true
+              }
+            },
+            "foldingRange": {
+              "enabled": true
+            },
+            "import": {
+              "gradle": {
+                "enabled": true,
+                "wrapper": {
+                  "enabled": true
+                }
+              },
+              "maven": {
+                "enabled": true
+              }
+            },
+            "implementationCodeLens": "all",
+            "inlayHints": {
+              "parameterNames": {
+                "enabled": "literals"
+              }
+            },
+            "referencesCodeLens": {
+              "enabled": true
+            },
+            "references": {
+              "includeDecompiledSources": true
+            },
+            "maven": {
+              "downloadSources": true,
+              "updateSnapshots": false
+            },
+            "project": {
+              "referencedLibraries": ["lib/**/*.jar"],
+              "resourceFilters": ["node_modules", ".git"]
+            },
+            "selectionRange": {
+              "enabled": true
+            },
+            "signatureHelp": {
+              "enabled": true
+            },
+            "typeHierarchy": {
+              "lazyLoad": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

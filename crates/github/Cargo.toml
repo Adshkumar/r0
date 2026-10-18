@@ -1,0 +1,19 @@
+[package]
+name = "r0-github"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+r0-exec-path = { path = "../exec-path" }
+git2 = { workspace = true }
+log = "0.4"
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

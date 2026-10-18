@@ -1,0 +1,25 @@
+{
+  "$schema": "https://adshkumar.is-a.dev/schemas/extension.json",
+  "id": "r0.agent.opencode",
+  "name": "OpenCode",
+  "displayName": "OpenCode",
+  "description": "Open-source terminal coding agent with native ACP support.",
+  "version": "1.0.0",
+  "publisher": "OpenCode",
+  "categories": ["Agent"],
+  "agents": [
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "binaryName": "opencode",
+      "description": "Open-source terminal coding agent with native ACP support.",
+      "args": ["acp"],
+      "install": {
+        "runtime": "node",
+        "package": "opencode-ai@1.18.27",
+        "version": "1.18.27",
+        "command": "opencode"
+      }
+    }
+  ]
+}
