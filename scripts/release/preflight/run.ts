@@ -396,18 +396,15 @@ async function main() {
 
   await runCheck("GitHub release workflow exists", async () => {
     const workflowPath = `${process.cwd()}/.github/workflows`;
-    const workflowDirCheck = await $`test -d ${workflowPath}`.nothrow();
-    if (workflowDirCheck.exitCode !== 0) {
-      return { passed: false, message: "Missing .github/workflows directory" };
-    }
-
     const releaseWorkflow = `${workflowPath}/release.yml`;
     const releaseAltWorkflow = `${workflowPath}/release.yaml`;
+
     const hasReleaseWorkflow =
-      (await Bun.file(releaseWorkflow).exists()) || (await Bun.file(releaseAltWorkflow).exists());
+      (await Bun.file(releaseWorkflow).exists()) ||
+      (await Bun.file(releaseAltWorkflow).exists());
 
     if (!hasReleaseWorkflow) {
-      return { passed: true, warning: true, message: "No release workflow file found" };
+      return { passed: false, message: "No release workflow file found" };
     }
 
     return { passed: true };
