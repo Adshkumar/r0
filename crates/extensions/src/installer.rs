@@ -534,7 +534,9 @@ mod tests {
          require_download_checksum("theme", &local).is_ok(),
          cfg!(debug_assertions)
       );
-      assert!(require_download_checksum("theme", &download("http://adshkumar.is-a.dev/x", "")).is_err());
+      assert!(
+         require_download_checksum("theme", &download("http://adshkumar.is-a.dev/x", "")).is_err()
+      );
    }
 
    #[test]

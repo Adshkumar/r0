@@ -1,7 +1,5 @@
 use crate::secure_storage::{get_secret, remove_secret, store_secret};
-use r0_extensions::{
-   DownloadInfo, ExtensionInstaller, ExtensionMetadata, validate_extension_id,
-};
+use r0_extensions::{DownloadInfo, ExtensionInstaller, ExtensionMetadata, validate_extension_id};
 use std::{env, fs, path::Path};
 use tauri::{AppHandle, Runtime, command};
 use url::Url;
@@ -340,9 +338,13 @@ mod tests {
 
    #[test]
    fn test_validate_extension_download_url_accepts_expected_hosts() {
-      assert!(validate_extension_download_url("https://adshkumar.is-a.dev/extensions/test.tar.gz").is_ok());
       assert!(
-         validate_extension_download_url("https://cdn.adshkumar.is-a.dev/extensions/test.tar.gz").is_ok()
+         validate_extension_download_url("https://adshkumar.is-a.dev/extensions/test.tar.gz")
+            .is_ok()
+      );
+      assert!(
+         validate_extension_download_url("https://cdn.adshkumar.is-a.dev/extensions/test.tar.gz")
+            .is_ok()
       );
 
       if cfg!(debug_assertions) {
@@ -357,7 +359,9 @@ mod tests {
       assert!(is_allowed_extension_host("a.b.adshkumar.is-a.dev"));
       // Suffix-match spoofing attempts must be rejected.
       assert!(!is_allowed_extension_host("evilr0.dev"));
-      assert!(!is_allowed_extension_host("adshkumar.is-a.dev.attacker.example"));
+      assert!(!is_allowed_extension_host(
+         "adshkumar.is-a.dev.attacker.example"
+      ));
       assert!(!is_allowed_extension_host("not-adshkumar.is-a.dev"));
       assert!(!is_allowed_extension_host(""));
    }

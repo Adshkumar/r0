@@ -202,11 +202,7 @@ impl Harness {
       ));
 
       let mut registry = AgentRegistry::empty();
-      registry.replace_agents(vec![AgentConfig::new(
-         AGENT,
-         "Fake Agent",
-         "r0-fake-agent",
-      )]);
+      registry.replace_agents(vec![AgentConfig::new(AGENT, "Fake Agent", "r0-fake-agent")]);
       let bridge = AcpAgentBridge {
          registry,
          command_tx,

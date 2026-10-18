@@ -233,8 +233,7 @@ mod tests {
 
    #[test]
    fn bindings_export_without_errors() {
-      let path =
-         std::env::temp_dir().join(format!("r0-bindings-test-{}.ts", std::process::id()));
+      let path = std::env::temp_dir().join(format!("r0-bindings-test-{}.ts", std::process::id()));
       let result = export_raw(&crate::specta_builder(), &path);
       let _ = std::fs::remove_file(&path);
       result.expect("bindings should export");

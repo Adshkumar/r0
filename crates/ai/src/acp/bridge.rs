@@ -6,7 +6,7 @@ use super::{
       process_launcher,
    },
    bridge_prompt::{PromptAuth, run_prompt},
-   client::{R0AcpClient, ClientResponders, PermissionResponse},
+   client::{ClientResponders, PermissionResponse, R0AcpClient},
    config::AgentRegistry,
    host::{AcpEmit, AcpHostInfo, SharedAcpEventSink},
    mcp_servers::{AcpSkippedMcpServer, McpServerConfig},

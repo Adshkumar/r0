@@ -582,7 +582,12 @@ mod tests {
 
       let expected: BTreeSet<String> = [&first, &second]
          .iter()
-         .map(|path| path.to_string_lossy().into_owned())
+         .map(|path| {
+            dunce::canonicalize(path)
+               .unwrap()
+               .to_string_lossy()
+               .into_owned()
+         })
          .collect();
       let deadline = Instant::now() + Duration::from_secs(15);
       let mut changed = BTreeSet::new();

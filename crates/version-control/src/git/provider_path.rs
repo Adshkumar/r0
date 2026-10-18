@@ -168,7 +168,10 @@ mod tests {
    #[test]
    fn lists_worktrees_with_local_paths_unchanged() {
       let (_dir, root) = init_repo_with_commit();
-      let linked = root.parent().unwrap().join("linked");
+      let parent = root.parent().unwrap();
+      let parent_text = parent.to_string_lossy();
+      let parent_text = parent_text.strip_prefix(r"\\?\").unwrap_or(&parent_text);
+      let linked = std::path::PathBuf::from(parent_text).join("linked");
       let status = std::process::Command::new("git")
          .arg("-C")
          .arg(&root)
@@ -183,11 +186,25 @@ mod tests {
       let paths = worktrees
          .iter()
          .map(|worktree| {
-            std::path::Path::new(worktree.path.trim_end_matches('/'))
+            let path = std::path::Path::new(worktree.path.trim_end_matches('/'))
                .canonicalize()
-               .unwrap()
+               .unwrap();
+            let path = path.to_string_lossy();
+            std::path::PathBuf::from(path.strip_prefix(r"\\?\").unwrap_or(&path))
          })
          .collect::<Vec<_>>();
+      let root = std::path::PathBuf::from(
+         root
+            .to_string_lossy()
+            .strip_prefix(r"\\?\")
+            .unwrap_or(&root.to_string_lossy()),
+      );
+      let linked = std::path::PathBuf::from(
+         linked
+            .to_string_lossy()
+            .strip_prefix(r"\\?\")
+            .unwrap_or(&linked.to_string_lossy()),
+      );
       assert!(paths.contains(&root), "{paths:?}");
       assert!(paths.contains(&linked), "{paths:?}");
       assert!(

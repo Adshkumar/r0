@@ -852,12 +852,11 @@ fn apply_r0_developer_instructions(params: &mut Map<String, Value>) {
    let host_instructions =
       "On the first turn of a newly started R0 conversation, infer a concise one-to-four-word \
        title from the user's request and MUST call r0_set_chat_title exactly once before the \
-       final response. Opening the native R0 tab is a required final step of GitHub pull \
-       request and issue creation workflows. Whenever you successfully create a pull request or \
-       issue for the current workspace, you MUST immediately call the matching R0 dynamic tool \
-       before your final response without waiting for the user to ask. Also call the matching \
-       tool whenever the user asks to open one. Never open supported GitHub resources in the \
-       system browser.";
+       final response. Opening the native R0 tab is a required final step of GitHub pull request \
+       and issue creation workflows. Whenever you successfully create a pull request or issue for \
+       the current workspace, you MUST immediately call the matching R0 dynamic tool before your \
+       final response without waiting for the user to ask. Also call the matching tool whenever \
+       the user asks to open one. Never open supported GitHub resources in the system browser.";
    let instructions = params
       .get("developerInstructions")
       .and_then(Value::as_str)

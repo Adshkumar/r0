@@ -1421,9 +1421,7 @@ impl R0AcpClient {
       });
 
       if let Some(state) = removed_state
-         && let Err(e) = self
-            .terminal_manager
-            .close_terminal(&state.r0_terminal_id)
+         && let Err(e) = self.terminal_manager.close_terminal(&state.r0_terminal_id)
       {
          log::warn!("Failed to close terminal {}: {}", terminal_id, e);
       }
@@ -1635,9 +1633,9 @@ fn automatic_permission_option(
 #[cfg(test)]
 mod tests {
    use super::{
-      R0AcpClient, ChunkRole, ClientResponders, PendingBufferRead, PendingEntry,
-      PermissionResponse, SessionConfigOptionKind, acp, agent_location_event,
-      automatic_permission_option, elicitation_response, ext_request_session_id, notice_event,
+      ChunkRole, ClientResponders, PendingBufferRead, PendingEntry, PermissionResponse,
+      R0AcpClient, SessionConfigOptionKind, acp, agent_location_event, automatic_permission_option,
+      elicitation_response, ext_request_session_id, notice_event,
    };
    use crate::acp::types::{AcpBufferReadRequest, AcpEvent};
    use serde_json::json;

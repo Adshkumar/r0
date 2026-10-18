@@ -9,7 +9,7 @@
   "dashboardIntegrationsUrl": "https://adshkumar.is-a.dev/dashboard/settings/integrations",
   "dashboardCollaborationUrl": "https://adshkumar.is-a.dev/dashboard/collaboration",
   "extensionsCdnBaseUrl": "https://adshkumar.is-a.dev/extensions",
-  "stableUpdateUrl": "https://adshkumar.is-a.dev/api/update/stable",
+  "stableUpdateUrl": "https://github.com/Adshkumar/r0/releases/latest/download/latest.json",
   "githubReleasesBaseUrl": "https://github.com/Adshkumar/r0/releases",
   "githubReleasesApiBaseUrl": "https://api.github.com/repos/Adshkumar/r0/releases"
 }

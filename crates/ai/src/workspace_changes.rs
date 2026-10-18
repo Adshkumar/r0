@@ -349,6 +349,7 @@ mod tests {
       }
       let dir = tempfile::tempdir().unwrap();
       run_git(dir.path(), &["init", "-q"]);
+      run_git(dir.path(), &["config", "core.autocrlf", "false"]);
       fs::create_dir(dir.path().join("app")).unwrap();
       fs::write(dir.path().join("app/clean.txt"), "committed\n").unwrap();
       fs::write(dir.path().join("app/dirty.txt"), "committed\n").unwrap();

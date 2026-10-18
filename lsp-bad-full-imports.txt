@@ -1,0 +1,566 @@
+
+.\target\debug\build\r0-lsp\545c1f20dabd1b57\out\r0_lsp-545c1f20dabd1b57.exe:	file format coff-x86-64
+Characteristics 0x22
+	executable
+	large address aware
+
+Time/Date               Mon Oct 19 00:24:09 2026
+Magic                   020b	(PE32+)
+MajorLinkerVersion      14
+MinorLinkerVersion      29
+SizeOfCode              0000000000da9e00
+SizeOfInitializedData   00000000004a5c00
+SizeOfUninitializedData 0000000000000000
+AddressOfEntryPoint     0000000000da55fc
+BaseOfCode              0000000000001000
+ImageBase               0000000140000000
+SectionAlignment        00001000
+FileAlignment           00000200
+MajorOSystemVersion     6
+MinorOSystemVersion     0
+MajorImageVersion       0
+MinorImageVersion       0
+MajorSubsystemVersion   6
+MinorSubsystemVersion   0
+Win32Version            00000000
+SizeOfImage             01252000
+SizeOfHeaders           00000400
+CheckSum                00000000
+Subsystem               00000003	(Windows CUI)
+DllCharacteristics      00008160
+					HIGH_ENTROPY_VA
+					DYNAMIC_BASE
+					NX_COMPAT
+					TERMINAL_SERVER_AWARE
+SizeOfStackReserve      0000000000100000
+SizeOfStackCommit       0000000000001000
+SizeOfHeapReserve       0000000000100000
+SizeOfHeapCommit        0000000000001000
+LoaderFlags             00000000
+NumberOfRvaAndSizes     00000010
+
+The Data Directory
+Entry 0 0000000000000000 00000000 Export Directory [.edata (or where ever we found it)]
+Entry 1 0000000001136710 00000244 Import Directory [parts of .idata]
+Entry 2 0000000000000000 00000000 Resource Directory [.rsrc]
+Entry 3 0000000001149000 000fac2c Exception Directory [.pdata]
+Entry 4 0000000000000000 00000000 Security Directory
+Entry 5 0000000001244000 0000db44 Base Relocation Directory [.reloc]
+Entry 6 0000000000f87b30 00000054 Debug Directory
+Entry 7 0000000000000000 00000000 Description Directory
+Entry 8 0000000000000000 00000000 Special Directory
+Entry 9 0000000000f87d00 00000028 Thread Storage Directory [.tls]
+Entry a 0000000000f87b90 00000138 Load Configuration Directory
+Entry b 0000000000000000 00000000 Bound Import Directory
+Entry c 0000000000dab000 00000c08 Import Address Table Directory
+Entry d 0000000000000000 00000000 Delay Import Directory
+Entry e 0000000000000000 00000000 CLR Runtime Header
+Entry f 0000000000000000 00000000 Reserved
+TLS directory:
+  StartAddressOfRawData: 0x00000140f88798
+  EndAddressOfRawData: 0x00000140f889a0
+  AddressOfIndex: 0x00000141148710
+  AddressOfCallBacks: 0x00000140dabc88
+  SizeOfZeroFill: 0
+  Characteristics: 4194304
+  Alignment: 8
+
+
+The Import Tables:
+  lookup 01136d70 time 00000000 fwd 00000000 name 01137738 addr 00dab250
+
+    DLL Name: advapi32.dll
+    Hint/Ord  Name
+           0  RegGetValueW
+           0  SystemFunction036
+           0  RegCreateKeyExW
+           0  RegCreateKeyTransactedW
+           0  RegOpenKeyTransactedW
+           0  RegCloseKey
+           0  RegQueryValueExW
+           0  RegOpenKeyExW
+
+  lookup 01137298 time 00000000 fwd 00000000 name 01137746 addr 00dab778
+
+    DLL Name: ntdll.dll
+    Hint/Ord  Name
+         521  NtReadFile
+           0  NtDeviceIoControlFile
+           0  RtlNtStatusToDosError
+         659  NtWriteFile
+         417  NtOpenFile
+         513  NtQueryVolumeInformationFile
+         290  NtCreateNamedPipeFile
+           0  RtlGetVersion
+           0  NtCreateFile
+           0  NtCancelIoFileEx
+
+  lookup 01136db8 time 00000000 fwd 00000000 name 011381d4 addr 00dab298
+
+    DLL Name: api-ms-win-core-synch-l1-2-0.dll
+    Hint/Ord  Name
+           0  WakeByAddressSingle
+          56  WaitOnAddress
+          58  WakeByAddressAll
+
+  lookup 01137090 time 00000000 fwd 00000000 name 011381f6 addr 00dab570
+
+    DLL Name: kernel32.dll
+    Hint/Ord  Name
+           0  LoadLibraryExA
+           0  HeapAlloc
+           0  GetConsoleScreenBufferInfo
+           0  FormatMessageW
+           0  HeapFree
+           0  CreateFileW
+           0  GetProcessHeap
+           0  GetLastError
+           0  GetModuleFileNameW
+           0  GetFileAttributesW
+           0  lstrlenW
+           0  GetFileInformationByHandle
+           0  SetFileAttributesW
+           0  MoveFileExW
+           0  GlobalAlloc
+           0  FindNextFileW
+           0  FindClose
+           0  CloseHandle
+           0  LoadLibraryA
+           0  DeleteFileW
+           0  GetProcAddress
+           0  ExitProcess
+           0  GetTempPathW
+           0  IsProcessorFeaturePresent
+           0  SetLastError
+           0  GetBinaryTypeW
+           0  GetSystemInfo
+           0  GetCurrentThreadId
+           0  InitializeConditionVariable
+           0  SetConsoleTextAttribute
+           0  SwitchToThread
+           0  CreateDirectoryW
+           0  GetLogicalDrives
+           0  GetStdHandle
+           0  GlobalFree
+           0  IsDebuggerPresent
+           0  LocalFree
+           0  WakeConditionVariable
+           0  GetSystemDirectoryW
+           0  GetCurrentProcessId
+           0  WaitForSingleObject
+           0  MultiByteToWideChar
+           0  WideCharToMultiByte
+           0  GetTickCount
+           0  LoadLibraryW
+           0  GetSystemTimeAsFileTime
+           0  SetThreadStackGuarantee
+           0  GetModuleHandleW
+           0  GetModuleHandleA
+           0  SetNamedPipeHandleState
+           0  ReadFile
+           0  GetSystemTimePreciseAsFileTime
+           0  Sleep
+           0  CancelIoEx
+           0  SetFilePointerEx
+           0  WriteFile
+           0  GetOverlappedResult
+           0  GetCurrentProcess
+           0  DuplicateHandle
+           0  SetFileCompletionNotificationModes
+           0  GetQueuedCompletionStatusEx
+           0  PostQueuedCompletionStatus
+           0  CreateIoCompletionPort
+           0  SetHandleInformation
+
+  lookup 011372f0 time 00000000 fwd 00000000 name 01138204 addr 00dab7d0
+
+    DLL Name: ole32.dll
+    Hint/Ord  Name
+           0  RevokeDragDrop
+           0  CoUninitialize
+           0  OleInitialize
+           0  CoCreateInstance
+           0  CoInitializeEx
+           0  RegisterDragDrop
+
+  lookup 01137378 time 00000000 fwd 00000000 name 0113820e addr 00dab858
+
+    DLL Name: user32.dll
+    Hint/Ord  Name
+           0  SetWindowRgn
+           0  DestroyIcon
+           0  IsWindowEnabled
+           0  EnableWindow
+           0  ShowWindow
+           0  ChangeDisplaySettingsExW
+           0  GetMessageA
+           0  GetParent
+           0  GetWindowPlacement
+           0  SetWindowLongPtrW
+           0  IsProcessDPIAware
+           0  GetWindowLongPtrW
+           0  GetWindowRect
+           0  DispatchMessageA
+           0  ValidateRect
+           0  FindWindowExW
+           0  MonitorFromPoint
+           0  EnumDisplayMonitors
+           0  SetCapture
+           0  SetParent
+           0  RegisterRawInputDevices
+           0  GetKeyState
+           0  CloseTouchInputHandle
+           0  GetDC
+           0  GetTouchInputInfo
+           0  ToUnicodeEx
+           0  FillRect
+           0  MapVirtualKeyW
+           0  ReleaseCapture
+           0  MonitorFromWindow
+           0  ReleaseDC
+           0  MonitorFromRect
+           0  GetMonitorInfoW
+           0  ScreenToClient
+           0  InvalidateRect
+           0  ClientToScreen
+           0  InvalidateRgn
+           0  GetMenuItemInfoW
+           0  UpdateWindow
+           0  RedrawWindow
+           0  SetCursor
+           0  IsIconic
+           0  GetForegroundWindow
+           0  PostThreadMessageW
+           0  MapWindowPoints
+           0  SetWindowTextW
+           0  CreateWindowExW
+           0  AdjustWindowRectEx
+           0  TranslateMessage
+           0  RegisterClassExW
+           0  GetSystemMetrics
+           0  DispatchMessageW
+           0  GetWindowLongW
+           0  DefWindowProcW
+           0  GetClientRect
+           0  SetPropW
+           0  ClipCursor
+           0  FlashWindowEx
+           0  DestroyWindow
+           0  SetWindowPos
+           0  SetCursorPos
+           0  SendMessageW
+           0  PostMessageW
+           0  PeekMessageW
+           0  GetCursorPos
+           0  LoadCursorW
+           0  TrackMouseEvent
+           0  GetActiveWindow
+           0  ShowCursor
+           0  GetClipCursor
+           0  GetSystemMenu
+           0  EnableMenuItem
+           0  GetWindowTextW
+           0  SetWindowLongW
+           0  IsWindowVisible
+           0  GetAsyncKeyState
+           0  SetWindowDisplayAffinity
+           0  SystemParametersInfoA
+           0  GetKeyboardState
+           0  MapVirtualKeyExW
+           0  GetKeyboardLayout
+           0  SendInput
+           0  GetWindowTextLengthW
+           0  RegisterWindowMessageA
+           0  SetForegroundWindow
+           0  SetWindowPlacement
+           0  SystemParametersInfoW
+           0  GetMenuBarInfo
+           0  OffsetRect
+           0  GetWindowDC
+           0  DestroyMenu
+           0  GetMenu
+           0  PostQuitMessage
+           0  CheckMenuItem
+           0  RemoveMenu
+           0  DrawMenuBar
+           0  SetMenu
+           0  CreateAcceleratorTableW
+           0  DestroyAcceleratorTable
+           0  DrawTextW
+           0  RegisterTouchWindow
+
+  lookup 01137008 time 00000000 fwd 00000000 name 0113821a addr 00dab4e8
+
+    DLL Name: gdi32.dll
+    Hint/Ord  Name
+           0  CombineRgn
+           0  GetDeviceCaps
+           0  DeleteObject
+           0  CreateDIBSection
+           0  CreateSolidBrush
+           0  CreateCompatibleDC
+           0  BitBlt
+           0  SetTextColor
+           0  SelectObject
+           0  CreateRectRgn
+           0  SetBkMode
+           0  DeleteDC
+
+  lookup 01136fe8 time 00000000 fwd 00000000 name 01138224 addr 00dab4c8
+
+    DLL Name: dwmapi.dll
+    Hint/Ord  Name
+           0  DwmSetWindowAttribute
+           0  DwmGetWindowAttribute
+           0  DwmEnableBlurBehindWindow
+
+  lookup 01137350 time 00000000 fwd 00000000 name 01138230 addr 00dab830
+
+    DLL Name: shell32.dll
+    Hint/Ord  Name
+           0  SHAppBarMessage
+           0  SHGetKnownFolderPath
+           0  DragQueryFileW
+           0  DragFinish
+
+  lookup 01136f68 time 00000000 fwd 00000000 name 0113823c addr 00dab448
+
+    DLL Name: combase.dll
+    Hint/Ord  Name
+           0  CoCreateFreeThreadedMarshaler
+           0  CoTaskMemFree
+
+  lookup 01136f80 time 00000000 fwd 00000000 name 01138248 addr 00dab460
+
+    DLL Name: comctl32.dll
+    Hint/Ord  Name
+           0  DefSubclassProc
+           0  SetWindowSubclass
+           0  TaskDialogIndirect
+           0  RemoveWindowSubclass
+
+  lookup 01137070 time 00000000 fwd 00000000 name 01138256 addr 00dab550
+
+    DLL Name: imm32.dll
+    Hint/Ord  Name
+           0  ImmGetCompositionStringW
+           0  ImmReleaseContext
+           0  ImmGetContext
+
+  lookup 01137328 time 00000000 fwd 00000000 name 01138260 addr 00dab808
+
+    DLL Name: oleaut32.dll
+    Hint/Ord  Name
+           0  SysStringLen
+           0  SysFreeString
+           0  GetErrorInfo
+           0  SetErrorInfo
+
+  lookup 01136f58 time 00000000 fwd 00000000 name 011382ae addr 00dab438
+
+    DLL Name: bcryptprimitives.dll
+    Hint/Ord  Name
+           0  ProcessPrng
+
+  lookup 01136fa8 time 00000000 fwd 00000000 name 0113890a addr 00dab488
+
+    DLL Name: crypt32.dll
+    Hint/Ord  Name
+           0  CertGetEnhancedKeyUsage
+           0  CertFreeCertificateContext
+           0  CertVerifyTimeValidity
+           0  CertDuplicateCertificateContext
+           0  CertEnumCertificatesInStore
+           0  CertCloseStore
+           0  CertOpenStore
+
+  lookup 01136f48 time 00000000 fwd 00000000 name 01138916 addr 00dab428
+
+    DLL Name: bcrypt.dll
+    Hint/Ord  Name
+           0  BCryptGenRandom
+
+  lookup 011376a8 time 00000000 fwd 00000000 name 01138922 addr 00dabb88
+
+    DLL Name: ws2_32.dll
+    Hint/Ord  Name
+           0  WSAGetLastError
+           0  getsockopt
+           0  setsockopt
+           0  getpeername
+           0  getsockname
+           0  closesocket
+           0  shutdown
+           0  connect
+           0  WSASocketW
+           0  send
+           0  recv
+           0  bind
+           0  WSAIoctl
+           0  WSASend
+           0  ioctlsocket
+
+  lookup 01136b20 time 00000000 fwd 00000000 name 01138d84 addr 00dab000
+
+    DLL Name: KERNEL32.dll
+    Hint/Ord  Name
+         480  GetCommandLineW
+         538  GetCurrentDirectoryW
+         577  GetEnvironmentStringsW
+        1106  QueryPerformanceCounter
+        1252  RtlVirtualUnwind
+         157  CompareStringOrdinal
+         611  GetFullPathNameW
+         173  CopyFileExW
+         210  CreateHardLinkW
+         856  HeapReAlloc
+         245  CreateThread
+         194  CreateEventW
+        1147  ReadFileEx
+         435  FreeEnvironmentStringsW
+        1425  SleepConditionVariableCS
+         276  DeleteCriticalSection
+         964  LeaveCriticalSection
+         312  EnterCriticalSection
+         874  InitializeCriticalSection
+         875  InitializeCriticalSectionAndSpinCount
+        1473  UnhandledExceptionFilter
+        1408  SetUnhandledExceptionFilter
+        1107  QueryPerformanceFrequency
+         879  InitializeSListHead
+        1427  SleepEx
+        1513  WaitForMultipleObjects
+         422  FlsSetValue
+         910  IsThreadAFiber
+         640  GetModuleHandleExW
+         419  FlsAlloc
+         420  FlsFree
+        1417  SetWaitableTimer
+         259  CreateWaitableTimerExW
+        1143  ReadConsoleW
+        1573  WriteConsoleW
+        1098  QueryDosDeviceW
+         602  GetFinalPathNameByHandleW
+         243  CreateSymbolicLinkW
+        1207  ReleaseMutex
+         218  CreateMutexA
+        1516  WaitForSingleObjectEx
+         388  FindFirstFileExW
+         548  GetCurrentThread
+          19  AddVectoredExceptionHandler
+         582  GetExitCodeProcess
+        1439  TerminateProcess
+         704  GetProcessId
+         232  CreateProcessW
+         818  GetWindowsDirectoryW
+         594  GetFileInformationByHandleEx
+        1335  SetFileTime
+         115  CancelIo
+        1245  RtlLookupFunctionEntry
+        1238  RtlCaptureContext
+        1329  SetFileInformationByHandle
+        1575  WriteFileEx
+         579  GetEnvironmentVariableW
+
+  lookup 01136cf0 time 00000000 fwd 00000000 name 01138e10 addr 00dab1d0
+
+    DLL Name: USERENV.dll
+    Hint/Ord  Name
+          38  GetUserProfileDirectoryW
+
+  lookup 01136d50 time 00000000 fwd 00000000 name 01138e3a addr 00dab230
+
+    DLL Name: WS2_32.dll
+    Hint/Ord  Name
+         165  getaddrinfo
+         115
+         164  freeaddrinfo
+
+  lookup 01136d00 time 00000000 fwd 00000000 name 01138f0a addr 00dab1e0
+
+    DLL Name: VCRUNTIME140.dll
+    Hint/Ord  Name
+          28  __current_exception_context
+          27  __current_exception
+          14  __CxxFrameHandler3
+          60  memcpy
+          62  memset
+          61  memmove
+          59  memcmp
+           8  __C_specific_handler
+           1  _CxxThrowException
+
+  lookup 01136e10 time 00000000 fwd 00000000 name 0113917c addr 00dab2f0
+
+    DLL Name: api-ms-win-crt-math-l1-1-0.dll
+    Hint/Ord  Name
+         190  floor
+         265  round
+         287  trunc
+         266  roundf
+         201  fmod
+         254  pow
+           9  __setusermatherr
+
+  lookup 01136f10 time 00000000 fwd 00000000 name 0113919c addr 00dab3f0
+
+    DLL Name: api-ms-win-crt-string-l1-1-0.dll
+    Hint/Ord  Name
+         139  strlen
+         163  wcslen
+
+  lookup 01136dd8 time 00000000 fwd 00000000 name 011391be addr 00dab2b8
+
+    DLL Name: api-ms-win-crt-heap-l1-1-0.dll
+    Hint/Ord  Name
+          25  malloc
+          24  free
+          23  calloc
+          22  _set_new_mode
+
+  lookup 01136e50 time 00000000 fwd 00000000 name 011391de addr 00dab330
+
+    DLL Name: api-ms-win-crt-runtime-l1-1-0.dll
+    Hint/Ord  Name
+         103  terminate
+          52  _initialize_onexit_table
+          60  _register_onexit_function
+          61  _register_thread_local_exe_atexit_callback
+          21  _c_exit
+          22  _cexit
+           5  __p___argv
+           4  __p___argc
+          79  _wassert
+          35  _exit
+          85  exit
+          55  _initterm_e
+          54  _initterm
+          40  _get_initial_narrow_environment
+          51  _initialize_narrow_environment
+          24  _configure_narrow_argv
+          20  _beginthreadex
+          66  _set_app_type
+          64  _seh_filter_exe
+          30  _crt_atexit
+
+  lookup 01136f28 time 00000000 fwd 00000000 name 01139200 addr 00dab408
+
+    DLL Name: api-ms-win-crt-utility-l1-1-0.dll
+    Hint/Ord  Name
+          11  _rotl64
+           1  _byteswap_uint64
+           2  _byteswap_ulong
+
+  lookup 01136ef8 time 00000000 fwd 00000000 name 01139222 addr 00dab3d8
+
+    DLL Name: api-ms-win-crt-stdio-l1-1-0.dll
+    Hint/Ord  Name
+           1  __p__commode
+          84  _set_fmode
+
+  lookup 01136e00 time 00000000 fwd 00000000 name 01139242 addr 00dab2e0
+
+    DLL Name: api-ms-win-crt-locale-l1-1-0.dll
+    Hint/Ord  Name
+           8  _configthreadlocale
+

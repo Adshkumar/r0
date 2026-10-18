@@ -86,7 +86,7 @@ fn parses_jetbrains_recent_project_paths() {
 
 fn temp_root() -> (tempfile::TempDir, PathBuf) {
    let dir = tempfile::tempdir().unwrap();
-   let root = dir.path().canonicalize().unwrap();
+   let root = dunce::canonicalize(dir.path()).unwrap();
    (dir, root)
 }
 

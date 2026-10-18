@@ -1,5 +1,5 @@
-use r0_fff_search::{FffFsChange, FffGrepOptions, FffScanStatus, FffSearch};
 use fff_search::GrepMode;
+use r0_fff_search::{FffFsChange, FffGrepOptions, FffScanStatus, FffSearch};
 use std::{
    fs,
    path::{Path, PathBuf},

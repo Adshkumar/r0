@@ -4,6 +4,7 @@
 //! tests never depend on the runner's global git configuration. Commands that
 //! shell out (stash, worktree, hunk staging) need the `git` CLI, which CI has.
 
+use git2::{Repository, Signature, Time};
 use r0_version_control::{
    DiffLineType, FileStatus, GitDiffLine, GitHunk, format_git_time, get_ahead_behind_counts,
    git_add, git_add_all, git_add_worktree, git_branches, git_checkout, git_commit,
@@ -12,7 +13,6 @@ use r0_version_control::{
    git_get_worktrees, git_log, git_pop_stash, git_remove_worktree, git_reset, git_reset_all,
    git_stage_hunk, git_status, git_unstage_hunk, is_image_file,
 };
-use git2::{Repository, Signature, Time};
 use std::{fs, path::Path};
 use tempfile::TempDir;
 

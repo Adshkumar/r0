@@ -1,0 +1,1051 @@
+windows-sys v0.61.2
+Gצ£GצַGצַ windows-sys feature "Wdk"
+Gצי   Gצ£GצַGצַ windows-sys feature "Wdk_Foundation"
+Gצי   Gצי   Gצ£GצַGצַ mio v1.2.1
+Gצי   Gצי   Gצי   GצצGצַGצַ tokio v1.52.3
+Gצי   Gצי   Gצי       GצצGצַGצַ hyper-util v0.1.20
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "client"
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ reqwest v0.12.28
+Gצי   Gצי   Gצי           Gצי   Gצי   GצצGצַGצַ tauri-plugin-http v2.8.0
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-http feature "charset"
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri)
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצי       GצצGצַGצַ r0 feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-http feature "http2"
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-http feature "rustls-tls"
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-http feature "system-proxy"
+Gצי   Gצי   Gצי           Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי       GצצGצַGצַ tauri-plugin-http feature "unsafe-headers"
+Gצי   Gצי   Gצי           Gצי   Gצי           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "__rustls"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-native-roots-no-provider"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "rustls-tls-native-roots"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-ai feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-extensions v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\extensions)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-extensions feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-github feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-runtime feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-debugger v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\debugger)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ r0-debugger feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-lsp v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\lsp)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ r0-lsp feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי           GצצGצַGצַ r0-tooling feature "default" (command-line)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       Gצי               GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "rustls-tls-webpki-roots-no-provider"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי       GצצGצַGצַ reqwest feature "rustls-tls-webpki-roots"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי           GצצGצַGצַ reqwest feature "rustls-tls"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               Gצ£GצַGצַ r0-extensions v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\extensions) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               Gצ£GצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי               GצצGצַGצַ tauri-plugin-http feature "rustls-tls" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "__rustls-ring"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-native-roots" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "rustls-tls-webpki-roots" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "__tls"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "__rustls" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "blocking"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "charset"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-http feature "charset" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "h2"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "http2"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי       GצצGצַGצַ tauri-plugin-http feature "http2" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "http2" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "json"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-native-roots" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-native-roots-no-provider" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-webpki-roots" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "rustls-tls-webpki-roots-no-provider" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest feature "stream"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-extensions v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\extensions) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   GצצGצַGצַ reqwest feature "system-proxy"
+Gצי   Gצי   Gצי           Gצי   Gצי       GצצGצַGצַ tauri-plugin-http feature "system-proxy" (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ reqwest v0.13.4
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest feature "__rustls"
+Gצי   Gצי   Gצי           Gצי       Gצי   GצצGצַGצַ reqwest feature "rustls-no-provider"
+Gצי   Gצי   Gצי           Gצי       Gצי       GצצGצַGצַ tauri-plugin-updater feature "rustls-tls"
+Gצי   Gצי   Gצי           Gצי       Gצי           GצצGצַGצַ tauri-plugin-updater feature "default"
+Gצי   Gצי   Gצי           Gצי       Gצי               GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest feature "__tls"
+Gצי   Gצי   Gצי           Gצי       Gצי   GצצGצַGצַ reqwest feature "__rustls" (*)
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest feature "json"
+Gצי   Gצי   Gצי           Gצי       Gצי   GצצGצַGצַ tauri-plugin-updater v2.13.1
+Gצי   Gצי   Gצי           Gצי       Gצי       Gצ£GצַGצַ tauri-plugin-updater feature "default" (*)
+Gצי   Gצי   Gצי           Gצי       Gצי       Gצ£GצַGצַ tauri-plugin-updater feature "rustls-tls" (*)
+Gצי   Gצי   Gצי           Gצי       Gצי       Gצ£GצַGצַ tauri-plugin-updater feature "system-proxy"
+Gצי   Gצי   Gצי           Gצי       Gצי       Gצי   GצצGצַGצַ tauri-plugin-updater feature "default" (*)
+Gצי   Gצי   Gצי           Gצי       Gצי       GצצGצַGצַ tauri-plugin-updater feature "zip"
+Gצי   Gצי   Gצי           Gצי       Gצי           GצצGצַGצַ tauri-plugin-updater feature "default" (*)
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest feature "rustls-no-provider" (*)
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest feature "stream"
+Gצי   Gצי   Gצי           Gצי       Gצי   GצצGצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי           Gצי       GצצGצַGצַ reqwest feature "system-proxy"
+Gצי   Gצי   Gצי           Gצי           GצצGצַGצַ tauri-plugin-updater feature "system-proxy" (*)
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ hyper-util feature "client-legacy"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ hyper-rustls v0.27.9
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "http1"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "http2"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "http2" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "native-tokio"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "rustls-tls-native-roots-no-provider" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "ring"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "__rustls-ring" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "rustls-native-certs"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ hyper-rustls feature "native-tokio" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "tls12"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-rustls feature "webpki-roots"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ hyper-rustls feature "webpki-tokio"
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ reqwest feature "rustls-tls-webpki-roots-no-provider" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצי   GצצGצַGצַ hyper-rustls feature "webpki-tokio" (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ hyper-util feature "client-proxy"
+Gצי   Gצי   Gצי           Gצי       Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי       GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "client-legacy" (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "client-proxy" (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "client-proxy-system"
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ reqwest feature "system-proxy" (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ reqwest feature "system-proxy" (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "default"
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "http1"
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ hyper-rustls feature "http1" (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ hyper-util feature "http2"
+Gצי   Gצי   Gצי           Gצי   Gצ£GצַGצַ reqwest feature "http2" (*)
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ hyper-rustls feature "http2" (*)
+Gצי   Gצי   Gצי           GצצGצַGצַ hyper-util feature "tokio"
+Gצי   Gצי   Gצי               Gצ£GצַGצַ hyper-rustls v0.27.9 (*)
+Gצי   Gצי   Gצי               Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי               GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי               Gצ£GצַGצַ hyper-util feature "client" (*)
+Gצי   Gצי   Gצי               Gצ£GצַGצַ hyper-util feature "client-legacy" (*)
+Gצי   Gצי   Gצי               GצצGצַGצַ hyper-util feature "tokio" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "bytes"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "io-util"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ h2 v0.4.16
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ h2 feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצ£GצַGצַ hyper v1.10.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ hyper-rustls v0.27.9 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper feature "client"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ hyper-util feature "client" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ hyper-util v0.1.20 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper feature "http1"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ hyper-util feature "http1" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ hyper feature "http2"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ reqwest feature "http2" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ hyper-util feature "http2" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       GצצGצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ r0-docker feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ sha256 v1.6.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ sha256 feature "async"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ sha256 feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-extensions v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\extensions) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ sha256 feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ sha256 feature "tokio"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       GצצGצַGצַ sha256 feature "async" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tauri v2.12.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-debugger v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\debugger) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-terminal v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\terminal)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0-terminal feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-remote v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\remote)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי           GצצGצַGצַ r0-remote feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי               GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-clipboard-manager v2.4.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-clipboard-manager feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-deep-link v2.6.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-deep-link feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-dialog v2.8.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-dialog feature "xdg-portal"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-drag v2.1.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-drag feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-fs v2.6.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-fs feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-dialog v2.8.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-log v2.10.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-log feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-notification v2.5.1
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-notification feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-opener v2.7.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-opener feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-os v2.4.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-os feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-process v2.4.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-process feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-single-instance feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-store v2.5.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-store feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-window-state v2.5.0
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       GצצGצַGצַ tauri-plugin-window-state feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "common-controls-v6"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "compression"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "dbus"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "dynamic-acl"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "http-range"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "protocol-asset"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "macos-private-api"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "protocol-asset" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "specta"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-specta v2.0.0-rc.25
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-specta feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-specta feature "derive"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ tauri-specta feature "typescript"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "tauri-runtime-wry"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "wry"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-extensions v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\extensions) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-lsp v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\lsp) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-remote v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\remote) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "test"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "webkit2gtk"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "wry" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "webview2-com"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "wry" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri feature "wry" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "x11"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי       GצצGצַGצַ tauri feature "default" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tokio-tungstenite v0.27.0
+Gצי   Gצי   Gצי       Gצי   Gצי       GצצGצַGצַ tokio-tungstenite feature "handshake"
+Gצי   Gצי   Gצי       Gצי   Gצי           GצצGצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide)
+Gצי   Gצי   Gצי       Gצי   Gצי               GצצGצַGצַ r0-claude-ide feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי                   GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio feature "full"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-database v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\database)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-database feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0-database feature "sqlite"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-database feature "default" (command-line)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ r0-lsp v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\lsp) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest feature "__tls" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ reqwest feature "__tls" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "process"
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי       [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ h2 v0.4.16 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper v1.10.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper-rustls v0.27.9 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-database v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\database) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-lsp v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\lsp) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ sha256 v1.6.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio-rustls v0.26.4
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ hyper-rustls v0.27.9 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio-rustls feature "ring"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ reqwest feature "__rustls-ring" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tokio-rustls feature "tls12"
+Gצי   Gצי   Gצי       Gצי   Gצי       Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי       GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי       GצצGצַGצַ hyper-rustls feature "tls12" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio-util v0.7.18
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio-util feature "codec"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ h2 v0.4.16 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio-util feature "compat"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio-util feature "default"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ h2 v0.4.16 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio-util feature "futures-io"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצי   GצצGצַGצַ tokio-util feature "compat" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tokio-util feature "io"
+Gצי   Gצי   Gצי       Gצי   Gצי       Gצ£GצַGצַ h2 v0.4.16 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי       Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי       GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tower v0.5.3
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "default"
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower-http v0.6.11
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצ£GצַGצַ tower-http feature "follow-redirect"
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצ£GצַGצַ tower-http feature "futures-util"
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצי   GצצGצַGצַ tower-http feature "follow-redirect" (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       GצצGצַGצַ tower-http feature "tower"
+Gצי   Gצי   Gצי       Gצי       Gצי           GצצGצַGצַ tower-http feature "follow-redirect" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "futures-core"
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower feature "util"
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצ£GצַGצַ tower feature "retry"
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי       GצצGצַGצַ tower-http feature "follow-redirect" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "futures-util"
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower feature "util" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "pin-project-lite"
+Gצי   Gצי   Gצי       Gצי       Gצי   Gצ£GצַGצַ tower feature "timeout"
+Gצי   Gצי   Gצי       Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי   Gצי   GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower feature "util" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "retry" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "sync_wrapper"
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower feature "util" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "timeout" (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tower feature "tokio"
+Gצי   Gצי   Gצי       Gצי       Gצי   Gצ£GצַGצַ tower feature "retry" (*)
+Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tower feature "timeout" (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ tower feature "util" (*)
+Gצי   Gצי   Gצי       Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "fs"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ sha256 v1.6.0 (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ reqwest feature "stream" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ reqwest feature "stream" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "io-std"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "io-util" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "libc"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "net"
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ hyper-util feature "client" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "signal"
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "macros"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "mio"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "parking_lot"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "rt"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "rt-multi-thread"
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצי   GצצGצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ hyper-util feature "tokio" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "rt-multi-thread" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "signal-hook-registry"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "socket2"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "sync"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper v1.10.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio-util v0.7.18 (*)
+Gצי   Gצי   Gצי       Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ reqwest feature "blocking" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ hyper-util feature "client-legacy" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "time"
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tokio feature "full" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ hyper-util feature "tokio" (*)
+Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tower feature "retry" (*)
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tower feature "timeout" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "tokio-macros"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tokio feature "macros" (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ tokio feature "windows-sys"
+Gצי   Gצי   Gצי           Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי           Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי           GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ mio feature "net"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ mio feature "os-ext"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ mio feature "os-poll"
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ mio feature "os-ext" (*)
+Gצי   Gצי   GצצGצַGצַ polling v3.11.0
+Gצי   Gצי       GצצGצַGצַ polling feature "default"
+Gצי   Gצי           GצצGצַGצַ async-io v2.6.0
+Gצי   Gצי               GצצGצַGצַ async-io feature "default"
+Gצי   Gצי                   Gצ£GצַGצַ agent-client-protocol v2.2.0
+Gצי   Gצי                   Gצי   Gצ£GצַGצַ agent-client-protocol feature "default"
+Gצי   Gצי                   Gצי   Gצי   GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי                   Gצי   Gצ£GצַGצַ agent-client-protocol feature "unstable_end_turn_token_usage"
+Gצי   Gצי                   Gצי   Gצי   GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי                   Gצי   GצצGצַGצַ agent-client-protocol feature "unstable_session_notices"
+Gצי   Gצי                   Gצי       GצצGצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי                   GצצGצַGצַ async-process v2.5.0
+Gצי   Gצי                       GצצGצַGצַ async-process feature "default"
+Gצי   Gצי                           GצצGצַGצַ agent-client-protocol v2.2.0 (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Wdk_Storage"
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Wdk_Storage_FileSystem"
+Gצי   Gצי       Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי       GצצGצַGצַ polling v3.11.0 (*)
+Gצי   GצצGצַGצַ windows-sys feature "Wdk_System"
+Gצי       GצצGצַGצַ windows-sys feature "Wdk_System_IO"
+Gצי           GצצGצַGצַ mio v1.2.1 (*)
+Gצ£GצַGצַ windows-sys feature "Wdk_Foundation" (*)
+Gצ£GצַGצַ windows-sys feature "Wdk_Storage" (*)
+Gצ£GצַGצַ windows-sys feature "Wdk_Storage_FileSystem" (*)
+Gצ£GצַGצַ windows-sys feature "Wdk_System" (*)
+Gצ£GצַGצַ windows-sys feature "Wdk_System_IO" (*)
+Gצ£GצַGצַ windows-sys feature "Win32"
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Devices"
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_Devices_Communication"
+Gצי   Gצי       GצצGצַGצַ serial2 v0.2.37
+Gצי   Gצי           GצצGצַGצַ serial2 feature "default"
+Gצי   Gצי               GצצGצַGצַ portable-pty v0.9.0
+Gצי   Gצי                   GצצGצַGצַ portable-pty feature "default"
+Gצי   Gצי                       GצצGצַGצַ r0-terminal v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\terminal) (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Foundation"
+Gצי   Gצי   Gצ£GצַGצַ anstyle-query v1.1.5
+Gצי   Gצי   Gצי   GצצGצַGצַ anstyle-query feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ anstream v1.0.0
+Gצי   Gצי   Gצי           Gצ£GצַGצַ anstream feature "auto"
+Gצי   Gצי   Gצי           Gצי   GצצGצַGצַ env_logger feature "auto-color"
+Gצי   Gצי   Gצי           Gצי       GצצGצַGצַ env_logger feature "default"
+Gצי   Gצי   Gצי           Gצי           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי           GצצGצַGצַ anstream feature "wincon"
+Gצי   Gצי   Gצי               GצצGצַGצַ env_logger v0.11.10
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ env_logger feature "anstream"
+Gצי   Gצי   Gצי                   Gצי   GצצGצַGצַ env_logger feature "auto-color" (*)
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ env_logger feature "auto-color" (*)
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ env_logger feature "color"
+Gצי   Gצי   Gצי                   Gצי   GצצGצַGצַ env_logger feature "auto-color" (*)
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ env_logger feature "default" (*)
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ env_logger feature "humantime"
+Gצי   Gצי   Gצי                   Gצי   GצצGצַGצַ env_logger feature "default" (*)
+Gצי   Gצי   Gצי                   GצצGצַGצַ env_logger feature "regex"
+Gצי   Gצי   Gצי                       GצצGצַGצַ env_logger feature "default" (*)
+Gצי   Gצי   Gצ£GצַGצַ anstyle-wincon v3.0.11
+Gצי   Gצי   Gצי   GצצGצַGצַ anstyle-wincon feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ anstream v1.0.0 (*)
+Gצי   Gצי   Gצ£GצַGצַ async-io v2.6.0 (*)
+Gצי   Gצי   Gצ£GצַGצַ colored v3.1.1
+Gצי   Gצי   Gצי   GצצGצַGצַ colored feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצ£GצַGצַ dirs-sys v0.5.0
+Gצי   Gצי   Gצי   GצצGצַGצַ dirs-sys feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ dirs v7.0.0
+Gצי   Gצי   Gצי           GצצGצַGצַ dirs feature "default"
+Gצי   Gצי   Gצי               Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי               GצצGצַGצַ tauri-build v2.7.1
+Gצי   Gצי   Gצי                   [build-dependencies]
+Gצי   Gצי   Gצי                   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי                   Gצ£GצַGצַ tauri-build feature "config-json"
+Gצי   Gצי   Gצי                   Gצי   GצצGצַGצַ tauri-build feature "default"
+Gצי   Gצי   Gצי                   Gצי       [build-dependencies]
+Gצי   Gצי   Gצי                   Gצי       GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי                   GצצGצַGצַ tauri-build feature "default" (*)
+Gצי   Gצי   Gצ£GצַGצַ errno v0.3.14
+Gצי   Gצי   Gצי   GצצGצַGצַ rustix v1.1.4
+Gצי   Gצי   Gצי       Gצ£GצַGצַ rustix feature "alloc"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ rustix feature "std"
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ async-io v2.6.0 (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ rustix feature "fs"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ async-io v2.6.0 (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ rustix feature "net"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ async-io v2.6.0 (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ rustix feature "std" (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ errno feature "std"
+Gצי   Gצי   Gצי       GצצGצַGצַ rustix feature "std" (*)
+Gצי   Gצי   Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ muda v0.20.0
+Gצי   Gצי   Gצי   Gצ£GצַGצַ muda feature "common-controls-v6"
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri feature "common-controls-v6" (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ muda feature "gtk3"
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ muda feature "serde"
+Gצי   Gצי   Gצי       GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ notify v9.0.0-rc.4
+Gצי   Gצי   Gצי   Gצ£GצַGצַ notify feature "default"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ fff-notify-debouncer-full v0.9.4
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ fff-notify-debouncer-full feature "default"
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ fff-search v0.10.0
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ fff-search feature "default"
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ r0-fff-search v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\fff-search)
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0-fff-search feature "default" (command-line)
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי       Gצי           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ fff-search feature "ripgrep"
+Gצי   Gצי   Gצי   Gצי   Gצי   Gצי           GצצGצַGצַ fff-search feature "default" (*)
+Gצי   Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ fff-notify-debouncer-full feature "macos_fsevent"
+Gצי   Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ fff-notify-debouncer-full feature "default" (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ fff-search v0.10.0 (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0-project v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\project)
+Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-project feature "default" (command-line)
+Gצי   Gצי   Gצי   Gצי           Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי   Gצי           Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי   Gצי           Gצ£GצַGצַ r0-remote v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\remote) (*)
+Gצי   Gצי   Gצי   Gצי           GצצGצַGצַ r0-wsl v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\wsl)
+Gצי   Gצי   Gצי   Gצי               GצצGצַGצַ r0-wsl feature "default" (command-line)
+Gצי   Gצי   Gצי   Gצי                   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי   Gצי                   Gצ£GצַGצַ r0-terminal v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\terminal) (*)
+Gצי   Gצי   Gצי   Gצי                   GצצGצַGצַ r0-version-control v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\version-control)
+Gצי   Gצי   Gצי   Gצי                       GצצGצַGצַ r0-version-control feature "default" (command-line)
+Gצי   Gצי   Gצי   Gצי                           GצצGצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ notify feature "macos_fsevent"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ notify feature "default" (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ fff-notify-debouncer-full feature "macos_fsevent" (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ notify feature "objc2-core-foundation"
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ notify feature "macos_fsevent" (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ notify feature "objc2-core-services"
+Gצי   Gצי   Gצי       GצצGצַGצַ notify feature "macos_fsevent" (*)
+Gצי   Gצי   Gצ£GצַGצַ nu-ansi-term v0.50.3
+Gצי   Gצי   Gצי   Gצ£GצַGצַ nu-ansi-term feature "default"
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tracing-subscriber v0.3.23
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "alloc"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "std"
+Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ tracing-appender v0.2.5
+Gצי   Gצי   Gצי   Gצי       Gצי           GצצGצַGצַ tracing-appender feature "default"
+Gצי   Gצי   Gצי   Gצי       Gצי               GצצGצַGצַ fff-search v0.10.0 (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tracing-subscriber feature "default"
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ fff-search v0.10.0 (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tracing-subscriber feature "env-filter"
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ fff-search v0.10.0 (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ tracing-subscriber feature "fmt"
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tracing-appender v0.2.5 (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   Gצ£GצַGצַ tracing-subscriber feature "ansi"
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   Gצי   GצצGצַGצַ tracing-subscriber feature "default" (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "default" (*)
+Gצי   Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ tracing-subscriber feature "registry"
+Gצי   Gצי   Gצי   Gצי       Gצי           GצצGצַGצַ tracing-subscriber feature "fmt" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "ansi" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "default" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "env-filter" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "fmt" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "matchers"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "env-filter" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "nu-ansi-term"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "ansi" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "once_cell"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "env-filter" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "registry" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "sharded-slab"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "registry" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "smallvec"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "default" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "std" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "thread_local"
+Gצי   Gצי   Gצי   Gצי       Gצי   Gצ£GצַGצַ tracing-subscriber feature "env-filter" (*)
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "registry" (*)
+Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ tracing-subscriber feature "tracing"
+Gצי   Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tracing-subscriber feature "env-filter" (*)
+Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ tracing-subscriber feature "tracing-log"
+Gצי   Gצי   Gצי   Gצי           GצצGצַGצַ tracing-subscriber feature "default" (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ nu-ansi-term feature "std"
+Gצי   Gצי   Gצי       GצצGצַGצַ nu-ansi-term feature "default" (*)
+Gצי   Gצי   Gצ£GצַGצַ os_info v3.15.0
+Gצי   Gצי   Gצי   Gצ£GצַGצַ os_info feature "default"
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-os v2.4.0 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ os_info feature "serde"
+Gצי   Gצי   Gצי       GצצGצַGצַ os_info feature "default" (*)
+Gצי   Gצי   Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי   Gצ£GצַGצַ rustix v1.1.4 (*)
+Gצי   Gצי   Gצ£GצַGצַ rustls-platform-verifier v0.7.0
+Gצי   Gצי   Gצי   GצצGצַGצַ rustls-platform-verifier feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ reqwest v0.13.4 (*)
+Gצי   Gצי   Gצ£GצַGצַ schannel v0.1.29
+Gצי   Gצי   Gצי   GצצGצַGצַ schannel feature "default"
+Gצי   Gצי   Gצי       GצצGצַGצַ rustls-native-certs v0.8.4
+Gצי   Gצי   Gצי           GצצGצַGצַ rustls-native-certs feature "default"
+Gצי   Gצי   Gצי               Gצ£GצַGצַ hyper-rustls v0.27.9 (*)
+Gצי   Gצי   Gצי               GצצGצַGצַ reqwest v0.12.28 (*)
+Gצי   Gצי   Gצ£GצַGצַ socket2 v0.6.4
+Gצי   Gצי   Gצי   Gצ£GצַGצַ socket2 feature "all"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ hyper-util v0.1.20 (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tokio v1.52.3 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ socket2 feature "default"
+Gצי   Gצי   Gצי       Gצ£GצַGצַ hyper-util v0.1.20 (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ tokio v1.52.3 (*)
+Gצי   Gצי   Gצ£GצַGצַ softbuffer v0.4.8
+Gצי   Gצי   Gצי   GצצGצַGצַ tauri-runtime-wry v2.12.1
+Gצי   Gצי   Gצי       GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-runtime-wry feature "common-controls-v6"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri feature "common-controls-v6" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-runtime-wry feature "dbus"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri feature "dbus" (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ tauri-runtime-wry feature "macos-private-api"
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ tauri feature "macos-private-api" (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ tauri-runtime-wry feature "x11"
+Gצי   Gצי   Gצי           GצצGצַGצַ tauri feature "x11" (*)
+Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ tempfile v3.27.0
+Gצי   Gצי   Gצי   Gצ£GצַGצַ tempfile feature "default"
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0 v0.17.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\src-tauri) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-exec-path v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\exec-path)
+Gצי   Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0-exec-path feature "default" (command-line)
+Gצי   Gצי   Gצי   Gצי   Gצי       Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי   Gצי   Gצי       GצצGצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-project v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\project) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-runtime v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\runtime) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-version-control v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\version-control) (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי   Gצי   [dev-dependencies]
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-claude-ide v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\claude-ide) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-docker v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\docker) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-fff-search v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\fff-search) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-github v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\github) (*)
+Gצי   Gצי   Gצי   Gצי   Gצ£GצַGצַ r0-lsp v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\lsp) (*)
+Gצי   Gצי   Gצי   Gצי   GצצGצַGצַ r0-remote v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\remote) (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ tempfile feature "getrandom"
+Gצי   Gצי   Gצי       GצצGצַGצַ tempfile feature "default" (*)
+Gצי   Gצי   Gצ£GצַGצַ winapi-util v0.1.11
+Gצי   Gצי   Gצי   GצצGצַGצַ winapi-util feature "default"
+Gצי   Gצי   Gצי       Gצ£GצַGצַ ignore v0.4.26
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ ignore feature "default"
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ fff-search v0.10.0 (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-ai v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\ai) (*)
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ r0-fff-search v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\fff-search) (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ r0-project v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\project) (*)
+Gצי   Gצי   Gצי       Gצ£GצַGצַ same-file v1.0.6
+Gצי   Gצי   Gצי       Gצי   GצצGצַGצַ same-file feature "default"
+Gצי   Gצי   Gצי       Gצי       Gצ£GצַGצַ ignore v0.4.26 (*)
+Gצי   Gצי   Gצי       Gצי       GצצGצַGצַ walkdir v2.5.0
+Gצי   Gצי   Gצי       Gצי           GצצGצַGצַ walkdir feature "default"
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ fff-notify-debouncer-full v0.9.4 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ ignore v0.4.26 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ r0-project v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\project) (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ r0-tooling v0.1.0 (C:\Users\adars\OneDrive\Desktop\r-0\r0\crates\tooling) (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ tauri-build v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ tauri-codegen v2.7.1
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-codegen feature "brotli"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-codegen feature "compression"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי       GצצGצַGצַ tauri-macros feature "compression"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי           GצצGצַGצַ tauri feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-codegen feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   GצצGצַGצַ tauri-codegen feature "default"
+Gצי   Gצי   Gצי       Gצי               Gצי       GצצGצַGצַ tauri-macros v2.7.1 (proc-macro)
+Gצי   Gצי   Gצי       Gצי               Gצי           Gצ£GצַGצַ tauri-macros feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי           GצצGצַGצַ tauri-macros feature "default"
+Gצי   Gצי   Gצי       Gצי               Gצי               GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ tauri-plugin v2.7.1
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-plugin feature "build"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   [build-dependencies]
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-clipboard-manager v2.4.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-deep-link v2.6.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-dialog v2.8.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-drag v2.1.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-fs v2.6.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-log v2.10.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-notification v2.5.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-opener v2.7.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-os v2.4.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-process v2.4.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-plugin-window-state v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   GצצGצַGצַ tauri-plugin feature "default"
+Gצי   Gצי   Gצי       Gצי               Gצי       [build-dependencies]
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-clipboard-manager v2.4.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-deep-link v2.6.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-dialog v2.8.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-drag v2.1.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-fs v2.6.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-http v2.8.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-log v2.10.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-notification v2.5.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-opener v2.7.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-os v2.4.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-process v2.4.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-store v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי       GצצGצַGצַ tauri-plugin-window-state v2.5.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצ£GצַGצַ tauri-utils v2.10.1
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "brotli"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "compression"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי       Gצ£GצַGצַ tauri feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי       GצצGצַGצַ tauri-codegen feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "build-2"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-build v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-codegen v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-plugin v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   [build-dependencies]
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "cargo_metadata"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "default"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-build v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-codegen v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-macros v2.7.1 (proc-macro) (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-plugin v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   [build-dependencies]
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-deep-link v2.6.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-plugin-fs v2.6.0 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "html-manipulation-2"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "proc-macro2"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "quote"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "resources"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-build v2.7.1 (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "schema"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "schemars"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "schema" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצ£GצַGצַ tauri-utils feature "swift-rs"
+Gצי   Gצי   Gצי       Gצי               Gצי   Gצי   GצצGצַGצַ tauri-utils feature "build-2" (*)
+Gצי   Gצי   Gצי       Gצי               Gצי   GצצGצַGצַ tauri-utils feature "walkdir"
+Gצי   Gצי   Gצי       Gצי               Gצי       GצצGצַGצַ tauri-utils feature "resources" (*)
+Gצי   Gצי   Gצי       Gצי               GצצGצַGצַ tauri-utils v2.10.1
+Gצי   Gצי   Gצי       Gצי                   Gצ£GצַGצַ tauri-utils feature "brotli"
+Gצי   Gצי   Gצי       Gצי                   Gצי   GצצGצַGצַ tauri-utils feature "compression"
+Gצי   Gצי   Gצי       Gצי                   Gצי       GצצGצַGצַ tauri feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי                   Gצ£GצַGצַ tauri-utils feature "compression" (*)
+Gצי   Gצי   Gצי       Gצי                   Gצ£GצַGצַ tauri-utils feature "default"
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצ£GצַGצַ tauri-plugin-deep-link v2.6.1 (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצ£GצַGצַ tauri-runtime v2.12.1
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי   Gצ£GצַGצַ tauri-runtime feature "default"
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי   Gצי   GצצGצַGצַ tauri-runtime-wry v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי   GצצGצַGצַ tauri-runtime feature "macos-private-api"
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי       Gצ£GצַGצַ tauri feature "macos-private-api" (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   Gצי       GצצGצַGצַ tauri-runtime-wry feature "macos-private-api" (*)
+Gצי   Gצי   Gצי       Gצי                   Gצי   GצצGצַGצַ tauri-runtime-wry v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי                   Gצ£GצַGצַ tauri-utils feature "resources"
+Gצי   Gצי   Gצי       Gצי                   Gצי   GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצי       Gצי                   GצצGצַGצַ tauri-utils feature "walkdir"
+Gצי   Gצי   Gצי       Gצי                       GצצGצַGצַ tauri-utils feature "resources" (*)
+Gצי   Gצי   Gצי       GצצGצַGצַ walkdir v2.5.0 (*)
+Gצי   Gצי   GצצGצַGצַ window-vibrancy v0.8.1
+Gצי   Gצי       GצצGצַGצַ window-vibrancy feature "default"
+Gצי   Gצי           GצצGצַGצַ tauri v2.12.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Wdk" (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32" (*)
+Gצי   Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצ£GצַGצַ tokio feature "process" (*)
+Gצי   Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Globalization"
+Gצי   Gצי   Gצ£GצַGצַ dirs-sys v0.5.0 (*)
+Gצי   Gצי   GצצGצַGצַ muda v0.20.0 (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Graphics"
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Graphics_Dwm"
+Gצי   Gצי   Gצי   GצצGצַGצַ window-vibrancy v0.8.1 (*)
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_Graphics_Gdi"
+Gצי   Gצי       Gצ£GצַGצַ muda v0.20.0 (*)
+Gצי   Gצי       Gצ£GצַGצַ softbuffer v0.4.8 (*)
+Gצי   Gצי       Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי       GצצGצַGצַ window-vibrancy v0.8.1 (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Networking"
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_Networking_WinSock"
+Gצי   Gצי       Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי       Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי       Gצ£GצַGצַ rustix v1.1.4 (*)
+Gצי   Gצי       GצצGצַGצַ socket2 v0.6.4 (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Security"
+Gצי   Gצי   Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי   Gצ£GצַGצַ nu-ansi-term v0.50.3 (*)
+Gצי   Gצי   Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי   Gצ£GצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי   GצצGצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Security_Authentication"
+Gצי   Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_Security_Authentication_Identity"
+Gצי   Gצי   Gצי       GצצGצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Security_Credentials"
+Gצי   Gצי   Gצי   GצצGצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Security_Cryptography"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ rustls-platform-verifier v0.7.0 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   GצצGצַGצַ mio feature "os-ext" (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_Storage"
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_Storage_FileSystem"
+Gצי   Gצי       Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי       Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי       Gצ£GצַGצַ nu-ansi-term v0.50.3 (*)
+Gצי   Gצי       Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי       Gצ£GצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי       Gצ£GצַGצַ tempfile v3.27.0 (*)
+Gצי   Gצי       GצצGצַGצַ winapi-util v0.1.11 (*)
+Gצי   Gצי       GצצGצַGצַ tokio feature "net" (*)
+Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System"
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Com"
+Gצי   Gצי   Gצי   GצצGצַGצַ dirs-sys v0.5.0 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Console"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ anstyle-query v1.1.5 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ anstyle-wincon v3.0.11 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ colored v3.1.1 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ nu-ansi-term v0.50.3 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ winapi-util v0.1.11 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ tokio feature "signal" (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_DataExchange"
+Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Diagnostics"
+Gצי   Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_System_Diagnostics_Debug"
+Gצי   Gצי   Gצי       GצצGצַGצַ errno v0.3.14 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_IO"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ socket2 v0.6.4 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_LibraryLoader"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ muda v0.20.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ os_info v3.15.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ window-vibrancy v0.8.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Memory"
+Gצי   Gצי   Gצי   GצצGצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Pipes"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ mio feature "os-ext" (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Registry"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ os_info v3.15.0 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_SystemInformation"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ os_info v3.15.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ schannel v0.1.29 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ winapi-util v0.1.11 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ window-vibrancy v0.8.1 (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_SystemServices"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ muda v0.20.0 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ os_info v3.15.0 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ tokio feature "net" (*)
+Gצי   Gצי   Gצ£GצַGצַ windows-sys feature "Win32_System_Threading"
+Gצי   Gצי   Gצי   Gצ£GצַGצַ agent-client-protocol v2.2.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ os_info v3.15.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי   Gצי   Gצ£GצַGצַ socket2 v0.6.4 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי   Gצי   Gצי   GצצGצַGצַ tokio feature "process" (*)
+Gצי   Gצי   GצצGצַGצַ windows-sys feature "Win32_System_WindowsProgramming"
+Gצי   Gצי       Gצ£GצַGצַ mio v1.2.1 (*)
+Gצי   Gצי       Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+Gצי   Gצי       Gצ£GצַGצַ polling v3.11.0 (*)
+Gצי   Gצי       Gצ£GצַGצַ serial2 v0.2.37 (*)
+Gצי   Gצי       GצצGצַGצַ socket2 v0.6.4 (*)
+Gצי   Gצי       GצצGצַGצַ tokio feature "process" (*)
+Gצי   GצצGצַGצַ windows-sys feature "Win32_UI"
+Gצי       Gצ£GצַGצַ windows-sys feature "Win32_UI_Accessibility"
+Gצי       Gצי   GצצGצַGצַ muda v0.20.0 (*)
+Gצי       Gצ£GצַGצַ windows-sys feature "Win32_UI_Controls"
+Gצי       Gצי   GצצGצַGצַ muda v0.20.0 (*)
+Gצי       Gצ£GצַGצַ windows-sys feature "Win32_UI_HiDpi"
+Gצי       Gצי   GצצGצַGצַ muda v0.20.0 (*)
+Gצי       Gצ£GצַGצַ windows-sys feature "Win32_UI_Input"
+Gצי       Gצי   GצצGצַGצַ windows-sys feature "Win32_UI_Input_KeyboardAndMouse"
+Gצי       Gצי       GצצGצַGצַ muda v0.20.0 (*)
+Gצי       Gצ£GצַGצַ windows-sys feature "Win32_UI_Shell"
+Gצי       Gצי   Gצ£GצַGצַ dirs-sys v0.5.0 (*)
+Gצי       Gצי   Gצ£GצַGצַ muda v0.20.0 (*)
+Gצי       Gצי   Gצ£GצַGצַ softbuffer v0.4.8 (*)
+Gצי       Gצי   GצצGצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי       GצצGצַGצַ windows-sys feature "Win32_UI_WindowsAndMessaging"
+Gצי           Gצ£GצַGצַ muda v0.20.0 (*)
+Gצי           Gצ£GצַGצַ os_info v3.15.0 (*)
+Gצי           Gצ£GצַGצַ softbuffer v0.4.8 (*)
+Gצי           Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+Gצי           Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+Gצי           GצצGצַGצַ window-vibrancy v0.8.1 (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Devices" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Devices_Communication" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Foundation" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Globalization" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Graphics" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Graphics_Dwm" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Graphics_Gdi" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Networking" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Networking_WinSock" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Security" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Security_Authentication" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Security_Authentication_Identity" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Security_Credentials" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Security_Cryptography" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Storage" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_Storage_FileSystem" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Com" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Console" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_DataExchange" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Diagnostics" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Diagnostics_Debug" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_IO" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_LibraryLoader" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Memory" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Pipes" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Registry" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_SystemInformation" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_SystemServices" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_Threading" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_System_WindowsProgramming" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_Accessibility" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_Controls" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_HiDpi" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_Input" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_Input_KeyboardAndMouse" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_Shell" (*)
+Gצ£GצַGצַ windows-sys feature "Win32_UI_WindowsAndMessaging" (*)
+GצצGצַGצַ windows-sys feature "default"
+    Gצ£GצַGצַ agent-client-protocol v2.2.0 (*)
+    Gצ£GצַGצַ anstyle-query v1.1.5 (*)
+    Gצ£GצַGצַ anstyle-wincon v3.0.11 (*)
+    Gצ£GצַGצַ async-io v2.6.0 (*)
+    Gצ£GצַGצַ colored v3.1.1 (*)
+    Gצ£GצַGצַ dirs-sys v0.5.0 (*)
+    Gצ£GצַGצַ errno v0.3.14 (*)
+    Gצ£GצַGצַ mio v1.2.1 (*)
+    Gצ£GצַGצַ muda v0.20.0 (*)
+    Gצ£GצַGצַ notify v9.0.0-rc.4 (*)
+    Gצ£GצַGצַ nu-ansi-term v0.50.3 (*)
+    Gצ£GצַGצַ os_info v3.15.0 (*)
+    Gצ£GצַGצַ polling v3.11.0 (*)
+    Gצ£GצַGצַ rustix v1.1.4 (*)
+    Gצ£GצַGצַ schannel v0.1.29 (*)
+    Gצ£GצַGצַ serial2 v0.2.37 (*)
+    Gצ£GצַGצַ socket2 v0.6.4 (*)
+    Gצ£GצַGצַ softbuffer v0.4.8 (*)
+    Gצ£GצַGצַ tauri-plugin-single-instance v2.5.2 (*)
+    Gצ£GצַGצַ tauri-plugin-updater v2.13.1 (*)
+    Gצ£GצַGצַ tempfile v3.27.0 (*)
+    Gצ£GצַGצַ tokio v1.52.3 (*)
+    Gצ£GצַGצַ winapi-util v0.1.11 (*)
+    GצצGצַGצַ window-vibrancy v0.8.1 (*)

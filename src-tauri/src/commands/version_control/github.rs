@@ -1,5 +1,5 @@
 use super::github_token::{
-   PERSONAL_ACCESS_TOKEN_SECRET_KEY, has_r0_account_token, has_personal_access_token,
+   PERSONAL_ACCESS_TOKEN_SECRET_KEY, has_personal_access_token, has_r0_account_token,
    resolve_github_token,
 };
 use crate::secure_storage::{get_secret, remove_secret, store_secret};
@@ -273,10 +273,8 @@ pub async fn github_delete_issue_comment(
    comment_id: i64,
 ) -> Result<(), String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || {
-      r0_github::github_delete_issue_comment(repo_path, comment_id, github_token)
-   })
-   .await
+   run_blocking(move || r0_github::github_delete_issue_comment(repo_path, comment_id, github_token))
+      .await
 }
 
 #[tauri::command]
@@ -302,8 +300,7 @@ pub async fn github_unlock_issue(
    issue_number: i64,
 ) -> Result<(), String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || r0_github::github_unlock_issue(repo_path, issue_number, github_token))
-      .await
+   run_blocking(move || r0_github::github_unlock_issue(repo_path, issue_number, github_token)).await
 }
 
 #[tauri::command]
@@ -371,10 +368,8 @@ pub async fn github_add_pr_comment(
    body: String,
 ) -> Result<PullRequestComment, String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || {
-      r0_github::github_add_pr_comment(repo_path, pr_number, body, github_token)
-   })
-   .await
+   run_blocking(move || r0_github::github_add_pr_comment(repo_path, pr_number, body, github_token))
+      .await
 }
 
 #[tauri::command]
@@ -454,8 +449,7 @@ pub async fn github_get_pr_details(
    pr_number: i64,
 ) -> Result<PullRequestDetails, String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || r0_github::github_get_pr_details(repo_path, pr_number, github_token))
-      .await
+   run_blocking(move || r0_github::github_get_pr_details(repo_path, pr_number, github_token)).await
 }
 
 #[tauri::command]
@@ -488,8 +482,7 @@ pub async fn github_get_pr_comments(
    pr_number: i64,
 ) -> Result<Vec<PullRequestComment>, String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || r0_github::github_get_pr_comments(repo_path, pr_number, github_token))
-      .await
+   run_blocking(move || r0_github::github_get_pr_comments(repo_path, pr_number, github_token)).await
 }
 
 #[tauri::command]
@@ -500,10 +493,8 @@ pub async fn github_get_issue_details(
    issue_number: i64,
 ) -> Result<IssueDetails, String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || {
-      r0_github::github_get_issue_details(repo_path, issue_number, github_token)
-   })
-   .await
+   run_blocking(move || r0_github::github_get_issue_details(repo_path, issue_number, github_token))
+      .await
 }
 
 #[tauri::command]
@@ -514,10 +505,8 @@ pub async fn github_get_workflow_run_details(
    run_id: i64,
 ) -> Result<WorkflowRunDetails, String> {
    let github_token = resolve_github_token_async(&app).await;
-   run_blocking(move || {
-      r0_github::github_get_workflow_run_details(repo_path, run_id, github_token)
-   })
-   .await
+   run_blocking(move || r0_github::github_get_workflow_run_details(repo_path, run_id, github_token))
+      .await
 }
 
 #[tauri::command]
@@ -620,8 +609,7 @@ pub async fn github_publish_release(
    make_latest: bool,
 ) -> Result<r0_github::Release, String> {
    let token = resolve_github_token_async(&app).await;
-   run_blocking(move || r0_github::github_publish_release(repo_path, id, make_latest, token))
-      .await
+   run_blocking(move || r0_github::github_publish_release(repo_path, id, make_latest, token)).await
 }
 
 #[tauri::command]

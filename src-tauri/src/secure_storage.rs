@@ -404,14 +404,24 @@ mod tests {
       let cache = Mutex::new(HashMap::new());
       let loads = AtomicUsize::new(0);
 
-      let first = get_secret_with_cache(&cache, "com.code.adshkumar.is-a.dev", "github_token", || {
-         loads.fetch_add(1, Ordering::Relaxed);
-         Ok(Some("secret".to_string()))
-      });
-      let second = get_secret_with_cache(&cache, "com.code.adshkumar.is-a.dev", "github_token", || {
-         loads.fetch_add(1, Ordering::Relaxed);
-         Ok(Some("different".to_string()))
-      });
+      let first = get_secret_with_cache(
+         &cache,
+         "com.code.adshkumar.is-a.dev",
+         "github_token",
+         || {
+            loads.fetch_add(1, Ordering::Relaxed);
+            Ok(Some("secret".to_string()))
+         },
+      );
+      let second = get_secret_with_cache(
+         &cache,
+         "com.code.adshkumar.is-a.dev",
+         "github_token",
+         || {
+            loads.fetch_add(1, Ordering::Relaxed);
+            Ok(Some("different".to_string()))
+         },
+      );
 
       assert_eq!(first, Ok(Some("secret".to_string())));
       assert_eq!(second, Ok(Some("secret".to_string())));
@@ -423,14 +433,24 @@ mod tests {
       let cache = Mutex::new(HashMap::new());
       let loads = AtomicUsize::new(0);
 
-      let first = get_secret_with_cache(&cache, "com.code.adshkumar.is-a.dev", "github_token", || {
-         loads.fetch_add(1, Ordering::Relaxed);
-         Ok(None)
-      });
-      let second = get_secret_with_cache(&cache, "com.code.adshkumar.is-a.dev", "github_token", || {
-         loads.fetch_add(1, Ordering::Relaxed);
-         Ok(Some("secret".to_string()))
-      });
+      let first = get_secret_with_cache(
+         &cache,
+         "com.code.adshkumar.is-a.dev",
+         "github_token",
+         || {
+            loads.fetch_add(1, Ordering::Relaxed);
+            Ok(None)
+         },
+      );
+      let second = get_secret_with_cache(
+         &cache,
+         "com.code.adshkumar.is-a.dev",
+         "github_token",
+         || {
+            loads.fetch_add(1, Ordering::Relaxed);
+            Ok(Some("secret".to_string()))
+         },
+      );
 
       assert_eq!(first, Ok(None));
       assert_eq!(second, Ok(Some("secret".to_string())));
@@ -678,10 +698,7 @@ mod tests {
       let store = load_store_from_path(&path).expect("recover leading store");
 
       assert_eq!(store.len(), 1);
-      assert_eq!(
-         store["r0_auth_token"],
-         Value::String("token".to_string())
-      );
+      assert_eq!(store["r0_auth_token"], Value::String("token".to_string()));
    }
 
    #[test]

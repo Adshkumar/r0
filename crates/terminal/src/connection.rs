@@ -547,9 +547,9 @@ impl TerminalConnection {
    ) -> anyhow::Error {
       if err.kind() == std::io::ErrorKind::PermissionDenied {
          return anyhow!(
-            "R0 does not have permission to {operation}: {working_dir}. On macOS, allow R0 \
-             in System Settings > Privacy & Security > Files and Folders, or grant Full Disk \
-             Access for developer tools that need broad project access."
+            "R0 does not have permission to {operation}: {working_dir}. On macOS, allow R0 in \
+             System Settings > Privacy & Security > Files and Folders, or grant Full Disk Access \
+             for developer tools that need broad project access."
          );
       }
 

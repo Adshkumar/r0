@@ -19,8 +19,8 @@ use crate::{
       set_remote_terminal_paused, write_remote_terminal,
    },
 };
-use r0_terminal::{TerminalChannelMessage, TerminalInput, TerminalSize};
 pub use file_ops::RemoteFileEntry;
+use r0_terminal::{TerminalChannelMessage, TerminalInput, TerminalSize};
 use serde::{Deserialize, Serialize};
 pub use session_types::{RemoteTerminalTarget, SSH_CONNECTION_STATUS_EVENT, SshConnectionStatus};
 use tauri::{AppHandle, Manager, ipc::Channel};

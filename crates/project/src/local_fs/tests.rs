@@ -14,7 +14,7 @@ fn sums_nested_file_sizes_and_rejects_files() {
    fs::write(root.join("first.txt"), b"r0").unwrap();
    fs::write(root.join("nested/second.txt"), b"editor").unwrap();
 
-   assert_eq!(directory_size(&root), Ok(11));
+   assert_eq!(directory_size(&root), Ok(8));
    assert_eq!(
       directory_size(&root.join("first.txt")),
       Err("Path is not a directory".to_string())

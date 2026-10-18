@@ -108,8 +108,11 @@ fn reports_missing_formatters_without_changing_the_content() {
    assert!(!response.success);
    assert_eq!(response.formatted_content, UNFORMATTED);
    assert!(
-      response.error.as_deref().is_some_and(|error| error
-         .starts_with("Formatter not available: r0-definitely-missing-formatter - ")),
+      response
+         .error
+         .as_deref()
+         .is_some_and(|error| error
+            .starts_with("Formatter not available: r0-definitely-missing-formatter - ")),
       "{response:?}"
    );
 }

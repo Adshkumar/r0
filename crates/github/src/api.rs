@@ -563,9 +563,7 @@ fn send_github_request(request: RequestBuilder) -> Result<Response, String> {
    let normalized_message = parsed_message.to_lowercase();
 
    if status.as_u16() == 401 {
-      return Err(
-         "GitHub authentication failed. Connect GitHub in R0 and try again.".to_string(),
-      );
+      return Err("GitHub authentication failed. Connect GitHub in R0 and try again.".to_string());
    }
 
    if status.as_u16() == 403 && rate_remaining.as_deref() == Some("0") {
@@ -2285,8 +2283,7 @@ mod api_tests {
    #[test]
    fn converts_notification_subject_api_urls_to_github_urls() {
       assert_eq!(
-         github_api_url_to_web_url("https://api.github.com/repos/Adshkumar/r0/pulls/42")
-            .as_deref(),
+         github_api_url_to_web_url("https://api.github.com/repos/Adshkumar/r0/pulls/42").as_deref(),
          Some("https://github.com/Adshkumar/r0/pull/42")
       );
       assert_eq!(

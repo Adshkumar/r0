@@ -419,8 +419,47 @@ fn expand_jetbrains_path(value: &str, home: Option<&Path>) -> Option<String> {
 
 fn file_uri_to_path(uri: &str) -> Option<String> {
    let parsed = Url::parse(uri).ok()?;
-   if parsed.scheme() != "file" {
+   if parsed.scheme() != "file" || parsed.query().is_some() || parsed.fragment().is_some() {
       return None;
+   }
+
+   #[cfg(windows)]
+   {
+      let path = parsed.path();
+      let is_drive_path = path
+         .get(1..)
+         .is_some_and(|rest| rest.as_bytes().get(1) == Some(&b':'));
+
+      if parsed.host_str().is_none_or(str::is_empty) && path.starts_with('/') && !is_drive_path {
+         // Unix-style file URIs must remain Unix-style paths even on Windows.
+         let decoded = Url::parse(uri).ok()?;
+         let mut output = String::new();
+         let bytes = decoded.path().as_bytes();
+         let mut index = 0;
+
+         while index < bytes.len() {
+            if bytes[index] == b'%' {
+               let high = *bytes.get(index + 1)?;
+               let low = *bytes.get(index + 2)?;
+               let hex = |b: u8| -> Option<u8> {
+                  match b {
+                     b'0'..=b'9' => Some(b - b'0'),
+                     b'a'..=b'f' => Some(b - b'a' + 10),
+                     b'A'..=b'F' => Some(b - b'A' + 10),
+                     _ => None,
+                  }
+               };
+               output.push((hex(high)? * 16 + hex(low)?) as char);
+               index += 3;
+            } else {
+               let character = decoded.path()[index..].chars().next()?;
+               output.push(character);
+               index += character.len_utf8();
+            }
+         }
+
+         return Some(output);
+      }
    }
 
    parsed
@@ -428,7 +467,6 @@ fn file_uri_to_path(uri: &str) -> Option<String> {
       .ok()
       .map(|path| path.to_string_lossy().into_owned())
 }
-
 fn project_name_from_path(path: &Path) -> String {
    path
       .file_name()

@@ -170,8 +170,8 @@ fn ensure_installable_location() -> Result<(), String> {
    let binary = std::env::current_exe().map_err(|error| error.to_string())?;
    if is_translocated(&binary) {
       return Err(
-         "R0 is running from a temporary location. Move R0 to your Applications folder, \
-          reopen it, and install the CLI command again."
+         "R0 is running from a temporary location. Move R0 to your Applications folder, reopen \
+          it, and install the CLI command again."
             .to_string(),
       );
    }
@@ -372,8 +372,8 @@ pub fn install_cli_command() -> Result<String, String> {
          format!("{installed}\n\nOpen a new terminal and run `r0 .` to open a folder.")
       }
       ShellPathSetup::Added(file) => format!(
-         "{installed}\n\nAdded {} to your PATH in {}. Open a new terminal and run `r0 .` to \
-          open a folder.",
+         "{installed}\n\nAdded {} to your PATH in {}. Open a new terminal and run `r0 .` to open \
+          a folder.",
          bin_dir.display(),
          file.display()
       ),
@@ -410,8 +410,8 @@ pub fn install_cli_command() -> Result<String, String> {
    );
    Ok(match add_to_user_path(bin_dir) {
       Ok(true) => format!(
-         "{installed}\n\nAdded {} to your user PATH. Open a new terminal and run `r0 .` to \
-          open a folder.",
+         "{installed}\n\nAdded {} to your user PATH. Open a new terminal and run `r0 .` to open a \
+          folder.",
          bin_dir.display()
       ),
       Ok(false) => {
@@ -511,8 +511,7 @@ pub fn get_cli_install_command() -> Result<String, String> {
 pub fn get_cli_install_command() -> Result<String, String> {
    let script = current_cli_script()?;
    Ok(format!(
-      "mkdir -p ~/.local/bin && cat > ~/.local/bin/r0 << 'EOF'\n{}\nEOF\nchmod +x \
-       ~/.local/bin/r0",
+      "mkdir -p ~/.local/bin && cat > ~/.local/bin/r0 << 'EOF'\n{}\nEOF\nchmod +x ~/.local/bin/r0",
       script.trim()
    ))
 }

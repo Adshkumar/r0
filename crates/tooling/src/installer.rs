@@ -1,9 +1,7 @@
 use crate::{ToolConfig, ToolError, ToolRuntime, platform};
-use r0_runtime::{
-   NodeRuntime, RuntimeManager, RuntimeType, process::configure_background_command,
-};
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use r0_runtime::{NodeRuntime, RuntimeManager, RuntimeType, process::configure_background_command};
 use serde_json::Value;
 use std::{
    env, fs,
@@ -637,11 +635,15 @@ impl ToolInstaller {
    }
 
    fn safe_package_bin_path(package_root: &Path, bin_path: &str) -> Option<PathBuf> {
+      let normalized = bin_path.replace('\\', "/");
       let relative_path = Path::new(bin_path);
-      if relative_path.is_absolute()
+
+      if normalized.starts_with('/')
+         || relative_path.is_absolute()
          || relative_path
             .components()
             .any(|component| matches!(component, Component::ParentDir | Component::Prefix(_)))
+         || normalized.split('/').any(|component| component == "..")
       {
          return None;
       }

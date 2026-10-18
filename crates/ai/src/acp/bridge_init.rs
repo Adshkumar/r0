@@ -4,7 +4,7 @@ use super::{
       ACP_AUTHENTICATE_TIMEOUT, AuthenticationRequired, LEGACY_TERMINAL_AUTH_META_KEY,
       describe_auth_methods, startup_auth_method,
    },
-   client::{R0AcpClient, ClientResponders},
+   client::{ClientResponders, R0AcpClient},
    host::{AcpEventSink, SharedAcpEventSink},
    mcp_servers::{AcpSkippedMcpServer, McpServerConfig, select_mcp_servers},
    process::{stop_child_tree, stop_child_tree_mut},
@@ -24,8 +24,8 @@ use agent_client_protocol::{
    schema::{ProtocolVersion, v1 as acp},
 };
 use anyhow::{Result, bail};
-use r0_terminal::TerminalManager;
 use futures::future::LocalBoxFuture;
+use r0_terminal::TerminalManager;
 use serde_json::json;
 use std::{
    collections::{HashMap, VecDeque},
@@ -694,8 +694,8 @@ fn check_protocol_version(version: ProtocolVersion) -> Result<()> {
       return Ok(());
    }
    bail!(
-      "The agent uses ACP protocol version {}, but R0 supports version {}. Update the agent or \
-       R0 to a matching version.",
+      "The agent uses ACP protocol version {}, but R0 supports version {}. Update the agent or R0 \
+       to a matching version.",
       version.as_u16(),
       SUPPORTED_PROTOCOL_VERSION.as_u16()
    )

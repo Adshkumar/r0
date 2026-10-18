@@ -93,8 +93,7 @@ mod tests {
    fn allows_directories_recursively_and_files_individually() {
       let app = tauri::test::mock_app();
       let handle = app.handle().clone();
-      let workspace =
-         std::env::temp_dir().join(format!("r0-asset-scope-{}", std::process::id()));
+      let workspace = std::env::temp_dir().join(format!("r0-asset-scope-{}", std::process::id()));
       let nested = workspace.join("assets");
       std::fs::create_dir_all(&nested).unwrap();
       let image = nested.join("logo.png");

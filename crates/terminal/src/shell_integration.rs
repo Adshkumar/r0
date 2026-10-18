@@ -161,10 +161,8 @@ mod tests {
    use std::ffi::OsStr;
 
    fn install_dir() -> PathBuf {
-      let base = std::env::temp_dir().join(format!(
-         "r0-shell-integration-test-{}",
-         std::process::id()
-      ));
+      let base =
+         std::env::temp_dir().join(format!("r0-shell-integration-test-{}", std::process::id()));
       ensure_shell_integration_dir(&base).unwrap()
    }
 
@@ -186,11 +184,7 @@ mod tests {
       let dir = ensure_shell_integration_dir(&base).unwrap();
       let zshrc = dir.join("zsh").join(".zshrc");
       assert!(zshrc.is_file());
-      assert!(
-         dir.join("bash")
-            .join("r0-shell-integration.bash")
-            .is_file()
-      );
+      assert!(dir.join("bash").join("r0-shell-integration.bash").is_file());
       assert!(
          dir.join("fish")
             .join("fish")
@@ -228,10 +222,7 @@ mod tests {
          cmd.get_env("R0_USER_ZDOTDIR"),
          Some(OsStr::new("/home/me/.config/zsh"))
       );
-      assert_eq!(
-         cmd.get_env("R0_SHELL_INTEGRATION"),
-         Some(OsStr::new("1"))
-      );
+      assert_eq!(cmd.get_env("R0_SHELL_INTEGRATION"), Some(OsStr::new("1")));
    }
 
    #[cfg(not(target_os = "windows"))]
@@ -334,10 +325,7 @@ mod tests {
             ),
          ]
       );
-      assert_eq!(
-         cmd.get_env("R0_SHELL_INTEGRATION"),
-         Some(OsStr::new("1"))
-      );
+      assert_eq!(cmd.get_env("R0_SHELL_INTEGRATION"), Some(OsStr::new("1")));
    }
 
    #[cfg(not(target_os = "windows"))]

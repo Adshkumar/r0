@@ -105,8 +105,8 @@ pub fn parse_diff_to_lines(diff: &mut Diff) -> Result<ParsedDiffLines, String> {
                lines.push(GitDiffLine {
                   line_type: DiffLineType::Header,
                   content: format!(
-                     "R0 truncated this diff after {LARGE_DIFF_LINE_THRESHOLD} lines to keep \
-                      the editor responsive."
+                     "R0 truncated this diff after {LARGE_DIFF_LINE_THRESHOLD} lines to keep the \
+                      editor responsive."
                   ),
                   old_line_number: None,
                   new_line_number: None,
@@ -1875,9 +1875,7 @@ mod tests {
 
       let raw_patch = file.raw_patch.clone().expect("raw patch");
       assert!(file.is_truncated);
-      assert!(
-         raw_patch.ends_with("+é\n# R0 truncated this diff to keep the editor responsive.\n")
-      );
+      assert!(raw_patch.ends_with("+é\n# R0 truncated this diff to keep the editor responsive.\n"));
       assert_eq!(file.additions, 1);
 
       file.push_line('-', line(), b"ignored\n");

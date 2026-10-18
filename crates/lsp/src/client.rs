@@ -1,8 +1,8 @@
 use crate::semantic_tokens::RawSemanticTokensDeltaResult;
 use anyhow::{Context, Result, bail};
-use r0_runtime::{NodeRuntime, process::configure_background_command};
 use crossbeam_channel::{Sender, bounded};
 use lsp_types::*;
+use r0_runtime::{NodeRuntime, process::configure_background_command};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

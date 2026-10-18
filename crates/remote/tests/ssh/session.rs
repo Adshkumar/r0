@@ -54,10 +54,7 @@ fn handshake_failure_reports_endpoint_and_stage_without_reading_keys() {
 }
 
 fn connect_to_test_server(key: &str) -> Result<ssh2::Session, String> {
-   let port = std::env::var("R0_SSH_TEST_PORT")
-      .unwrap()
-      .parse()
-      .unwrap();
+   let port = std::env::var("R0_SSH_TEST_PORT").unwrap().parse().unwrap();
    let username = std::env::var("R0_SSH_TEST_USER").unwrap();
    let test_home = std::env::var("R0_SSH_TEST_HOME").unwrap();
    create_ssh_session_with_config(
@@ -104,13 +101,9 @@ fn reports_configured_key_failure() {
 #[ignore = "requires an isolated local SSH server and R0_SSH_TEST_PORT, R0_SSH_TEST_USER, \
             R0_SSH_TEST_HOME"]
 fn verifies_and_persists_server_trust_before_authentication() {
-   let port = std::env::var("R0_SSH_TEST_PORT")
-      .unwrap()
-      .parse()
-      .unwrap();
+   let port = std::env::var("R0_SSH_TEST_PORT").unwrap().parse().unwrap();
    let username = std::env::var("R0_SSH_TEST_USER").unwrap();
-   let key =
-      PathBuf::from(std::env::var("R0_SSH_TEST_HOME").unwrap()).join(".ssh/custom_ed25519");
+   let key = PathBuf::from(std::env::var("R0_SSH_TEST_HOME").unwrap()).join(".ssh/custom_ed25519");
    let home = tempfile::tempdir().unwrap();
    let connect = |identity: &Path| {
       create_ssh_session_with_config(

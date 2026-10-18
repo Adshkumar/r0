@@ -62,13 +62,8 @@ pub async fn chat_run_terminal_command(
       std::sync::Arc::new(move |chunk| {
          let _ = on_output.send(chunk);
       });
-   r0_ai::workspace_command::run_workspace_command_with_output(
-      &root,
-      &command,
-      &id,
-      Some(listener),
-   )
-   .await
+   r0_ai::workspace_command::run_workspace_command_with_output(&root, &command, &id, Some(listener))
+      .await
 }
 
 #[tauri::command]

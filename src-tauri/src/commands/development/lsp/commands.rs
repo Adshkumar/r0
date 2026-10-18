@@ -1,4 +1,10 @@
 use super::types::{IntoLsp, Lsp, SemanticTokensPayload};
+use lsp_types::{
+   CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, CodeActionOrCommand,
+   CompletionItem, DocumentHighlight, FoldingRange, Hover, Location, Position,
+   PrepareRenameResponse, SelectionRange, SignatureHelp, TextEdit, TypeHierarchyItem,
+   WorkspaceEdit,
+};
 use r0_lsp::{
    DocumentChangeBatch, LspError, LspManager, LspResult,
    client::LspInitialization,
@@ -11,12 +17,6 @@ use r0_lsp::{
    },
 };
 use r0_tooling::{LanguageToolConfigSet, LspLaunch, resolve_lsp_launch};
-use lsp_types::{
-   CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, CodeActionOrCommand,
-   CompletionItem, DocumentHighlight, FoldingRange, Hover, Location, Position,
-   PrepareRenameResponse, SelectionRange, SignatureHelp, TextEdit, TypeHierarchyItem,
-   WorkspaceEdit,
-};
 use serde_json::Value;
 use std::path::PathBuf;
 use tauri::{Manager, State};

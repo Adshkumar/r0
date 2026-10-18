@@ -1,13 +1,13 @@
 //! Merges the ACP Registry into the agent catalog built from R0's extension manifests.
 //!
 //! Precedence:
-//! - An agent R0 ships a manifest for keeps its manifest entry (name, description, the binary
-//!   name used to find a copy on PATH). When the registry can install it on this machine and has
-//!   not quarantined it, installs and updates come from the registry: its version becomes the
-//!   available version and its args and env are used to launch the agent. Otherwise the manifest's
-//!   own install stays in charge (for example a binary the registry publishes without a checksum).
-//! - An agent only the registry lists is added as a registry agent. It is launched only from
-//!   R0's own install, never from a same-named program on PATH.
+//! - An agent R0 ships a manifest for keeps its manifest entry (name, description, the binary name
+//!   used to find a copy on PATH). When the registry can install it on this machine and has not
+//!   quarantined it, installs and updates come from the registry: its version becomes the available
+//!   version and its args and env are used to launch the agent. Otherwise the manifest's own
+//!   install stays in charge (for example a binary the registry publishes without a checksum).
+//! - An agent only the registry lists is added as a registry agent. It is launched only from R0's
+//!   own install, never from a same-named program on PATH.
 
 use super::{
    schema::{RegistryAgent, resolve_distribution},
@@ -33,8 +33,8 @@ pub fn r0_agent_id(registry_id: &str) -> &str {
 const ADAPTER_LABELS: &[(&str, &str, &str)] = &[(
    "codex-acp",
    "Codex (ACP)",
-   "Codex through its ACP adapter. R0 also has a built-in Codex integration with native \
-    threads, review and skills; pick that one unless you want Codex to run as an ACP agent.",
+   "Codex through its ACP adapter. R0 also has a built-in Codex integration with native threads, \
+    review and skills; pick that one unless you want Codex to run as an ACP agent.",
 )];
 
 fn runtime_for(distribution: &str) -> AgentRuntime {

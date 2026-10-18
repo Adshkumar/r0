@@ -158,9 +158,22 @@ async fn reports_missing_interpreters() {
 /// Exercises the real runner script when a Python interpreter is available.
 #[tokio::test]
 async fn real_python_reports_output_results_and_errors() {
-   let Ok(python) = which::which("python3") else {
+   let python = ["python3", "python"]
+      .into_iter()
+      .filter_map(|name| which::which(name).ok())
+      .find(|path| {
+         std::process::Command::new(path)
+            .args(["-c", "import sys; print(sys.version_info.major)"])
+            .output()
+            .is_ok_and(|output| {
+               output.status.success() && String::from_utf8_lossy(&output.stdout).trim() == "3"
+            })
+      });
+
+   let Some(python) = python else {
       return;
    };
+
    let kernel = NotebookKernel::with_programs(python, "Rscript");
 
    let result = kernel

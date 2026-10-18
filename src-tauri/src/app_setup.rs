@@ -6,11 +6,11 @@ use crate::{
    file_events::TauriWorkspaceChangeSink,
    terminal::{FrontendTerminalSessions, ManagedTerminalManager as TerminalManager},
 };
+use log::{debug, info};
 use r0_ai::{AcpAgentBridge, CodexAppServer};
 use r0_debugger::DebugManager;
 use r0_lsp::LspManager;
 use r0_project::FileWatcher;
-use log::{debug, info};
 use serde::Serialize;
 use std::{path::PathBuf, sync::Arc, time::Instant};
 use tauri::{Emitter, Manager};

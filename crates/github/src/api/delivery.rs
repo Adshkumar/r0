@@ -257,13 +257,12 @@ pub fn github_upload_release_asset(
       .file_name()
       .and_then(|name| name.to_str())
       .ok_or("Invalid asset filename")?;
-   let file = std::fs::File::open(source).map_err(|error| format!("Cannot open asset: {error}"))?;
-   let metadata = file
-      .metadata()
-      .map_err(|error| format!("Cannot read asset: {error}"))?;
+   let metadata =
+      std::fs::metadata(source).map_err(|error| format!("Cannot open asset: {error}"))?;
    if !metadata.is_file() {
       return Err("Release assets must be regular files".into());
    }
+   let file = std::fs::File::open(source).map_err(|error| format!("Cannot open asset: {error}"))?;
    let request = api
       .apply_headers(
          api.client.post(format!(

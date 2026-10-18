@@ -3,7 +3,7 @@ use std::fs;
 
 fn canonical_temp_dir() -> (tempfile::TempDir, PathBuf) {
    let temp = tempfile::tempdir().unwrap();
-   let canonical = temp.path().canonicalize().unwrap();
+   let canonical = dunce::canonicalize(temp.path()).unwrap();
    (temp, canonical)
 }
 
@@ -36,7 +36,7 @@ fn accepts_paths_inside_and_outside_the_home_directory() {
    if let Some(home) = dirs::home_dir().filter(|home| home.exists()) {
       assert_eq!(
          resolve_local_path(text(&home)).unwrap(),
-         home.canonicalize().unwrap()
+         dunce::canonicalize(&home).unwrap()
       );
    }
 
@@ -105,7 +105,7 @@ fn the_filesystem_root_has_no_parent_to_resolve() {
    if Path::new(root).exists() {
       assert_eq!(
          resolve_local_path(root).unwrap(),
-         Path::new(root).canonicalize().unwrap()
+         dunce::canonicalize(root).unwrap()
       );
    }
 }

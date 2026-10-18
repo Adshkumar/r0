@@ -5,8 +5,8 @@
 //! - `<agents_root>/<id>/<version>-<key>/`: one complete install per version. Directories are built
 //!   under a `.staging-*` name and renamed into place, so a version directory that exists is
 //!   complete.
-//! - `<launcher_dir>/<id>` (`<id>.cmd` on Windows): the script R0 starts, rewritten atomically
-//!   to switch versions, next to `<id>.json` with the installed version.
+//! - `<launcher_dir>/<id>` (`<id>.cmd` on Windows): the script R0 starts, rewritten atomically to
+//!   switch versions, next to `<id>.json` with the installed version.
 //!
 //! Binary downloads are checked against the registry's SHA-256 before they are unpacked, and
 //! nothing from an install is run before that check passes.

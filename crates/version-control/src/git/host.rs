@@ -31,9 +31,7 @@ impl RepositoryHost {
    pub fn detect(path: &str) -> Self {
       if let Some(location) = r0_wsl::parse_wsl_location(path) {
          let native_path = if r0_wsl::is_wsl_path(path) {
-            PathBuf::from(
-               r0_wsl::wsl_uri_to_windows_unc(path).unwrap_or_else(|_| path.to_string()),
-            )
+            PathBuf::from(r0_wsl::wsl_uri_to_windows_unc(path).unwrap_or_else(|_| path.to_string()))
          } else {
             PathBuf::from(path)
          };
@@ -72,7 +70,7 @@ impl RepositoryHost {
    pub fn uses_distro_git(&self) -> bool {
       match self {
          Self::Local { .. } => false,
-         Self::Wsl { distro, .. } => r0_wsl::git_available(distro),
+         Self::Wsl { distro, .. } => uses_distro_git_available(r0_wsl::git_available(distro)),
       }
    }
 
@@ -104,15 +102,21 @@ impl RepositoryHost {
    /// A git command for this repository, running inside the distribution when
    /// that is possible and on the host otherwise.
    pub fn git(&self) -> GitCommand {
-      if self.uses_distro_git() {
-         return self
-            .distro_git()
-            .expect("WSL hosts always have a distribution");
+      match self {
+         Self::Local { path } => GitCommand::new(GitRunner::Host {
+            directory: path.to_path_buf(),
+         }),
+         Self::Wsl {
+            distro,
+            linux_path,
+            native_path,
+         } => GitCommand::new(git_runner_for_wsl(
+            distro,
+            linux_path,
+            native_path,
+            r0_wsl::git_available(distro),
+         )),
       }
-
-      GitCommand::new(GitRunner::Host {
-         directory: self.native_path().to_path_buf(),
-      })
    }
 
    /// A git command that always runs inside the distribution. Returns `None`
@@ -130,6 +134,27 @@ impl RepositoryHost {
    }
 }
 
+fn uses_distro_git_available(available: bool) -> bool {
+   available
+}
+
+fn git_runner_for_wsl(
+   distro: &str,
+   linux_path: &str,
+   native_path: &Path,
+   distro_git_available: bool,
+) -> GitRunner {
+   if distro_git_available {
+      GitRunner::Distro {
+         distro: distro.to_string(),
+         linux_path: linux_path.to_string(),
+      }
+   } else {
+      GitRunner::Host {
+         directory: native_path.to_path_buf(),
+      }
+   }
+}
 fn linux_parent(path: &str) -> String {
    match path.rfind('/') {
       Some(0) | None => "/".to_string(),
@@ -409,9 +434,18 @@ mod tests {
    #[test]
    fn wsl_hosts_without_distro_git_fall_back_to_host_git_over_the_share() {
       let host = RepositoryHost::detect("wsl://Ubuntu/home/me/repo");
-      let command = host.git();
+      let (distro, linux_path, native_path) = match &host {
+         RepositoryHost::Wsl {
+            distro,
+            linux_path,
+            native_path,
+         } => (distro, linux_path, native_path),
+         RepositoryHost::Local { .. } => panic!("expected a WSL host"),
+      };
 
-      assert!(!host.uses_distro_git());
+      let runner = git_runner_for_wsl(distro, linux_path, native_path, false);
+      let command = GitCommand::new(runner);
+
       assert!(!command.runs_in_distro());
       assert_eq!(
          command.argument_path(r"\\wsl$\Ubuntu\home\me\other"),
