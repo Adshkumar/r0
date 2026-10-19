@@ -14,6 +14,7 @@ import {
   runPaletteCommand,
   typeText,
   waitForDisplayed,
+  waitForHidden,
   waitForProjectTree,
   waitUntil,
 } from "../support/app.ts";
@@ -29,6 +30,7 @@ const ACTIVE_TERMINAL = By.xpath(
 );
 const ENTER_FULL_SCREEN = By.css('button[aria-label="Full screen terminal"]');
 const EXIT_FULL_SCREEN = By.css('button[aria-label="Exit full screen terminal"]');
+const FULLSCREEN_SURFACE = By.css('[data-slot="workbench-fullscreen-surface"]');
 
 function terminalTab(id: string) {
   return By.css(`${TERMINAL_TABS} [data-sortable-id="${id}"] [role="tab"]`);
@@ -159,7 +161,7 @@ describe("integrated terminal", () => {
     const { height } = await elementRect(TERMINAL);
 
     await click(ENTER_FULL_SCREEN);
-    await waitForDisplayed(EXIT_FULL_SCREEN, "The terminal did not go full screen");
+    await waitForDisplayed(FULLSCREEN_SURFACE, "The terminal did not go full screen");
     await waitUntil(
       async () => (await elementRect(TERMINAL)).height > height,
       UI_TIMEOUT,
@@ -174,7 +176,7 @@ describe("integrated terminal", () => {
     );
 
     await click(EXIT_FULL_SCREEN);
-    await waitForDisplayed(ENTER_FULL_SCREEN, "The terminal did not leave full screen");
+    await waitForHidden(FULLSCREEN_SURFACE, "The terminal did not leave full screen");
     await waitUntil(
       async () => (await elementRect(TERMINAL)).height < fullScreenHeight,
       UI_TIMEOUT,

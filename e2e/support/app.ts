@@ -13,6 +13,11 @@ export const FILE_TREE = By.css('[role="tree"][aria-label="File Explorer"]');
 export const EDITOR_LINES = By.css(".cm-editor .cm-content");
 const WORKBENCH = By.css('[data-slot="workbench-title-row"]');
 const PALETTE_INPUT = By.css('input[placeholder="Search commands and actions..."]');
+const MENU_BUTTON = By.css('button[aria-label="Menu"]');
+const FILE_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="File"]');
+const COMMAND_PALETTE_MENU_ITEM = By.xpath(
+  '//*[@role="menuitem"][normalize-space(.)="Command Palette"]',
+);
 
 export function treeItem(name: string) {
   return By.css(`[role="treeitem"][data-path$="${name}"]`);
@@ -174,7 +179,11 @@ export async function focusEditorAtStart() {
 }
 
 export async function runPaletteCommand(label: string) {
-  await pressShortcut(Key.CONTROL, Key.SHIFT, "p");
+  await click(MENU_BUTTON);
+  await waitForDisplayed(FILE_MENU_ITEM, "The app menu did not open");
+  await click(FILE_MENU_ITEM);
+  await waitForDisplayed(COMMAND_PALETTE_MENU_ITEM, "The File menu did not open");
+  await click(COMMAND_PALETTE_MENU_ITEM);
   await waitForDisplayed(PALETTE_INPUT, "The command palette did not open");
   const input = await visibleElement(PALETTE_INPUT);
   await input.clear();

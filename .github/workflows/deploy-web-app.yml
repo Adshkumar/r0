@@ -58,8 +58,22 @@ jobs:
       - name: Build the web app
         run: bun run build:web
 
+      - name: Check Cloudflare credentials
+        id: cloudflare-credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Cloudflare credentials are not configured; web deployment was skipped."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # wrangler-action installs Wrangler with npm, which rejects the repo's package overrides.
       - name: Deploy to Cloudflare
+        if: steps.cloudflare-credentials.outputs.configured == 'true'
         working-directory: web
         run: bunx wrangler@4.149.0 deploy
         env:
