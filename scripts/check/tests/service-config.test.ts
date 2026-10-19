@@ -31,7 +31,7 @@ describe("service configuration", () => {
 
     expect(getServiceConfigErrors(input)).toEqual([
       "Stable Tauri updater endpoint does not match src/config/services.json.",
-      "Tauri capabilities do not allow the configured R0 website origin.",
+      "Tauri capabilities do not allow the configured r0 website origin.",
     ]);
   });
 });

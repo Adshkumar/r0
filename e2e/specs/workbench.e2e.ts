@@ -16,7 +16,7 @@ describe("workbench", () => {
 
   e2eTest("launches and renders the workbench", async () => {
     await waitForWorkbench();
-    expect(await driver().getTitle()).toContain("R0");
+    expect(await driver().getTitle()).toContain("r0");
   });
 
   e2eTest("opens the fixture folder passed on the command line", async () => {
