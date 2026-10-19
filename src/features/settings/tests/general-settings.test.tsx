@@ -278,7 +278,9 @@ describe("general settings", () => {
     await click(body().getByRole("button", { name: /Email/ }));
 
     const [mailto] = mocks.openUrl.mock.calls[0];
-    expect(mailto.startsWith("mailto:hey@adshkumar.is-a.dev?subject=R0%20bug%20report&body=")).toBe(true);
+    expect(mailto.startsWith("mailto:hey@adshkumar.is-a.dev?subject=R0%20bug%20report&body=")).toBe(
+      true,
+    );
     expect(decodeURIComponent(mailto)).toContain("- OS: macos 15.1");
     expect(mocks.writeText).not.toHaveBeenCalled();
   });

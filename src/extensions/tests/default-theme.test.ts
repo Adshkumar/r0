@@ -46,9 +46,7 @@ describe("r0 default themes", () => {
   it("exposes canonical raw theme variables without runtime aliases", () => {
     const definition = getR0DefaultTheme("light").definition;
 
-    expect(definition.cssVariables["--background"]).toBe(
-      getR0DefaultColor("light", "background"),
-    );
+    expect(definition.cssVariables["--background"]).toBe(getR0DefaultColor("light", "background"));
     expect(definition.cssVariables["--color-background"]).toBeUndefined();
     expect(definition.syntaxTokens?.["--syntax-keyword"]).toBe(
       getR0DefaultSyntaxColor("light", "keyword"),

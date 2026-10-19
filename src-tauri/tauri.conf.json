@@ -1,129 +1,104 @@
 {
-    "$schema":  "https://schema.tauri.app/config/2",
-    "productName":  "r0",
-    "version":  "0.17.0",
-    "identifier":  "com.code.r0",
-    "build":  {
-                  "beforeDevCommand":  "vp dev",
-                  "devUrl":  "http://127.0.0.1:1420",
-                  "beforeBuildCommand":  "vp build",
-                  "frontendDist":  "../dist"
-              },
-    "app":  {
-                "windows":  [
-                                {
-                                    "label":  "main",
-                                    "title":  "r0",
-                                    "width":  1200,
-                                    "height":  800,
-                                    "decorations":  true,
-                                    "titleBarStyle":  "Overlay",
-                                    "hiddenTitle":  true,
-                                    "transparent":  true,
-                                    "resizable":  true,
-                                    "fullscreen":  false,
-                                    "center":  true,
-                                    "minWidth":  400,
-                                    "minHeight":  400,
-                                    "shadow":  true
-                                }
-                            ],
-                "security":  {
-                                 "csp":  "default-src \u0027self\u0027 ipc: http://ipc.localhost; connect-src \u0027self\u0027 ipc: http://ipc.localhost http://localhost:3000 http://127.0.0.1:3000 https://adshkumar.is-a.dev https://*.adshkumar.is-a.dev wss://*.adshkumar.is-a.dev ws://localhost:8787 ws://127.0.0.1:8787 https://api.github.com https://api.anthropic.com https://api.openai.com https://api.mistral.ai https://openrouter.ai https://generativelanguage.googleapis.com https://*.githubusercontent.com; img-src \u0027self\u0027 asset: http://asset.localhost https: data: blob:; font-src \u0027self\u0027 data:; style-src \u0027self\u0027 \u0027unsafe-inline\u0027; script-src \u0027self\u0027 blob: \u0027wasm-unsafe-eval\u0027; worker-src \u0027self\u0027 blob:; object-src \u0027none\u0027",
-                                 "dangerousDisableAssetCspModification":  [
-                                                                              "style-src"
-                                                                          ],
-                                 "capabilities":  [
-                                                      "main-capability"
-                                                  ],
-                                 "assetProtocol":  {
-                                                       "enable":  true,
-                                                       "scope":  [
-                                                                     "$APPDATA/**",
-                                                                     "$APPLOCALDATA/**",
-                                                                     "$APPCACHE/**",
-                                                                     "$RESOURCE/**"
-                                                                 ]
-                                                   }
-                             },
-                "macOSPrivateApi":  true
-            },
-    "bundle":  {
-                   "active":  true,
-                   "publisher":  "Adarsh Kumar",
-                   "homepage":  "https://adshkumar.is-a.dev/",
-                   "category":  "DeveloperTool",
-                   "shortDescription":  "A lightweight code editor with Git, terminal and AI agents",
-                   "longDescription":  "r0 is a code editor with Git, an integrated terminal, a database viewer and AI coding agents.",
-                   "targets":  [
-                                   "app",
-                                   "dmg",
-                                   "nsis"
-                               ],
-                   "createUpdaterArtifacts":  true,
-                   "icon":  [
-                                "icons/prod/32x32.png",
-                                "icons/prod/128x128.png",
-                                "icons/prod/128x128@2x.png",
-                                "icons/prod/icon.icns",
-                                "icons/prod/icon.ico"
-                            ],
-                   "resources":  {
-                                     "../src/extensions/bundled/icon-themes":  "bundled/icon-themes"
-                                 },
-                   "macOS":  {
-                                 "frameworks":  [
-
-                                                ],
-                                 "minimumSystemVersion":  "10.15",
-                                 "exceptionDomain":  "",
-                                 "signingIdentity":  "Developer ID Application: Mehmet Ozgul (N43BXFX4H4)",
-                                 "providerShortName":  null,
-                                 "entitlements":  null
-                             },
-                   "linux":  {
-                                 "appimage":  {
-                                                  "bundleMediaFramework":  false
-                                              },
-                                 "deb":  {
-                                             "desktopTemplate":  "linux/r0.desktop",
-                                             "recommends":  [
-                                                                "xdg-desktop-portal",
-                                                                "zenity"
-                                                            ]
-                                         },
-                                 "rpm":  {
-                                             "desktopTemplate":  "linux/r0.desktop",
-                                             "recommends":  [
-                                                                "xdg-desktop-portal",
-                                                                "zenity"
-                                                            ]
-                                         }
-                             },
-                   "windows":  {
-                                   "wix":  {
-                                               "version":  "0.17.900"
-                                           }
-                               }
-               },
-    "plugins":  {
-                    "deep-link":  {
-                                      "desktop":  {
-                                                      "schemes":  [
-                                                                      "r0"
-                                                                  ]
-                                                  }
-                                  },
-                    "fs":  {
-                               "requireLiteralLeadingDot":  false
-                           },
-                    "updater":  {
-                                    "active":  true,
-                                    "endpoints":  [
-                                                      "https://github.com/Adshkumar/r0/releases/latest/download/latest.json"
-                                                  ],
-                                    "dialog":  false,
-                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYyMkQ5M0RBNUMyQzRBN0YKUldSL1NpeGMycE10OHBZaEVvdU90UjlhUjc5czdKcTZSOTZkTmVLcjQ0UVpuWlFwSi8yYjMxNEQK"
-                                }
-                }
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "r0",
+  "version": "0.17.2",
+  "identifier": "com.code.r0",
+  "build": {
+    "beforeDevCommand": "vp dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "vp build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "r0",
+        "width": 1200,
+        "height": 800,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "minWidth": 400,
+        "minHeight": 400,
+        "shadow": true
+      }
+    ],
+    "security": {
+      "csp": "default-src \u0027self\u0027 ipc: http://ipc.localhost; connect-src \u0027self\u0027 ipc: http://ipc.localhost http://localhost:3000 http://127.0.0.1:3000 https://adshkumar.is-a.dev https://*.adshkumar.is-a.dev wss://*.adshkumar.is-a.dev ws://localhost:8787 ws://127.0.0.1:8787 https://api.github.com https://api.anthropic.com https://api.openai.com https://api.mistral.ai https://openrouter.ai https://generativelanguage.googleapis.com https://*.githubusercontent.com; img-src \u0027self\u0027 asset: http://asset.localhost https: data: blob:; font-src \u0027self\u0027 data:; style-src \u0027self\u0027 \u0027unsafe-inline\u0027; script-src \u0027self\u0027 blob: \u0027wasm-unsafe-eval\u0027; worker-src \u0027self\u0027 blob:; object-src \u0027none\u0027",
+      "dangerousDisableAssetCspModification": ["style-src"],
+      "capabilities": ["main-capability"],
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**", "$APPLOCALDATA/**", "$APPCACHE/**", "$RESOURCE/**"]
+      }
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Adarsh Kumar",
+    "homepage": "https://adshkumar.is-a.dev/",
+    "category": "DeveloperTool",
+    "shortDescription": "A lightweight code editor with Git, terminal and AI agents",
+    "longDescription": "r0 is a code editor with Git, an integrated terminal, a database viewer and AI coding agents.",
+    "targets": ["app", "dmg", "nsis"],
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/prod/32x32.png",
+      "icons/prod/128x128.png",
+      "icons/prod/128x128@2x.png",
+      "icons/prod/icon.icns",
+      "icons/prod/icon.ico"
+    ],
+    "resources": {
+      "../src/extensions/bundled/icon-themes": "bundled/icon-themes"
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "exceptionDomain": "",
+      "signingIdentity": "Developer ID Application: Mehmet Ozgul (N43BXFX4H4)",
+      "providerShortName": null,
+      "entitlements": null
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "desktopTemplate": "linux/r0.desktop",
+        "recommends": ["xdg-desktop-portal", "zenity"]
+      },
+      "rpm": {
+        "desktopTemplate": "linux/r0.desktop",
+        "recommends": ["xdg-desktop-portal", "zenity"]
+      }
+    },
+    "windows": {
+      "wix": {
+        "version": "0.17.2900"
+      }
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["r0"]
+      }
+    },
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "updater": {
+      "active": true,
+      "endpoints": ["https://github.com/Adshkumar/r0/releases/latest/download/latest.json"],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYyMkQ5M0RBNUMyQzRBN0YKUldSL1NpeGMycE10OHBZaEVvdU90UjlhUjc5czdKcTZSOTZkTmVLcjQ0UVpuWlFwSi8yYjMxNEQK"
+    }
+  }
 }

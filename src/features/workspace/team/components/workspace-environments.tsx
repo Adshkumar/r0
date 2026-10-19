@@ -121,8 +121,8 @@ export function WorkspaceEnvironments({ root, reportError }: WorkspaceSectionPro
       </ResourceSection>
       {info?.files.includes(".devcontainer") || info?.files.includes(".devcontainer.json") ? (
         <FieldDescription>
-          This project contains Dev Container configuration. Starting a Dev Container from r0 is
-          not supported yet.
+          This project contains Dev Container configuration. Starting a Dev Container from r0 is not
+          supported yet.
         </FieldDescription>
       ) : null}
     </div>

@@ -80,9 +80,7 @@ describe("CodeMirror signature help", () => {
 
   it("renders the active parameter, the signature count and the docs", () => {
     const element = renderSignatureHelp(help, 0);
-    expect(element.querySelector(".cm-r0-signatureActiveParameter")?.textContent).toBe(
-      "b: number",
-    );
+    expect(element.querySelector(".cm-r0-signatureActiveParameter")?.textContent).toBe("b: number");
     expect(element.querySelector(".cm-r0-signatureCount")?.textContent).toBe("1/2");
     const docs = element.querySelectorAll(".cm-r0-signatureDocs");
     expect(docs[0].querySelector("strong")?.textContent).toBe("second");
@@ -101,9 +99,7 @@ describe("CodeMirror signature help", () => {
     });
 
     typeText(view, "(");
-    await vi.waitFor(() =>
-      expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull(),
-    );
+    await vi.waitFor(() => expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull());
     expect(client.getSignatureHelp).toHaveBeenCalledWith("/repo/a.ts", 0, 4);
 
     view.contentDOM.dispatchEvent(
@@ -126,9 +122,7 @@ describe("CodeMirror signature help", () => {
       parent: document.body,
     });
     typeText(view, "(");
-    await vi.waitFor(() =>
-      expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull(),
-    );
+    await vi.waitFor(() => expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull());
     typeText(view, ")");
     await vi.waitFor(() => expect(view!.dom.querySelector(".cm-r0-signatureHelp")).toBeNull());
   });
@@ -143,8 +137,6 @@ describe("CodeMirror signature help", () => {
       parent: document.body,
     });
     emitAppEvent("editor:trigger-signature-help");
-    await vi.waitFor(() =>
-      expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull(),
-    );
+    await vi.waitFor(() => expect(view!.dom.querySelector(".cm-r0-signatureHelp")).not.toBeNull());
   });
 });

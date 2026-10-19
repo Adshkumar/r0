@@ -12,7 +12,9 @@ describe("formatDroppedPathsForTerminal", () => {
   });
 
   it("drops unsupported payload entries", () => {
-    expect(formatDroppedPathsForTerminal(["https://adshkumar.is-a.dev", "relative/path.ts"])).toBe("");
+    expect(formatDroppedPathsForTerminal(["https://adshkumar.is-a.dev", "relative/path.ts"])).toBe(
+      "",
+    );
   });
 
   it("neutralizes newlines and shell metacharacters in file names", () => {

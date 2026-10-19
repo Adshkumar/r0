@@ -7,4 +7,12 @@ ignore = [
   # never a server decrypting RSA, so the timing oracle is not reachable. Revisit when
   # rsa 0.10 or sqlx-mysql drops the dependency.
   "RUSTSEC-2023-0071",
+  # zip 2.x/4.x: symlink path traversal + SUID/SGID privilege escalation (RUSTSEC-2026-0367/8/9).
+  # Our direct `zip` dependency is already upgraded to v9 (patched). The remaining affected
+  # versions are pulled in transitively by tauri-bundler / tauri-utils and cannot be updated
+  # until Tauri ships a release with zip >= 9. These advisories only affect zip *extraction*
+  # on Unix which r0 does not perform in user-facing code paths. Revisit when Tauri updates.
+  "RUSTSEC-2026-0367",
+  "RUSTSEC-2026-0368",
+  "RUSTSEC-2026-0369",
 ]

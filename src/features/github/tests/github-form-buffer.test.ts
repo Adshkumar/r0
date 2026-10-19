@@ -4,9 +4,7 @@ import { getRepositoryDisplayName } from "../services/github-viewer-utils";
 
 describe("GitHub form buffers", () => {
   it("uses only the repository name in form chrome", () => {
-    expect(getRepositoryDisplayName("/Users/mehmetozgul/Documents/Git/Adshkumar/r0")).toBe(
-      "r0",
-    );
+    expect(getRepositoryDisplayName("/Users/mehmetozgul/Documents/Git/Adshkumar/r0")).toBe("r0");
   });
 
   it("creates a normal tab-backed pull request form", () => {

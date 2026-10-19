@@ -28,9 +28,7 @@ class BreakpointMarker extends GutterMarker {
   toDOM() {
     const node = document.createElement("div");
     node.className =
-      this.kind === "set"
-        ? "cm-r0-breakpoint"
-        : `cm-r0-breakpoint cm-r0-breakpoint-${this.kind}`;
+      this.kind === "set" ? "cm-r0-breakpoint" : `cm-r0-breakpoint cm-r0-breakpoint-${this.kind}`;
     node.title = this.label;
     return node;
   }

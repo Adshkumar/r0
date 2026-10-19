@@ -185,12 +185,10 @@ for (const root of ROOTS) {
 async function lintFindings(): Promise<Finding[]> {
   // The oxlint that Vite+ runs for `vp lint`, so both see the same version.
   const vitePlus = path.dirname(Bun.resolveSync("vite-plus/package.json", process.cwd()));
-  const oxlint = process.platform === "win32"
-    ? path.resolve(process.cwd(), "node_modules/.bin/oxlint.exe")
-    : path.join(
-        path.dirname(Bun.resolveSync("oxlint/package.json", vitePlus)),
-        "bin/oxlint",
-      );
+  const oxlint =
+    process.platform === "win32"
+      ? path.resolve(process.cwd(), "node_modules/.bin/oxlint.exe")
+      : path.join(path.dirname(Bun.resolveSync("oxlint/package.json", vitePlus)), "bin/oxlint");
   const config = path.join(import.meta.dir, "design-advisory.json");
   const result = await $`${oxlint} -c ${config} -A all -f json ${ROOTS}`.nothrow().quiet();
   const output = result.stdout.toString();
@@ -235,9 +233,13 @@ for (const [rule, bucket] of [...byRule].sort((a, b) => b[1].length - a[1].lengt
     console.log(`    ${finding.file}:${finding.line}  ${finding.detail}`);
   }
   if (shown.length < bucket.length) {
-    console.log(`    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ ${bucket.length - shown.length} more (bun check:design --all)`);
+    console.log(
+      `    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ ${bucket.length - shown.length} more (bun check:design --all)`,
+    );
   }
   console.log("");
 }
-console.log("Advisory only ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â this check does not fail the build.");
+console.log(
+  "Advisory only ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â this check does not fail the build.",
+);
 process.exit(0);

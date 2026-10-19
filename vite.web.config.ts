@@ -4,7 +4,6 @@ import type { IncomingMessage } from "node:http";
 import { defineConfig, mergeConfig, type Plugin } from "vite-plus";
 import baseConfig from "./vite.config";
 
-
 const BASE = "/app/";
 const siteDir = path.resolve(__dirname, "dist-web");
 const appDir = path.join(siteDir, "app");

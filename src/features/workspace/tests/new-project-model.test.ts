@@ -19,9 +19,7 @@ describe("new project model", () => {
   });
 
   it("infers project names from common repository URLs", () => {
-    expect(inferProjectNameFromRepositoryUrl("https://github.com/Adshkumar/r0.git")).toBe(
-      "r0",
-    );
+    expect(inferProjectNameFromRepositoryUrl("https://github.com/Adshkumar/r0.git")).toBe("r0");
     expect(inferProjectNameFromRepositoryUrl("git@github.com:Adshkumar/r0.git")).toBe("r0");
     expect(inferProjectNameFromRepositoryUrl("https://example.com/my%20project/")).toBe(
       "my project",
@@ -30,9 +28,7 @@ describe("new project model", () => {
 
   it("builds the destination path with the location separator", () => {
     expect(getNewProjectPath("/Users/mehmet/Code", "r0")).toBe("/Users/mehmet/Code/r0");
-    expect(getNewProjectPath("C:\\Users\\mehmet\\Code", "r0")).toBe(
-      "C:\\Users\\mehmet\\Code\\r0",
-    );
+    expect(getNewProjectPath("C:\\Users\\mehmet\\Code", "r0")).toBe("C:\\Users\\mehmet\\Code\\r0");
   });
 
   it("builds fixed starter commands for the selected package manager", () => {

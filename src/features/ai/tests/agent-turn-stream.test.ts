@@ -150,9 +150,7 @@ describe("starting a turn", () => {
   });
 
   it("asks to sign in for R0 models and for a key for the user's own providers", () => {
-    expect(getAgentAccessMessage("custom", "r0", "x")).toBe(
-      "Sign in to R0 to use R0 models.",
-    );
+    expect(getAgentAccessMessage("custom", "r0", "x")).toBe("Sign in to R0 to use R0 models.");
     expect(getAgentAccessMessage("custom", "openai", undefined)).toBe(
       "Add your OpenAI API key in Settings to use OpenAI models.",
     );

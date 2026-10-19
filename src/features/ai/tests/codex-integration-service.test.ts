@@ -210,9 +210,7 @@ describe("Codex integration service", () => {
       response: {
         requestId: 93,
         decision: {
-          contentItems: [
-            { type: "inputText", text: 'R0 chat renamed to "Native GitHub Tabs".' },
-          ],
+          contentItems: [{ type: "inputText", text: 'R0 chat renamed to "Native GitHub Tabs".' }],
           success: true,
         },
       },

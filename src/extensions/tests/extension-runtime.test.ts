@@ -72,10 +72,7 @@ describe("integration runtime startup", () => {
 
     expect(mocks.calls[0]).toBe("store");
     expect(mocks.calls[1]).toBe("registry");
-    expect(mocks.calls.slice(2, -1).sort()).toEqual([
-      "activate:r0.bundled",
-      "activate:r0.market",
-    ]);
+    expect(mocks.calls.slice(2, -1).sort()).toEqual(["activate:r0.bundled", "activate:r0.market"]);
     expect(mocks.calls[mocks.calls.length - 1]).toBe("generated");
     expect(mocks.activateExtensionContributions).toHaveBeenCalledWith(
       "r0.bundled",

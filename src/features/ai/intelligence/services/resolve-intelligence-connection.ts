@@ -20,9 +20,7 @@ const R0_AUTOMATIC: IntelligenceConnection = { providerId: "r0", modelId: "auto"
 function withR0Model(connection: IntelligenceConnection): IntelligenceConnection {
   const providerId = connection.providerId === "r0" ? "r0" : connection.providerId;
   const normalized = { ...connection, providerId };
-  return providerId === "r0" && !normalized.modelId.trim()
-    ? R0_AUTOMATIC
-    : normalized;
+  return providerId === "r0" && !normalized.modelId.trim() ? R0_AUTOMATIC : normalized;
 }
 
 /**

@@ -33,7 +33,7 @@ export function useTabCompletionModel() {
   /** Short name for compact places, such as the editor toolbar menu. */
   const shortName = !resolved
     ? "Choose a model"
-    : resolved.providerId === "r0" || resolved.providerId === "r0" || resolved.providerId === "r0"
+    : resolved.providerId === "r0"
       ? R0_TAB_MODEL_NAME
       : (modelName ?? resolved.modelId);
   const providerName = resolved ? (provider?.name ?? resolved.providerId) : "";
@@ -46,7 +46,7 @@ export function useTabCompletionModel() {
         : "Sign in for r0 Tab, or choose your own model";
     }
     const prefix = choice ? "" : "Automatic: ";
-    if (resolved.providerId === "r0" || resolved.providerId === "r0" || resolved.providerId === "r0") return `${prefix}r0 Tab, included in Pro`;
+    if (resolved.providerId === "r0") return `${prefix}r0 Tab, included in Pro`;
     if (resolvedIsLocal) return `${prefix}${shortName}, runs locally`;
     return `${prefix}${shortName} on your ${providerName} key${
       defaultIsLocal ? ", sends code off your network" : ""
@@ -68,5 +68,3 @@ export function useTabCompletionModel() {
       state.actions.change(withTaskConnection(state.preferences, "autocomplete", connection)),
   };
 }
-
-

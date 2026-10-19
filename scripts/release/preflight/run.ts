@@ -400,8 +400,7 @@ async function main() {
     const releaseAltWorkflow = `${workflowPath}/release.yaml`;
 
     const hasReleaseWorkflow =
-      (await Bun.file(releaseWorkflow).exists()) ||
-      (await Bun.file(releaseAltWorkflow).exists());
+      (await Bun.file(releaseWorkflow).exists()) || (await Bun.file(releaseAltWorkflow).exists());
 
     if (!hasReleaseWorkflow) {
       return { passed: false, message: "No release workflow file found" };

@@ -86,7 +86,9 @@ describe("handling window open requests", () => {
   it("opens web requests in the system browser", async () => {
     await enqueueWindowOpenRequest({ type: "web", url: "https://adshkumar.is-a.dev" });
 
-    await vi.waitFor(() => expect(harness.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev"));
+    await vi.waitFor(() =>
+      expect(harness.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev"),
+    );
     expect(harness.handleFileSelect).not.toHaveBeenCalled();
   });
 

@@ -62,9 +62,7 @@ describe("Intelligence SDK connections", () => {
     );
   });
   it("pins the first routed hosted model for following agent steps", async () => {
-    mocks.fetch.mockResolvedValue(
-      new Response("", { headers: { "x-r0-model": "routed-model" } }),
-    );
+    mocks.fetch.mockResolvedValue(new Response("", { headers: { "x-r0-model": "routed-model" } }));
     await getIntelligenceSdkModel("r0", "auto");
     const connection = mocks.compatible.mock.calls[0][0];
     expect(connection.baseURL).toBe("https://r0.test/api/ai");

@@ -49,7 +49,7 @@ try {
     root,
     "node_modules",
     ".bin",
-    process.platform === "win32" ? "vp.cmd" : "vp",
+    process.platform === "win32" ? "vp.exe" : "vp",
   );
   const fmt = Bun.spawnSync([vp, "fmt", `--stdin-filepath=${bindingsPath}`], {
     cwd: root,

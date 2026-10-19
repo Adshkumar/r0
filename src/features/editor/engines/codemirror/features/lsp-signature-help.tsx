@@ -105,10 +105,7 @@ export function renderSignatureHelp(help: SignatureHelp, activeSignature: number
     signature.parameters?.[activeParameter]?.documentation,
     "cm-r0-signatureDocs",
   );
-  const signatureDocs = createDocumentationElement(
-    signature.documentation,
-    "cm-r0-signatureDocs",
-  );
+  const signatureDocs = createDocumentationElement(signature.documentation, "cm-r0-signatureDocs");
   if (parameterDocs) element.append(parameterDocs);
   if (signatureDocs) element.append(signatureDocs);
   return element;

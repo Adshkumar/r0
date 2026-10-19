@@ -54,8 +54,7 @@ export function createIntelligenceSettingsStore(
   let initialized = false;
   const key = (userId: number | null, scope: string) =>
     `r0.intelligence.${userId ?? "local"}.${scope}`;
-  const selectedScopeKey = (userId: number | null) =>
-    `r0.intelligence.${userId ?? "local"}.scope`;
+  const selectedScopeKey = (userId: number | null) => `r0.intelligence.${userId ?? "local"}.scope`;
   function cached(userId: number | null, scope: string) {
     try {
       const raw = JSON.parse(dependencies.storage()?.getItem(key(userId, scope)) || "null");

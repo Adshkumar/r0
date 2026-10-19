@@ -102,20 +102,12 @@ describe("useWindowDocumentState", () => {
     harness.activeBufferId = "b1";
 
     const unmount = mount(useWindowDocumentState);
-    expect(sync).toHaveBeenLastCalledWith(
-      "main.ts — r0 — R0",
-      "/projects/r0/src/main.ts",
-      false,
-    );
+    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — R0", "/projects/r0/src/main.ts", false);
 
     act(() =>
       (useBufferStore as unknown as AnyStore).setState({ buffers: [editor({ isDirty: true })] }),
     );
-    expect(sync).toHaveBeenLastCalledWith(
-      "main.ts — r0 — R0",
-      "/projects/r0/src/main.ts",
-      true,
-    );
+    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — R0", "/projects/r0/src/main.ts", true);
     unmount();
   });
 
@@ -196,7 +188,9 @@ describe("useExternalNavigationGuard", () => {
     const unmount = mount(useExternalNavigationGuard);
 
     const external = clickLink("https://adshkumar.is-a.dev/docs");
-    await vi.waitFor(() => expect(harness.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev/docs"));
+    await vi.waitFor(() =>
+      expect(harness.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev/docs"),
+    );
     const middle = clickLink("mailto:hi@adshkumar.is-a.dev", { button: 1 }, "auxclick");
     await vi.waitFor(() => expect(harness.openUrl).toHaveBeenCalledTimes(2));
     const internal = clickLink("#settings");

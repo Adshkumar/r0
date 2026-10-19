@@ -110,9 +110,7 @@ describe("theme files", () => {
   });
 
   it("preserves explicit Git colors", () => {
-    const theme = (r0Themes as ThemeFile).themes.find(
-      (candidate) => candidate.id === "r0-dark",
-    );
+    const theme = (r0Themes as ThemeFile).themes.find((candidate) => candidate.id === "r0-dark");
     expect(theme).toBeDefined();
 
     const definition = toThemeDefinition(theme!);

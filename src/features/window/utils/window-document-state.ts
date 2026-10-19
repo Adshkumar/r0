@@ -20,11 +20,9 @@ export function getWindowDocumentState({
 }: WindowDocumentStateInput): WindowDocumentState {
   const contextName = rootFolderPath && projectName && projectName !== "Files" ? projectName : null;
   const documentName = activeBuffer?.name;
-  const titleParts = [
-    documentName,
-    documentName === contextName ? null : contextName,
-    "r0",
-  ].filter((part): part is string => Boolean(part));
+  const titleParts = [documentName, documentName === contextName ? null : contextName, "r0"].filter(
+    (part): part is string => Boolean(part),
+  );
   const representedPath =
     activeBuffer && activeBuffer.path.startsWith("/") && !isVirtualContent(activeBuffer)
       ? activeBuffer.path

@@ -204,9 +204,7 @@ describe("LSP completion source", () => {
       option,
     )) as HTMLElement;
 
-    expect(info.querySelector(".cm-r0-completionInfoDetail")?.textContent).toBe(
-      "map<T>(fn): T[]",
-    );
+    expect(info.querySelector(".cm-r0-completionInfoDetail")?.textContent).toBe("map<T>(fn): T[]");
     expect(info.querySelector("strong")?.textContent).toBe("items");
     expect(getLspCompletionEntry(option)?.resolved?.detail).toBe("map<T>(fn): T[]");
 

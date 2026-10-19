@@ -330,9 +330,7 @@ describe("GitHub issue viewer", () => {
     await render();
 
     await chooseIssueAction("Open on GitHub");
-    expect(mocks.openExternalUrl).toHaveBeenCalledWith(
-      "https://github.com/Adshkumar/r0/issues/12",
-    );
+    expect(mocks.openExternalUrl).toHaveBeenCalledWith("https://github.com/Adshkumar/r0/issues/12");
 
     await chooseIssueAction("Copy link");
     expect(mocks.clipboard).toEqual(["https://github.com/Adshkumar/r0/issues/12"]);

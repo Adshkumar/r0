@@ -71,8 +71,7 @@ export const developerCommands: Command[] = [
     palette: { closePalette: "settled" },
     execute: async () => {
       try {
-        const { openR0LogBuffer } =
-          await import("@/features/settings/services/r0-log-service");
+        const { openR0LogBuffer } = await import("@/features/settings/services/r0-log-service");
         await openR0LogBuffer();
       } catch (error) {
         showToast({

@@ -51,9 +51,7 @@ interface ModelConnectionPickerProps {
 const R0_TAB_MODEL_LABEL = "R0 Tab model";
 
 function isR0Automatic(connection: IntelligenceConnection) {
-  return (
-    connection.providerId === "r0" && (!connection.modelId || connection.modelId === "auto")
-  );
+  return connection.providerId === "r0" && (!connection.modelId || connection.modelId === "auto");
 }
 
 /**

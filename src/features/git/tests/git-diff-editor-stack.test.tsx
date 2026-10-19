@@ -268,9 +268,7 @@ describe("multi-file diff view", () => {
 
     await act(async () => root.unmount());
     root = createRoot(host);
-    mocks.getRemotes.mockResolvedValue([
-      { name: "upstream", url: "https://github.com/me/r0.git" },
-    ]);
+    mocks.getRemotes.mockResolvedValue([{ name: "upstream", url: "https://github.com/me/r0.git" }]);
     await render(commitDiff({ commitHash: "main..feature", title: "main..feature" }));
 
     expect(view().getByText("main..feature")).toBeTruthy();

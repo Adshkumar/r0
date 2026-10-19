@@ -59,7 +59,9 @@ describe("auth-api desktop auth parsers", () => {
     expect(__test__.getPreferredAuthApiBase("http://localhost:3000/")).toBe(
       "http://localhost:3000",
     );
-    expect(__test__.getPreferredAuthApiBase("https://adshkumar.is-a.dev/")).toBe("https://adshkumar.is-a.dev");
+    expect(__test__.getPreferredAuthApiBase("https://adshkumar.is-a.dev/")).toBe(
+      "https://adshkumar.is-a.dev",
+    );
   });
 
   it("only treats authorization failures as invalid auth", () => {
@@ -181,14 +183,15 @@ describe("session check failures", () => {
 
   it("tells an unreachable host, a timeout and a server error apart", () => {
     const timeout = new DOMException("timed out", "TimeoutError");
-    expect(describeSessionCheckFailure(new TypeError("x"), "https://adshkumar.is-a.dev").reason).toBe(
-      "unreachable",
-    );
+    expect(
+      describeSessionCheckFailure(new TypeError("x"), "https://adshkumar.is-a.dev").reason,
+    ).toBe("unreachable");
     expect(describeSessionCheckFailure(timeout, "https://adshkumar.is-a.dev").message).toBe(
       "adshkumar.is-a.dev did not answer in time.",
     );
     expect(
-      describeSessionCheckFailure(new AuthApiError("down", 503), "https://adshkumar.is-a.dev").message,
+      describeSessionCheckFailure(new AuthApiError("down", 503), "https://adshkumar.is-a.dev")
+        .message,
     ).toBe("adshkumar.is-a.dev had a server error (503).");
   });
 });

@@ -184,10 +184,7 @@ describe("resolving installed language integrations", () => {
 
   it("prefers the recorded extension id, with or without the -full suffix", () => {
     expect(
-      resolveInstalledExtensionId(
-        { languageId: "python", extensionId: "r0.python" },
-        extensions,
-      ),
+      resolveInstalledExtensionId({ languageId: "python", extensionId: "r0.python" }, extensions),
     ).toBe("r0.python");
     expect(
       resolveInstalledExtensionId(

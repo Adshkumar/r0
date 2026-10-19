@@ -175,8 +175,7 @@ export function AcpQuestionPrompt({
 
       {unanswerable ? (
         <p className="text-pretty text-muted-foreground">
-          This asks for something R0 can't show yet. Decline to let the agent continue without
-          it.
+          This asks for something R0 can't show yet. Decline to let the agent continue without it.
         </p>
       ) : questions.length > 0 ? (
         <Questionnaire key={requestId} onSubmit={submit} shortcuts="numbers">

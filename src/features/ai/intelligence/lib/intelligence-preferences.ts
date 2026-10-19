@@ -14,7 +14,10 @@ function connection(value: unknown): IntelligenceConnection | null {
   if (typeof entry.providerId !== "string" || !/^[a-z0-9][a-z0-9._-]{0,99}$/.test(entry.providerId))
     return null;
   if (typeof entry.modelId !== "string" || entry.modelId.length > 200) return null;
-  return { providerId: entry.providerId === "r0" ? "r0" : entry.providerId, modelId: entry.modelId.trim() };
+  return {
+    providerId: entry.providerId === "r0" ? "r0" : entry.providerId,
+    modelId: entry.modelId.trim(),
+  };
 }
 
 export function parseIntelligencePreferences(value: unknown): IntelligencePreferences {

@@ -65,10 +65,7 @@ export function getR0DefaultSyntaxTokens(type: R0DefaultThemeType): Record<strin
   return prefixRecord("--syntax-", getR0DefaultTheme(type).syntax);
 }
 
-export function getR0DefaultColor(
-  type: R0DefaultThemeType,
-  name: string,
-): string | undefined {
+export function getR0DefaultColor(type: R0DefaultThemeType, name: string): string | undefined {
   return getR0DefaultTheme(type).colors[name];
 }
 
@@ -88,10 +85,7 @@ export function getR0DefaultSyntaxColor(
   return getR0DefaultTheme(type).syntax[name];
 }
 
-export function getRequiredR0DefaultSyntaxColor(
-  type: R0DefaultThemeType,
-  name: string,
-): string {
+export function getRequiredR0DefaultSyntaxColor(type: R0DefaultThemeType, name: string): string {
   const color = getR0DefaultSyntaxColor(type, name);
   if (!color) {
     throw new Error(`Missing R0 ${type} default syntax color: ${name}`);

@@ -139,8 +139,7 @@ export function NotificationsCommand({
   const hasVisibleNotifications = localSections.length > 0 || githubNotifications.length > 0;
   const selectedCategoryCount =
     (category === "all" || category === "r0"
-      ? notifications.filter((notification) => (notification.category ?? "r0") === "r0")
-          .length
+      ? notifications.filter((notification) => (notification.category ?? "r0") === "r0").length
       : 0) +
     (category === "all" || category === "agent"
       ? notifications.filter((notification) => notification.category === "agent").length

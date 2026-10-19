@@ -3,12 +3,16 @@ import { resolveExternalBrowserUrl } from "../external-navigation";
 
 describe("resolveExternalBrowserUrl", () => {
   it("accepts http and https links", () => {
-    expect(resolveExternalBrowserUrl("https://adshkumar.is-a.dev/docs")).toBe("https://adshkumar.is-a.dev/docs");
+    expect(resolveExternalBrowserUrl("https://adshkumar.is-a.dev/docs")).toBe(
+      "https://adshkumar.is-a.dev/docs",
+    );
     expect(resolveExternalBrowserUrl("http://localhost:3000")).toBe("http://localhost:3000/");
   });
 
   it("accepts mail and phone links", () => {
-    expect(resolveExternalBrowserUrl("mailto:hello@adshkumar.is-a.dev")).toBe("mailto:hello@adshkumar.is-a.dev");
+    expect(resolveExternalBrowserUrl("mailto:hello@adshkumar.is-a.dev")).toBe(
+      "mailto:hello@adshkumar.is-a.dev",
+    );
     expect(resolveExternalBrowserUrl("tel:+15551234567")).toBe("tel:+15551234567");
   });
 

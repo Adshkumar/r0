@@ -4511,9 +4511,9 @@ export type AgentConfig = {
 export type AgentRuntime = "node" | "python" | "go" | "rust" | "binary";
 
 export type AgentSource =
-  /**  R0 ships a manifest for the agent; a copy on PATH is detected by its binary name. */
+  /**  r0 ships a manifest for the agent; a copy on PATH is detected by its binary name. */
   | "extension"
-  /**  Only the ACP Registry lists the agent; it runs only from R0's own install. */
+  /**  Only the ACP Registry lists the agent; it runs only from r0 own install. */
   | "registry";
 
 /**  Names the agent process a request is for: `agent_id` running in `workspace_path`. */
@@ -4547,13 +4547,6 @@ export type AppUpdateMode =
   | "notify"
   /**  A package manager installed R0 and keeps it up to date. */
   | "external";
-
-export type R0LogFile = {
-  path: string;
-  content: string;
-  target_line: number;
-  truncated: boolean;
-};
 
 /**  Where a browser tab sits in its window, in CSS pixels of the workbench. */
 export type BrowserBounds = {
@@ -5959,6 +5952,13 @@ export type PythonDisplayData = {
   metadata: { [key in string]: unknown };
 };
 
+export type R0LogFile = {
+  path: string;
+  content: string;
+  target_line: number;
+  truncated: boolean;
+};
+
 /**  What the ACP Registry says about an agent, shown before it is installed. */
 export type RegistryAgentInfo = {
   id: string;
@@ -6436,9 +6436,9 @@ export type TrafficBacklog_Serialize = {
 
 /**  Which way a line went. */
 export type TrafficDirection =
-  /**  From the agent to R0. */
+  /**  From the agent to r0. */
   | "in"
-  /**  From R0 to the agent. */
+  /**  From r0 to the agent. */
   | "out"
   /**  A line the agent wrote to stderr. */
   | "stderr";

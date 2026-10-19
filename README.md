@@ -50,7 +50,6 @@ APT on Debian and Ubuntu:
 
 DNF on Fedora and RHEL:
 
-
 Installs from the APT and DNF repositories update with `apt upgrade` and `dnf upgrade`.
 
 ### Manual download
@@ -91,4 +90,3 @@ Contributions are welcome! See the [contributing guide](CONTRIBUTING.md). Pull r
 
 - [Issues](https://github.com/Adshkumar/r0/issues)
 - [Discussions](https://github.com/Adshkumar/r0/discussions)
-

@@ -128,7 +128,7 @@ async function sendInlineEditRequest(
     ? { ...selected, providerId: request.provider, modelId: request.model }
     : selected;
   assertIntelligenceConnectionAllowed(connection.providerId, request.feature ?? "inline-edit");
-  const useHosted = options.useHosted ?? (connection.providerId === "r0" || connection.providerId === "r0");
+  const useHosted = options.useHosted ?? connection.providerId === "r0";
   const normalizedRequest = {
     ...request,
     provider: connection.providerId === "r0" ? "r0" : connection.providerId,

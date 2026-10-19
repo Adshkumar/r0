@@ -196,7 +196,9 @@ describe("browser tab navigation", () => {
   it("retries the address on reload when the page failed to be created", async () => {
     harness.buffers.push({ id: "retry", type: "browser", url: "https://adshkumar.is-a.dev" });
     vi.mocked(commands.browserCreate).mockRejectedValueOnce(new Error("engine missing"));
-    attached.push(browserTabManager.attach("retry", null, createSlot(), "https://adshkumar.is-a.dev"));
+    attached.push(
+      browserTabManager.attach("retry", null, createSlot(), "https://adshkumar.is-a.dev"),
+    );
     opened.push("retry");
     await flush();
     expect(useBrowserTabStore.getState().tabs.retry?.error).toBe("engine missing");
@@ -286,11 +288,21 @@ describe("browser page events", () => {
     emit({ event: "loadFinished", url: "https://adshkumar.is-a.dev/a" });
     expect(useBrowserTabStore.getState().tabs.events?.isLoading).toBe(false);
 
-    emit({ event: "urlChanged", url: "https://adshkumar.is-a.dev/b", canGoBack: null, canGoForward: null });
+    emit({
+      event: "urlChanged",
+      url: "https://adshkumar.is-a.dev/b",
+      canGoBack: null,
+      canGoForward: null,
+    });
     expect(buffer("events")?.url).toBe("https://adshkumar.is-a.dev/b");
     expect(useBrowserTabStore.getState().tabs.events?.canGoBack).toBeNull();
 
-    emit({ event: "urlChanged", url: "https://adshkumar.is-a.dev/c", canGoBack: true, canGoForward: false });
+    emit({
+      event: "urlChanged",
+      url: "https://adshkumar.is-a.dev/c",
+      canGoBack: true,
+      canGoForward: false,
+    });
     expect(useBrowserTabStore.getState().tabs.events).toMatchObject({
       canGoBack: true,
       canGoForward: false,

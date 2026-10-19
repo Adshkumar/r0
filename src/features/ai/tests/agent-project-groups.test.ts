@@ -52,11 +52,7 @@ describe("agent project groups", () => {
   });
 
   it("lists the projects with an agent mid-turn", () => {
-    const chats = [
-      chat("a", "/work/r0"),
-      chat("b", "/work/r0-browser"),
-      chat("c", "/work/closed"),
-    ];
+    const chats = [chat("a", "/work/r0"), chat("b", "/work/r0-browser"), chat("c", "/work/closed")];
     expect(selectProjectsWithRunningAgents(projects, chats, ["b", "c"])).toEqual(["browser"]);
     expect(selectProjectsWithRunningAgents(projects, chats, [])).toEqual([]);
   });

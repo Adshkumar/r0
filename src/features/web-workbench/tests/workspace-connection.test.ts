@@ -78,7 +78,9 @@ describe("workspace connection", () => {
     const { connection } = connect();
     await flush();
     const socket = FakeSocket.all[0];
-    expect(socket.url).toBe(`wss://cloud.adshkumar.is-a.dev/workspaces/${session.workspaceId}/socket`);
+    expect(socket.url).toBe(
+      `wss://cloud.adshkumar.is-a.dev/workspaces/${session.workspaceId}/socket`,
+    );
     expect(socket.url).not.toContain("token");
     const status = connection.call("git.status");
     socket.open();

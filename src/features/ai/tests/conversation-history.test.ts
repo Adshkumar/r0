@@ -213,9 +213,7 @@ describe("buildConversationHistory", () => {
     const bytes = new TextEncoder().encode(JSON.stringify(fitted)).length;
 
     const loopMessages = HOSTED_R0_TOOL_LOOP_RESERVE.messages;
-    expect(fitted.length + loopMessages).toBeLessThanOrEqual(
-      HOSTED_R0_REQUEST_LIMITS.maxMessages,
-    );
+    expect(fitted.length + loopMessages).toBeLessThanOrEqual(HOSTED_R0_REQUEST_LIMITS.maxMessages);
     expect(bytes + HOSTED_R0_TOOL_LOOP_RESERVE.bytes).toBeLessThanOrEqual(
       HOSTED_R0_REQUEST_LIMITS.maxBytes,
     );

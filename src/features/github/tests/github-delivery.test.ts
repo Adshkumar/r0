@@ -75,7 +75,9 @@ describe("GitHub delivery", () => {
       "not a url",
     ])
       expect(safeDeliveryUrl(value)).toBeNull();
-    expect(safeDeliveryUrl("https://adshkumar.is-a.dev/preview")).toBe("https://adshkumar.is-a.dev/preview");
+    expect(safeDeliveryUrl("https://adshkumar.is-a.dev/preview")).toBe(
+      "https://adshkumar.is-a.dev/preview",
+    );
   });
   it("includes repository and kind in tab identity", () => {
     expect(deliveryBufferPath("releases", "/a", 42)).not.toBe(

@@ -12,11 +12,7 @@ import {
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useMemo, useRef } from "react";
 import { cn } from "@/utils/cn";
 import { loadCodeMirrorLanguage } from "../engines/codemirror/languages";
-import {
-  r0EditorFont,
-  r0EditorTheme,
-  r0SyntaxHighlighting,
-} from "../engines/codemirror/theme";
+import { r0EditorFont, r0EditorTheme, r0SyntaxHighlighting } from "../engines/codemirror/theme";
 import { editorAPI } from "../services/editor-api";
 import { useEditorViewSettings } from "../hooks/use-editor-view-settings";
 

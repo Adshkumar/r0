@@ -29,8 +29,7 @@ export async function runHostedBrowserTool(args: unknown, callId: string, chatId
       signal: AbortSignal.timeout(120_000),
     });
     const result = await response.json();
-    if (!response.ok)
-      throw new Error(result.error || "R0 Browser could not complete this task.");
+    if (!response.ok) throw new Error(result.error || "R0 Browser could not complete this task.");
     return {
       success: true,
       contentItems: [{ type: "inputText" as const, text: JSON.stringify(result) }],

@@ -126,7 +126,9 @@ describe("terminal addons", () => {
     expect(mocks.openUrl).not.toHaveBeenCalled();
     addon._handler(withModifier(), "https://adshkumar.is-a.dev");
     addon._handler(withModifier(), "javascript:alert(1)");
-    await vi.waitFor(() => expect(mocks.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev/"));
+    await vi.waitFor(() =>
+      expect(mocks.openUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev/"),
+    );
     expect(mocks.openUrl).toHaveBeenCalledTimes(1);
 
     const event = withoutModifier();
@@ -222,7 +224,9 @@ describe("OSC 8 hyperlinks", () => {
     expect(openFile).toHaveBeenCalledWith(expect.objectContaining({ path: "/ws/a.ts" }));
 
     handler.activate(withModifier(), "mailto:dev@adshkumar.is-a.dev", undefined as never);
-    await vi.waitFor(() => expect(mocks.openUrl).toHaveBeenCalledWith("mailto:dev@adshkumar.is-a.dev"));
+    await vi.waitFor(() =>
+      expect(mocks.openUrl).toHaveBeenCalledWith("mailto:dev@adshkumar.is-a.dev"),
+    );
   });
 
   it("logs links that fail to open", async () => {

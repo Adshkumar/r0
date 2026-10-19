@@ -217,8 +217,8 @@ export function ShareLocalServerDialog() {
       ) : (
         <div className="space-y-3">
           <p className="text-foreground ui-text-sm">
-            Preview links are part of r0 Pro. Share a dev server running on your computer, or an
-            app a cloud agent is running, with a temporary link.
+            Preview links are part of r0 Pro. Share a dev server running on your computer, or an app
+            a cloud agent is running, with a temporary link.
           </p>
           <Button
             type="button"

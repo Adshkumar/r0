@@ -19,8 +19,12 @@ describe("terminal link activation", () => {
   });
 
   it("only opens web and mail links externally", () => {
-    expect(resolveExternalLinkTarget("https://adshkumar.is-a.dev/docs")).toBe("https://adshkumar.is-a.dev/docs");
-    expect(resolveExternalLinkTarget(" mailto:hey@adshkumar.is-a.dev ")).toBe("mailto:hey@adshkumar.is-a.dev");
+    expect(resolveExternalLinkTarget("https://adshkumar.is-a.dev/docs")).toBe(
+      "https://adshkumar.is-a.dev/docs",
+    );
+    expect(resolveExternalLinkTarget(" mailto:hey@adshkumar.is-a.dev ")).toBe(
+      "mailto:hey@adshkumar.is-a.dev",
+    );
     expect(resolveExternalLinkTarget("file:///etc/passwd")).toBeNull();
     expect(resolveExternalLinkTarget("javascript:alert(1)")).toBeNull();
     expect(resolveExternalLinkTarget("not a url")).toBeNull();

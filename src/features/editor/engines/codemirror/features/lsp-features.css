@@ -83,10 +83,7 @@
   white-space: nowrap;
 }
 
-.cm-editor
-  .cm-r0-completion
-  li:not([aria-selected])
-  .cm-r0-completionDescription-selectedOnly {
+.cm-editor .cm-r0-completion li:not([aria-selected]) .cm-r0-completionDescription-selectedOnly {
   visibility: hidden;
 }
 

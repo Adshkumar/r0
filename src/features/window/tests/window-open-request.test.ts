@@ -109,9 +109,7 @@ describe("parseWindowOpenUrl", () => {
   });
 
   it("parses terminal requests", () => {
-    const url = new URL(
-      "r0://open?type=terminal&command=npm%20test&cwd=%2FUsers%2Ftest%2Fproject",
-    );
+    const url = new URL("r0://open?type=terminal&command=npm%20test&cwd=%2FUsers%2Ftest%2Fproject");
     const result = parseWindowOpenUrl(url);
     expect(result).toEqual({
       type: "terminal",

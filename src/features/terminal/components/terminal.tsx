@@ -890,8 +890,7 @@ export const TerminalEmulator = ({
     const rootStyles = getComputedStyle(root);
     const themeType = root.getAttribute("data-theme-type") === "light" ? "light" : "dark";
     const themeColor = (name: string) =>
-      rootStyles.getPropertyValue(`--${name}`).trim() ||
-      getRequiredR0DefaultColor(themeType, name);
+      rootStyles.getPropertyValue(`--${name}`).trim() || getRequiredR0DefaultColor(themeType, name);
     const selected = themeColor("selected");
     const accent = themeColor("primary");
     const border = themeColor("border");

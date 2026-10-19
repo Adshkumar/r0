@@ -39,10 +39,7 @@ describe("release asset policy", () => {
       normalizedArtifactName("/target/aarch64-apple-darwin/R0.app.tar.gz", "R0.app.tar.gz"),
     ).toBe("R0_aarch64.app.tar.gz");
     expect(
-      normalizedArtifactName(
-        "/target/x86_64-apple-darwin/R0.app.tar.gz.sig",
-        "R0.app.tar.gz.sig",
-      ),
+      normalizedArtifactName("/target/x86_64-apple-darwin/R0.app.tar.gz.sig", "R0.app.tar.gz.sig"),
     ).toBe("R0_x64.app.tar.gz.sig");
   });
 
@@ -57,9 +54,7 @@ describe("release asset policy", () => {
     expect(assets.some((asset) => asset.pattern.test("R0_1.2.3_linux-aarch64.flatpak"))).toBe(
       false,
     );
-    expect(assets.some((asset) => asset.pattern.test("R0_1.2.3_linux-x86_64.tar.gz"))).toBe(
-      true,
-    );
+    expect(assets.some((asset) => asset.pattern.test("R0_1.2.3_linux-x86_64.tar.gz"))).toBe(true);
     expect(
       forbiddenAssetPatterns("1.2.3").some((pattern) =>
         pattern.test("R0_1.2.3_x64-setup-machine.exe"),

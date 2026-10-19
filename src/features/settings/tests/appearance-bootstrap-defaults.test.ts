@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import {
-  getR0DefaultColor,
-  getR0DefaultSyntaxColor,
-} from "@/extensions/themes/default-theme";
+import { getR0DefaultColor, getR0DefaultSyntaxColor } from "@/extensions/themes/default-theme";
 import {
   R0_BOOTSTRAP_DEFAULTS,
   DEFAULT_APPEARANCE_BOOTSTRAP_CACHE,

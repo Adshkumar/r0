@@ -51,15 +51,12 @@ describe("agent turn failures", () => {
     expect(tooLarge.message).toContain("Start a new chat");
     expect(tooLarge.error.retryable).toBe(false);
     expect(
-      describeFailure('r0 API error: 402|||{"error":"Too large","code":"request_too_large"}')
-        .title,
+      describeFailure('r0 API error: 402|||{"error":"Too large","code":"request_too_large"}').title,
     ).toBe("Conversation too large");
   });
 
   it("prefers the server's explanation for other failures", () => {
-    const failure = describeFailure(
-      'r0 API error: 429|||{"code":"http_429","error":"Slow down"}',
-    );
+    const failure = describeFailure('r0 API error: 429|||{"code":"http_429","error":"Slow down"}');
     expect(failure.message).toBe("Slow down");
     expect(failure.error).toMatchObject({ status: 429, code: "http_429", retryable: true });
   });

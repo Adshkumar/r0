@@ -160,7 +160,7 @@ fn format_with_vp(root: &Path, source: &str) -> Result<String, String> {
    let vp = root
       .join("node_modules")
       .join(".bin")
-      .join(if cfg!(windows) { "vp.cmd" } else { "vp" });
+      .join(if cfg!(windows) { "vp.exe" } else { "vp" });
    let mut child = Command::new(vp)
       .arg("fmt")
       .arg(format!("--stdin-filepath={BINDINGS_PATH}"))

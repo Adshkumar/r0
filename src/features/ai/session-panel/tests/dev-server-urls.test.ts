@@ -27,7 +27,9 @@ describe("dev server addresses", () => {
   });
 
   it("ignores remote hosts and addresses without a port", () => {
-    expect(extractLocalServerUrls("see https://adshkumar.is-a.dev and http://localhost/")).toEqual([]);
+    expect(extractLocalServerUrls("see https://adshkumar.is-a.dev and http://localhost/")).toEqual(
+      [],
+    );
   });
 
   it("reads the port of local addresses only", () => {

@@ -301,9 +301,7 @@ describe("built-in agent requests", () => {
       }),
     );
 
-    expect((await run()).errors).toEqual([
-      'r0 API error: 429|||{"error":{"message":"slow down"}}',
-    ]);
+    expect((await run()).errors).toEqual(['r0 API error: 429|||{"error":{"message":"slow down"}}']);
   });
 
   it("surfaces connection resolution failures", async () => {

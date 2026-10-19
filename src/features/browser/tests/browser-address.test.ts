@@ -3,7 +3,9 @@ import { getBrowserTabName, resolveBrowserAddress } from "../services/browser-ad
 
 describe("resolveBrowserAddress", () => {
   it("keeps full web addresses as typed", () => {
-    expect(resolveBrowserAddress(" https://adshkumar.is-a.dev/docs ")).toBe("https://adshkumar.is-a.dev/docs");
+    expect(resolveBrowserAddress(" https://adshkumar.is-a.dev/docs ")).toBe(
+      "https://adshkumar.is-a.dev/docs",
+    );
     expect(resolveBrowserAddress("http://localhost:3000/api?x=1")).toBe(
       "http://localhost:3000/api?x=1",
     );

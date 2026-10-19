@@ -240,8 +240,14 @@ describe("several browser pages at once", () => {
     );
 
     browserTabManager.navigate("split", "https://adshkumar.is-a.dev/docs");
-    expect(commands.browserNavigate).toHaveBeenCalledWith("browser-0", "https://adshkumar.is-a.dev/docs");
-    expect(commands.browserNavigate).toHaveBeenCalledWith("browser-1", "https://adshkumar.is-a.dev/docs");
+    expect(commands.browserNavigate).toHaveBeenCalledWith(
+      "browser-0",
+      "https://adshkumar.is-a.dev/docs",
+    );
+    expect(commands.browserNavigate).toHaveBeenCalledWith(
+      "browser-1",
+      "https://adshkumar.is-a.dev/docs",
+    );
 
     browserTabManager.perform("split", "back", left.slot.element);
     expect(commands.browserPerform).toHaveBeenLastCalledWith("browser-0", "back");

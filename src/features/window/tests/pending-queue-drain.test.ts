@@ -27,10 +27,7 @@ describe("pending queue drain", () => {
     takes[1].resolve(queue.splice(0));
     await first;
 
-    expect(handle.mock.calls.map(([url]) => url)).toEqual([
-      "r0://open?path=/a",
-      "r0://settings",
-    ]);
+    expect(handle.mock.calls.map(([url]) => url)).toEqual(["r0://open?path=/a", "r0://settings"]);
   });
 
   it("reports a failed take and drains again next time", async () => {
