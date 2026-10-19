@@ -38,6 +38,8 @@ import {
 import { GithubMark } from "@/ui/brand-marks";
 import { SidebarIconButton } from "@/ui/sidebar";
 
+const COMMUNITY_URL = "https://github.com/Adshkumar/r0/issues";
+
 function isBlockingModalOpen() {
   const state = useUIState.getState();
   return (

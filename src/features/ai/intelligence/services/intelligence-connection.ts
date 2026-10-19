@@ -68,7 +68,7 @@ export function assertIntelligenceConnectionAllowed(providerId: string, task: In
   if (policy?.managedMode) {
     if (
       !(task === "agent" ? policy.aiChatEnabled : policy.aiCompletionEnabled) ||
-      (providerId !== "r0" && providerId !== "r0" && !policy.allowByok)
+      (providerId !== "r0" && !policy.allowByok)
     ) {
       throw new Error("This AI connection is disabled by your organization.");
     }

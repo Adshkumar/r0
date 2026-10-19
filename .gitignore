@@ -34,12 +34,11 @@ coverage/
 .vscode/launch.json
 .vscode/tasks.json
 
-# npm, yarn and bun lock files
+# npm, yarn, and legacy Bun lock files
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
 bun.lockb
-bun.lock
 
 # rust compiled folders
 target/
