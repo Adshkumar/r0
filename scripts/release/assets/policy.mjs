@@ -19,15 +19,17 @@ function escapeRegExp(value) {
 }
 
 export function normalizedArtifactName(file, name) {
-  if (name !== "R0.app.tar.gz" && name !== "R0.app.tar.gz.sig") {
+  const lowerName = name.toLowerCase();
+  if (lowerName !== "r0.app.tar.gz" && lowerName !== "r0.app.tar.gz.sig") {
     return name;
   }
 
+  const signatureSuffix = lowerName.endsWith(".sig") ? ".sig" : "";
   if (file.includes("/aarch64-apple-darwin/")) {
-    return name.replace("R0.app.tar.gz", "R0_aarch64.app.tar.gz");
+    return `R0_aarch64.app.tar.gz${signatureSuffix}`;
   }
   if (file.includes("/x86_64-apple-darwin/")) {
-    return name.replace("R0.app.tar.gz", "R0_x64.app.tar.gz");
+    return `R0_x64.app.tar.gz${signatureSuffix}`;
   }
 
   return name;

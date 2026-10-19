@@ -36,10 +36,10 @@ describe("release asset policy", () => {
 
   it("normalizes architecture-specific macOS updater names", () => {
     expect(
-      normalizedArtifactName("/target/aarch64-apple-darwin/R0.app.tar.gz", "R0.app.tar.gz"),
+      normalizedArtifactName("/target/aarch64-apple-darwin/r0.app.tar.gz", "r0.app.tar.gz"),
     ).toBe("R0_aarch64.app.tar.gz");
     expect(
-      normalizedArtifactName("/target/x86_64-apple-darwin/R0.app.tar.gz.sig", "R0.app.tar.gz.sig"),
+      normalizedArtifactName("/target/x86_64-apple-darwin/r0.app.tar.gz.sig", "r0.app.tar.gz.sig"),
     ).toBe("R0_x64.app.tar.gz.sig");
   });
 
