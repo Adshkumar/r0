@@ -181,7 +181,7 @@ export async function focusEditorAtStart() {
 export async function runPaletteCommand(label: string) {
   await click(MENU_BUTTON);
   await waitForDisplayed(EDIT_MENU_ITEM, "The app menu did not open");
-  await click(EDIT_MENU_ITEM);
+  await hover(EDIT_MENU_ITEM);
   await waitForDisplayed(COMMAND_PALETTE_MENU_ITEM, "The Edit menu did not open");
   await click(COMMAND_PALETTE_MENU_ITEM);
   await waitForDisplayed(PALETTE_INPUT, "The command palette did not open");
