@@ -20,18 +20,19 @@ function escapeRegExp(value) {
 
 export function normalizedArtifactName(file, name) {
   const lowerName = name.toLowerCase();
-  if (lowerName !== "r0.app.tar.gz" && lowerName !== "r0.app.tar.gz.sig") {
-    return name;
+  if (lowerName === "r0.app.tar.gz" || lowerName === "r0.app.tar.gz.sig") {
+    const signatureSuffix = lowerName.endsWith(".sig") ? ".sig" : "";
+    if (file.includes("/aarch64-apple-darwin/")) {
+      return `R0_aarch64.app.tar.gz${signatureSuffix}`;
+    }
+    if (file.includes("/x86_64-apple-darwin/")) {
+      return `R0_x64.app.tar.gz${signatureSuffix}`;
+    }
   }
 
-  const signatureSuffix = lowerName.endsWith(".sig") ? ".sig" : "";
-  if (file.includes("/aarch64-apple-darwin/")) {
-    return `R0_aarch64.app.tar.gz${signatureSuffix}`;
+  if (/^r0[_-]/i.test(name)) {
+    return `R0${name.slice(2)}`;
   }
-  if (file.includes("/x86_64-apple-darwin/")) {
-    return `R0_x64.app.tar.gz${signatureSuffix}`;
-  }
-
   return name;
 }
 

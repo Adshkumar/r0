@@ -41,6 +41,27 @@ describe("release asset policy", () => {
     expect(
       normalizedArtifactName("/target/x86_64-apple-darwin/r0.app.tar.gz.sig", "r0.app.tar.gz.sig"),
     ).toBe("R0_x64.app.tar.gz.sig");
+    expect(
+      normalizedArtifactName(
+        "/target/aarch64-apple-darwin/r0_0.17.4_aarch64.dmg",
+        "r0_0.17.4_aarch64.dmg",
+      ),
+    ).toBe("R0_0.17.4_aarch64.dmg");
+  });
+
+  it("normalizes lowercase Tauri filenames for every desktop platform", () => {
+    expect(normalizedArtifactName("/release/r0_0.17.4_arm64.deb", "r0_0.17.4_arm64.deb")).toBe(
+      "R0_0.17.4_arm64.deb",
+    );
+    expect(
+      normalizedArtifactName("/release/r0-0.17.4-1.aarch64.rpm", "r0-0.17.4-1.aarch64.rpm"),
+    ).toBe("R0-0.17.4-1.aarch64.rpm");
+    expect(
+      normalizedArtifactName(
+        "/release/r0_0.17.4_arm64-setup.exe.sig",
+        "r0_0.17.4_arm64-setup.exe.sig",
+      ),
+    ).toBe("R0_0.17.4_arm64-setup.exe.sig");
   });
 
   it("requires the supported release matrix and rejects unsupported packages", () => {
