@@ -16,7 +16,7 @@ const PALETTE_INPUT = By.css('input[placeholder="Search commands and actions..."
 const MENU_BUTTON = By.css('button[aria-label="Menu"]');
 const EDIT_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="Edit"]');
 const COMMAND_PALETTE_MENU_ITEM = By.xpath(
-  '//*[@role="menuitem"][normalize-space(.)="Command Palette"]',
+  '//*[@role="menuitem"][.//span[normalize-space(.)="Command Palette"]]',
 );
 
 export function treeItem(name: string) {
