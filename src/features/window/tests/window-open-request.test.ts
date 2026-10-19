@@ -104,7 +104,7 @@ describe("parseWindowOpenUrl", () => {
     const result = parseWindowOpenUrl(url);
     expect(result).toEqual({
       type: "web",
-      url: "https://adshkumar.is-a.dev/docs",
+      url: "https://r0.dev/docs",
     });
   });
 

@@ -254,9 +254,7 @@ describe("general settings", () => {
     expect(mocks.writeText).toHaveBeenCalledWith(
       expect.stringContaining("- App: R0 1.4.0\n- OS: macos 15.1"),
     );
-    expect(mocks.openUrl).toHaveBeenCalledWith(
-      "https://github.com/Adshkumar/r0/issues/new?template=01-bug.yml",
-    );
+    expect(mocks.openUrl).toHaveBeenCalledWith("https://x.com/Adshkumar62");
     expect(mocks.toasts).toContainEqual({ type: "success", message: "Report template copied" });
     expect(body().queryByPlaceholderText("Report via...")).toBeNull();
   });
@@ -278,9 +276,9 @@ describe("general settings", () => {
     await click(body().getByRole("button", { name: /Email/ }));
 
     const [mailto] = mocks.openUrl.mock.calls[0];
-    expect(mailto.startsWith("mailto:hey@adshkumar.is-a.dev?subject=R0%20bug%20report&body=")).toBe(
-      true,
-    );
+    expect(
+      mailto.startsWith("mailto:adarshdevops62041@gmail.com?subject=R0%20bug%20report&body="),
+    ).toBe(true);
     expect(decodeURIComponent(mailto)).toContain("- OS: macos 15.1");
     expect(mocks.writeText).not.toHaveBeenCalled();
   });

@@ -39,7 +39,7 @@ describe("r0 default themes", () => {
       getR0DefaultSyntaxColor("light", "keyword"),
     );
     expect(() => getRequiredR0DefaultColor("dark", "missing-color")).toThrow(
-      "Missing r0 dark default color: missing-color",
+      "Missing R0 dark default color: missing-color",
     );
   });
 

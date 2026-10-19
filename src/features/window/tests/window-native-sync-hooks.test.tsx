@@ -102,12 +102,12 @@ describe("useWindowDocumentState", () => {
     harness.activeBufferId = "b1";
 
     const unmount = mount(useWindowDocumentState);
-    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — R0", "/projects/r0/src/main.ts", false);
+    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — r0", "/projects/r0/src/main.ts", false);
 
     act(() =>
       (useBufferStore as unknown as AnyStore).setState({ buffers: [editor({ isDirty: true })] }),
     );
-    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — R0", "/projects/r0/src/main.ts", true);
+    expect(sync).toHaveBeenLastCalledWith("main.ts — r0 — r0", "/projects/r0/src/main.ts", true);
     unmount();
   });
 
@@ -121,7 +121,7 @@ describe("useWindowDocumentState", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(sync).toHaveBeenCalledWith("R0", null, false);
+    expect(sync).toHaveBeenCalledWith("r0", null, false);
     expect(console.error).toHaveBeenCalledWith(
       "Failed to update native window document state:",
       new Error("no window"),

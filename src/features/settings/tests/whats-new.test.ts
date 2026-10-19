@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { getServiceUrls } from "@/config/services";
 import {
   buildReleaseNotesMarkdown,
   buildWhatsNewMarkdown,
@@ -104,7 +105,7 @@ describe("resolveWhatsNewInfo", () => {
       body: "Fixed release notes.",
       date: "2026-07-08",
     });
-    expect(fetchCalls).toEqual(["https://adshkumar.is-a.dev/api/update/stable"]);
+    expect(fetchCalls).toEqual([getServiceUrls().stableUpdateUrl]);
   });
 
   it("falls back to the GitHub release when the updater manifest is for another version", async () => {
@@ -113,7 +114,7 @@ describe("resolveWhatsNewInfo", () => {
       const href = String(url);
       fetchCalls.push(href);
 
-      if (href.includes("adshkumar.is-a.dev")) {
+      if (href === getServiceUrls().stableUpdateUrl) {
         return Response.json({ version: "1.3.0", notes: "Newer release." });
       }
 
@@ -129,7 +130,7 @@ describe("resolveWhatsNewInfo", () => {
       date: "2026-07-07",
     });
     expect(fetchCalls).toEqual([
-      "https://adshkumar.is-a.dev/api/update/stable",
+      getServiceUrls().stableUpdateUrl,
       "https://api.github.com/repos/Adshkumar/r0/releases/tags/v1.2.0",
     ]);
   });

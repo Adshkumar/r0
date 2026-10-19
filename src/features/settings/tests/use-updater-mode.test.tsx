@@ -117,7 +117,9 @@ describe("updater install modes", () => {
       await current().downloadAndInstall();
     });
 
-    expect(io.openExternalUrl).toHaveBeenCalledWith("https://adshkumar.is-a.dev/");
+    expect(io.openExternalUrl).toHaveBeenCalledWith(
+      "https://github.com/Adshkumar/r0/releases/latest",
+    );
     expect(update.downloadAndInstall).not.toHaveBeenCalled();
     expect(io.relaunch).not.toHaveBeenCalled();
   });

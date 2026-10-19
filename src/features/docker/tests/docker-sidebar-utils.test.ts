@@ -55,7 +55,7 @@ describe("Docker sidebar utilities", () => {
   });
 
   it("shares filtering and error detection semantics", () => {
-    expect(includesDockerQuery(["R0", null], "ath")).toBe(true);
+    expect(includesDockerQuery(["R0", null], "r0")).toBe(true);
     expect(isDockerErrorLogLine("worker panic: failed to start")).toBe(true);
     expect(isDockerErrorLogLine("server listening")).toBe(false);
   });

@@ -73,8 +73,8 @@ describe("useTabCompletionModel", () => {
     await render();
     expect(tab).toMatchObject({
       isAutomatic: true,
-      shortName: "R0 Tab",
-      description: "Automatic: R0 Tab, included in Pro",
+      shortName: "r0 Tab",
+      description: "Automatic: r0 Tab, included in Pro",
       allowed: true,
       enabled: true,
     });
@@ -110,15 +110,15 @@ describe("useTabCompletionModel", () => {
     await render();
     expect(tab.resolved).toBeNull();
     expect(tab.shortName).toBe("Choose a model");
-    expect(tab.description).toBe("Sign in for R0 Tab, or choose your own model");
+    expect(tab.description).toBe("Sign in for r0 Tab, or choose your own model");
 
     useAuthStore.setState({ isAuthenticated: true });
     await render();
-    expect(tab.description).toBe("R0 Tab needs Pro, or choose your own model");
+    expect(tab.description).toBe("r0 Tab needs Pro, or choose your own model");
 
     settings({ aiProviderId: "ollama", aiModelId: "", ollamaBaseUrl: "http://localhost:11434" });
     await render();
-    expect(tab.description).toBe("Choose a local model; Automatic never uses R0 here");
+    expect(tab.description).toBe("Choose a local model; Automatic never uses r0 here");
   });
 
   it("follows the organization policy", async () => {

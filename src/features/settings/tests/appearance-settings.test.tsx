@@ -82,7 +82,7 @@ function theme(id: string, name: string, isDark: boolean): ThemeDefinition {
 
 const bundledThemes = [
   theme("r0-dark", "r0 Dark", true),
-  theme("r0-light", "r0 Light", false),
+  theme("r0-light", "R0 Light", false),
   theme("nord", "Nord", true),
   theme("paper", "Paper", false),
 ];
@@ -272,7 +272,7 @@ describe("appearance settings", () => {
     expect(settings().syncSystemTheme).toBe(true);
     expect(document.querySelector('[data-setting-row-label="Color Theme"]')).toBeNull();
 
-    await openOptions("Preferred Light Theme", "a");
+    await openOptions("Preferred Light Theme", "");
     expect(options()).toEqual(["R0 Light", "Paper"]);
     await click(
       [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(

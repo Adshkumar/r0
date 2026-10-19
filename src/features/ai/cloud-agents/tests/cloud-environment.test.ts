@@ -93,9 +93,10 @@ describe("cloud environment defaults", () => {
       { fullName: "R0Dev/R0", defaultBranch: "main", private: false, pushedAt: null },
     ];
     expect(orderCloudRepos(repos, "Adshkumar/r0").map((repo) => repo.fullName)).toEqual([
-      "R0Dev/R0",
+      "Adshkumar/r0",
       "me/new",
       "me/old",
+      "R0Dev/R0",
     ]);
     expect(orderCloudRepos([], "Adshkumar/r0").map((repo) => repo.fullName)).toEqual([
       "Adshkumar/r0",

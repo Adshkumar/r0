@@ -272,7 +272,7 @@ describe("fetchIntelligenceSettings", () => {
     mocks.fetch.mockResolvedValue(snapshot("team:9", {}));
     await expect(fetchIntelligenceSettings("personal")).rejects.toMatchObject({
       status: 502,
-      message: "r0 returned invalid AI settings.",
+      message: "R0 returned invalid AI settings.",
     });
 
     mocks.fetch.mockResolvedValue(snapshot("personal", {}, -1));
