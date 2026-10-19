@@ -121,6 +121,12 @@ describe("Linux release packaging", () => {
     expect(script).not.toMatch(/libcef|libexec|LD_PRELOAD/);
   });
 
+  it("runs the Linux tarball packager through Bash", () => {
+    const wrapper = readRepoFile("scripts/release/package-linux-tarball.sh");
+
+    expect(wrapper).toContain('exec bash scripts/release/packaging/linux/tarball.sh "$@"');
+  });
+
   it("builds every Linux package with the stock Tauri bundler in the release workflow", () => {
     const workflow = readRepoFile(".github/workflows/release.yml");
 

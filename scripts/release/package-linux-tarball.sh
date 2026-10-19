@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-exec scripts/release/packaging/linux/tarball.sh "$@"
+exec bash scripts/release/packaging/linux/tarball.sh "$@"
