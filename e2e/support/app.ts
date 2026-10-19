@@ -14,7 +14,7 @@ export const EDITOR_LINES = By.css(".cm-editor .cm-content");
 const WORKBENCH = By.css('[data-slot="workbench-title-row"]');
 const PALETTE_INPUT = By.css('input[placeholder="Search commands and actions..."]');
 const MENU_BUTTON = By.css('button[aria-label="Menu"]');
-const FILE_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="File"]');
+const EDIT_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="Edit"]');
 const COMMAND_PALETTE_MENU_ITEM = By.xpath(
   '//*[@role="menuitem"][normalize-space(.)="Command Palette"]',
 );
@@ -180,9 +180,9 @@ export async function focusEditorAtStart() {
 
 export async function runPaletteCommand(label: string) {
   await click(MENU_BUTTON);
-  await waitForDisplayed(FILE_MENU_ITEM, "The app menu did not open");
-  await click(FILE_MENU_ITEM);
-  await waitForDisplayed(COMMAND_PALETTE_MENU_ITEM, "The File menu did not open");
+  await waitForDisplayed(EDIT_MENU_ITEM, "The app menu did not open");
+  await click(EDIT_MENU_ITEM);
+  await waitForDisplayed(COMMAND_PALETTE_MENU_ITEM, "The Edit menu did not open");
   await click(COMMAND_PALETTE_MENU_ITEM);
   await waitForDisplayed(PALETTE_INPUT, "The command palette did not open");
   const input = await visibleElement(PALETTE_INPUT);
