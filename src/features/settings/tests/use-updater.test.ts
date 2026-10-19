@@ -162,12 +162,39 @@ describe("useUpdater", () => {
       const { render, act, useUpdater } = await load();
       const updater = render(() => useUpdater(false));
 
-      await act(() => updater.current.checkForUpdates().then(() => {}));
+      let found: boolean | undefined;
+      await act(async () => {
+        found = await updater.current.checkForUpdates();
+      });
 
+      expect(found).toBeUndefined();
       expect(updater.current).toMatchObject({ checking: false, error: "Network unreachable" });
       expect(mocks.recordUpdateCheck).toHaveBeenCalledWith(
         expect.objectContaining({ status: "failed", error: "Network unreachable" }),
       );
+    });
+
+    it("clears a previously available update after a failed recheck", async () => {
+      mocks.check
+        .mockResolvedValueOnce(fakeUpdate())
+        .mockRejectedValueOnce(new Error("Network unreachable"));
+      const { render, act, useUpdater } = await load();
+      const updater = render(() => useUpdater(false));
+
+      await act(() => updater.current.checkForUpdates().then(() => {}));
+      expect(updater.current.available).toBe(true);
+
+      let found: boolean | undefined;
+      await act(async () => {
+        found = await updater.current.checkForUpdates();
+      });
+
+      expect(found).toBeUndefined();
+      expect(updater.current).toMatchObject({
+        available: false,
+        error: "Network unreachable",
+        updateInfo: null,
+      });
     });
 
     it("uses a generic message for non-error failures", async () => {
@@ -185,12 +212,12 @@ describe("useUpdater", () => {
       const { render, act, useUpdater } = await load();
       const updater = render(() => useUpdater(false));
 
-      let found: boolean | undefined;
+      let found: boolean | undefined = false;
       await act(async () => {
         found = await updater.current.checkForUpdates();
       });
 
-      expect(found).toBe(false);
+      expect(found).toBeUndefined();
       expect(mocks.check).not.toHaveBeenCalled();
     });
 

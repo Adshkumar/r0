@@ -91,7 +91,7 @@ export function useMenuEventsWrapper() {
     },
     onCheckForUpdates: async () => {
       const hasUpdate = await checkForUpdates({ ignoreSuppression: true });
-      if (!hasUpdate) {
+      if (hasUpdate === false) {
         showToast({ message: "You're on the latest version", type: "success" });
       }
     },

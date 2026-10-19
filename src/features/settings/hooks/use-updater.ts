@@ -94,7 +94,17 @@ export const useUpdater = (checkOnMount = true) => {
     try {
       const updateMode = await getAppUpdateMode();
       if (updateMode === "external") {
-        return false;
+        updateRef.current = null;
+        updateInfoRef.current = null;
+        setState((prev) => ({
+          ...prev,
+          updateMode,
+          available: false,
+          checking: false,
+          error: null,
+          updateInfo: null,
+        }));
+        return undefined;
       }
 
       setState((prev) => ({ ...prev, updateMode, checking: true, error: null }));
@@ -156,11 +166,14 @@ export const useUpdater = (checkOnMount = true) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to check for updates";
       const failedCurrentVersion = updateInfoRef.current?.currentVersion ?? "";
+      updateRef.current = null;
       updateInfoRef.current = null;
       setState((prev) => ({
         ...prev,
+        available: false,
         checking: false,
         error: message,
+        updateInfo: null,
       }));
       void recordUpdateCheckTelemetry({
         status: "failed",
@@ -168,7 +181,7 @@ export const useUpdater = (checkOnMount = true) => {
         currentVersion: failedCurrentVersion,
         error: message,
       });
-      return false;
+      return undefined;
     }
   }, []);
 

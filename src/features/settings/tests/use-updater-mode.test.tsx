@@ -92,14 +92,15 @@ describe("updater install modes", () => {
   it("stays quiet for installs a package manager updates", async () => {
     await renderUpdater("external");
 
-    let found = true;
+    let found: boolean | undefined = false;
     await act(async () => {
       found = await current().checkForUpdates();
     });
 
-    expect(found).toBe(false);
+    expect(found).toBeUndefined();
     expect(io.check).not.toHaveBeenCalled();
     expect(current().available).toBe(false);
+    expect(current().updateMode).toBe("external");
   });
 
   it("announces new versions and opens the download page instead of installing", async () => {

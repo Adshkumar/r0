@@ -1,92 +1,113 @@
 <div align="center">
-  <img src="public/logo.png" alt="r0" width="120">
+  <img src="public/logo.png" alt="r0 logo" width="120">
   <h1>r0</h1>
-  <p>A lightweight, cross-platform code editor, built with <a href="https://tauri.app/" title="Tauri">Tauri</a> (Rust and React) with Git support, AI agents, vim keybindings.</p>
-  <img src="public/screenshot.png" alt="r0 Screenshot" width="800">
+  <p>A cross-platform code editor for building software with AI, Git, an integrated terminal, and a focused editing workflow.</p>
+  <p>
+    <a href="https://github.com/Adshkumar/r0/releases/latest">Download the latest release</a>
+    ·
+    <a href="https://r0-ide.vercel.app/docs">Documentation</a>
+    ·
+    <a href="https://github.com/Adshkumar/r0/issues">Report an issue</a>
+  </p>
+  <img src="public/screenshot.png" alt="Screenshot of the r0 editor" width="800">
 </div>
+
+## About r0
+
+r0 is a desktop code editor built with Tauri, Rust, and React. It brings everyday development
+tools together in one application: edit code, work with Git, use a terminal, inspect databases,
+and collaborate with AI coding agents without leaving your project.
 
 ## Features
 
-- AI agents
-- Git integration
-- Syntax highlighting
-- LSP support
-- Vim keybindings
-- Integrated terminal
-- Database viewers
-- Collaboration
-- Enterprise policy controls (managed mode + extension allowlist)
+- **Code editing:** syntax highlighting, language-server support, and Vim keybindings.
+- **AI coding agents:** work with supported AI providers and agent integrations from the editor.
+- **Git:** review and manage source-control changes alongside your code.
+- **Integrated terminal:** run project commands in the editor.
+- **Database tools:** connect to and inspect supported databases.
+- **Project workflows:** browse files, search your workspace, and work across projects.
+- **Extensions and themes:** customize language support and the editor experience.
+- **Collaboration and managed mode:** use collaboration features and enterprise policy controls.
 
-## Installation
+## Download and install
 
-### Quick install
+Get the newest stable version from the
+[GitHub Releases page](https://github.com/Adshkumar/r0/releases/latest). The release page lists
+the available installers for each operating system and processor architecture. Releases include
+Windows x64 and ARM64 installers, Linux x64 and ARM64 packages, and macOS Intel and Apple silicon
+downloads.
 
-macOS and Linux:
+### Windows
 
-```bash
-curl command for download | sh
-```
+On the [latest release page](https://github.com/Adshkumar/r0/releases/latest), download
+`R0_<version>_x64-setup.exe` for most PCs or `R0_<version>_arm64-setup.exe` for Windows on ARM,
+then open the downloaded installer.
 
-Windows (PowerShell):
+Alternatively, paste the command for your shell to download and start the latest matching
+installer. The PowerShell script detects x64 versus ARM64, verifies the installer against the
+release's SHA-256 checksums, and then opens the installer. Review the
+[installer script](scripts/install/install-windows.ps1) before running it if you want to inspect
+what it does.
+
+PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "ommand for download | iex"
+irm https://raw.githubusercontent.com/Adshkumar/r0/main/scripts/install/install-windows.ps1 | iex
 ```
 
-The install scripts detect your operating system and architecture, download the latest stable
-release, and verify its SHA256 checksum when one is available. You can review the
-[macOS and Linux script](http://r0-ide.vercel.app/) or
-[Windows script](http://r0-ide.vercel.app/) before running it.
+Command Prompt (`cmd.exe`):
 
-### Package managers
-
-Homebrew on macOS:
-
-```bash
-brew install --cask r0
+```cmd
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression (Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/Adshkumar/r0/main/scripts/install/install-windows.ps1').Content"
 ```
 
-APT on Debian and Ubuntu:
+### Linux
 
-DNF on Fedora and RHEL:
+Choose the package for your distribution and architecture from the
+[latest release page](https://github.com/Adshkumar/r0/releases/latest):
 
-Installs from the APT and DNF repositories update with `apt upgrade` and `dnf upgrade`.
+| Package                                     | Install                                                                                                  |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Debian or Ubuntu (`.deb`)                   | `sudo apt install ./R0_<version>_amd64.deb` (or the `_arm64.deb` build)                                  |
+| Fedora or another RPM distribution (`.rpm`) | `sudo dnf install ./R0-<version>-1.x86_64.rpm` (or the `.aarch64.rpm` build)                             |
+| AppImage                                    | `chmod +x R0_<version>_amd64.AppImage && ./R0_<version>_amd64.AppImage`                                  |
+| Portable archive (`.tar.gz`)                | Extract the matching `linux-x86_64` or `linux-aarch64` archive and run `r0` from the extracted directory |
 
-### Manual download
+The portable archive uses the system WebKitGTK 4.1 libraries. The release page also provides
+SHA-256 checksums and updater signatures for supported assets.
 
-Prebuilt packages for macOS, Windows, and Linux are available on the
-[GitHub Releases page](https://github.com/Adshkumar/r0/releases). Linux releases include native
-`.deb` and `.rpm` packages, an AppImage, and a portable `.tar.gz` bundle that uses the system
-WebKitGTK 4.1.
+### macOS
 
-See the [installation guide](http://r0-ide.vercel.app/docs/installation) for detailed platform steps,
-install locations, and uninstall instructions.
+Download the `.dmg` matching your Mac from the
+[latest release page](https://github.com/Adshkumar/r0/releases/latest): choose `aarch64` for
+Apple silicon or `x64` for Intel. Open the disk image and move r0 into Applications.
 
-## Development
+## Updates
 
-To build r0 from source, install [Node.js 24](https://nodejs.org),
-[Bun 1.3.14](https://bun.sh), and [Rust](https://rustup.rs), then run:
+r0 checks for updates automatically after startup and periodically while it is running. To check
+manually, open **Settings → General → Check for updates**. When a newer compatible release is
+available, r0 offers it for download and installation. If no update is available, Settings shows
+**Up to date** and the manual check confirms that you're on the latest version. If the check
+cannot reach the update service, r0 reports the check failure instead of claiming that the app
+is current.
+
+## Build from source
+
+Install [Node.js 24](https://nodejs.org), [Bun 1.3.14](https://bun.sh), and
+[Rust](https://rustup.rs), then clone the repository and start the development app:
 
 ```bash
-git https://github.com/Adshkumar/r0
+git clone https://github.com/Adshkumar/r0.git
 cd r0
 bun setup
 bun dev
 ```
 
-`bun setup` installs the project dependencies and checks the native requirements for your
-platform. See the [contributing guide](CONTRIBUTING.md) for validation commands and contribution
-guidelines.
-
-## Documentation
-
-See the [documentation](https://r0-ide.vercel.app/docs).
+`bun setup` installs the project dependencies and checks your platform's native requirements.
+See the [project documentation](https://r0-ide.vercel.app/docs) for platform setup and usage.
 
 ## Contributing
 
-Contributions are welcome! See the [contributing guide](CONTRIBUTING.md). Pull requests need agreement to the [Contributor License and Feedback Agreement](CONTRIBUTOR_LICENSE_AND_FEEDBACK_AGREEMENT.md).
-
-## Support
-
-- [Issues](https://github.com/Adshkumar/r0/issues)
-- [Discussions](https://github.com/Adshkumar/r0/discussions)
+Contributions and bug reports are welcome. Please open an
+[issue](https://github.com/Adshkumar/r0/issues) or start a
+[discussion](https://github.com/Adshkumar/r0/discussions).

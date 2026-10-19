@@ -237,7 +237,7 @@ async function release() {
     success("Staged version changes");
 
     const commitMessage = "Prepare release";
-    await $`git commit -m ${commitMessage} -m "Update version files for the release."`;
+    await $`git commit -m ${commitMessage} -m "Update version files for the release." -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"`;
     success(`Created commit: ${commitMessage}`);
 
     const releaseSha = (await $`git rev-parse HEAD`.text()).trim();

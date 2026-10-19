@@ -136,7 +136,7 @@ export const GeneralSettings = () => {
 
   const handleCheckForUpdates = async () => {
     const hasUpdate = await checkForUpdates({ ignoreSuppression: true });
-    if (!hasUpdate) {
+    if (hasUpdate === false) {
       showToast({ message: "You're on the latest version", type: "success" });
     }
   };
@@ -175,9 +175,11 @@ export const GeneralSettings = () => {
       ? `${versionLabel} · Installing`
       : available
         ? `${versionLabel} · ${updateInfo?.version} available`
-        : error
-          ? `${versionLabel} · Update check failed`
-          : `${versionLabel} · Up to date`;
+        : updateMode === "external"
+          ? `${versionLabel} · Updates managed externally`
+          : error
+            ? `${versionLabel} · Update check failed`
+            : `${versionLabel} · Up to date`;
   const cliStatus = cliChecking
     ? "Checking..."
     : cliInstalled
@@ -201,6 +203,8 @@ export const GeneralSettings = () => {
                     ? "Installing..."
                     : `${updateMode === "notify" ? "Download" : "Install"} ${updateInfo?.version ?? "update"}`}
               </Button>
+            ) : updateMode === "external" ? (
+              <span>Managed externally</span>
             ) : (
               <Button
                 onClick={handleCheckForUpdates}

@@ -152,6 +152,7 @@ describe("general settings", () => {
 
     expect(rowDescription("Version")).toBe("R0 1.4.0 · Update check failed");
     expect(body().getByText("network unreachable")).toBeTruthy();
+    expect(mocks.toasts).toEqual([]);
   });
 
   it("installs the shell command and reports the result", async () => {
