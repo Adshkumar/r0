@@ -127,36 +127,12 @@ jobs:
                -o -name '*.msi' -o -name '*.dmg' \) -exec cp {} release-dist/ \;
           ls -lh release-dist
 
-      - name: Smoke test the Windows installer
+      - name: Smoke test fresh install and upgrade
         if: matrix.name == 'windows-x86_64'
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
           $setup = Get-ChildItem release-dist -Filter '*-setup.exe' | Select-Object -First 1
-          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
-          $installDir = Join-Path $env:LOCALAPPDATA 'R0'
-          if (-not (Test-Path (Join-Path $installDir 'r0.exe'))) { throw "r0.exe was not installed to $installDir" }
-
-          $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\R0'
-          $publisher = (Get-ItemProperty -LiteralPath $uninstallKey).Publisher
-          if ($publisher -ne 'Adshkumar') { throw "Publisher is '$publisher', expected 'Adshkumar'" }
-
-          $menuKeys = @(
-            'HKCU:\Software\Classes\*\shell\R0\command',
-            'HKCU:\Software\Classes\Directory\shell\R0\command',
-            'HKCU:\Software\Classes\Directory\Background\shell\R0\command'
-          )
-          foreach ($key in $menuKeys) {
-            $command = (Get-Item -LiteralPath $key).GetValue('')
-            if ($command -notlike '*r0.exe*') { throw "Missing Open with R0 command at $key" }
-            Write-Host "$key -> $command"
-          }
-
-          Start-Process -FilePath (Join-Path $installDir 'uninstall.exe') -ArgumentList '/S', "_?=$installDir" -Wait
-          foreach ($key in $menuKeys) {
-            if (Test-Path -LiteralPath (Split-Path $key -Parent)) { throw "Uninstall left $key behind" }
-          }
-          Write-Host 'Installer smoke test passed'
+          ./scripts/release/windows/smoke-test-installer.ps1 -SetupPath $setup.FullName -UpgradeFromLatestRelease
 
       - name: Upload installers
         uses: actions/upload-artifact@v6

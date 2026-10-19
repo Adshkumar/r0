@@ -409,6 +409,13 @@ jobs:
             throw "Could not find updater signature for $($setup.Name)."
           }
 
+      - name: Smoke test Windows install and upgrade
+        if: matrix.artifact == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem release-dist -Filter '*-setup.exe' | Select-Object -First 1
+          ./scripts/release/windows/smoke-test-installer.ps1 -SetupPath $setup.FullName -UpgradeFromLatestRelease
+
       - name: Upload platform artifacts
         uses: actions/upload-artifact@v6
         with:

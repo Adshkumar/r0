@@ -22,6 +22,9 @@
   "bundle": {
     "windows": {
       "nsis": {
+        "installerIcon": "icons/prod/icon.ico",
+        "uninstallerIcon": "icons/prod/icon.ico",
+        "headerImage": "icons/prod/installer-header.bmp",
         "installerHooks": "windows/installer-hooks.nsh"
       }
     }
