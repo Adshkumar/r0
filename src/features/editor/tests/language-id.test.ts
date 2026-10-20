@@ -29,6 +29,21 @@ describe("getLanguageIdFromPath", () => {
     expect(getLanguageDisplayName("dotenv")).toBe("Dotenv");
   });
 
+  it("detects common frontend and config extensions without registry data", () => {
+    expect(getLanguageIdFromPath("/tmp/component.jsx")).toBe("javascriptreact");
+    expect(getLanguageIdFromPath("/tmp/config.yaml")).toBe("yaml");
+    expect(getLanguageIdFromPath("/tmp/settings.yml")).toBe("yaml");
+    expect(getLanguageIdFromPath("/tmp/script.sh")).toBe("shell");
+  });
+
+  it("normalizes Windows-style paths for special-case file detection", () => {
+    expect(getLanguageIdFromPath("C:\\temp\\src\\app\\app.component.html")).toBe("angular");
+    expect(getLanguageIdFromPath("C:\\temp\\.env.production.local")).toBe("dotenv");
+    expect(getLanguageIdFromPath("C:\\temp\\Dockerfile.dev")).toBe("dockerfile");
+    expect(getLanguageIdFromPath("C:\\temp\\project\\Makefile")).toBe("makefile");
+    expect(detectLanguageFromFileName("C:\\temp\\.gitignore")).toBe("gitignore");
+  });
+
   it("detects extension-backed highlight languages without registry data", () => {
     expect(getLanguageIdFromPath("/tmp/component.tsx")).toBe("typescriptreact");
     expect(getLanguageIdFromPath("/tmp/analysis.R")).toBe("r");

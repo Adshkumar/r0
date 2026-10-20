@@ -18,7 +18,8 @@ export function detectLanguageFromPath(filePath: string): string {
     return fromRegistry;
   }
 
-  const extension = filePath.toLowerCase().split(".").pop() || "";
+  const normalizedPath = filePath.replace(/\\/g, "/");
+  const extension = normalizedPath.toLowerCase().split(".").pop() || "";
 
   const languageProvider = languageProviderRegistry.get(extension);
   if (languageProvider) {
@@ -29,6 +30,34 @@ export function detectLanguageFromPath(filePath: string): string {
   const languageMap: Record<string, string> = {
     // Unsupported languages that might be added in the future
     tsx: "typescriptreact",
+    jsx: "javascriptreact",
+    js: "javascript",
+    ts: "typescript",
+    json: "json",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    sass: "sass",
+    less: "less",
+    md: "markdown",
+    py: "python",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    rs: "rust",
+    go: "go",
+    php: "php",
+    vue: "vue",
+    svelte: "svelte",
+    yaml: "yaml",
+    yml: "yaml",
+    xml: "xml",
+    svg: "xml",
+    sh: "shell",
+    bash: "shell",
+    zsh: "shell",
+    sql: "sql",
+    env: "dotenv",
     dockerignore: "gitignore",
     gitattributes: "gitattributes",
     gitignore: "gitignore",
@@ -36,11 +65,6 @@ export function detectLanguageFromPath(filePath: string): string {
     lock: "lockfile",
     zig: "zig",
     el: "elisp",
-    scss: "scss",
-    sass: "sass",
-    less: "less",
-    xml: "xml",
-    svg: "xml",
     rst: "restructuredtext",
     tex: "latex",
     scala: "scala",
@@ -77,8 +101,9 @@ export function detectLanguageFromPath(filePath: string): string {
  * Detect language from file name (handles special cases like Dockerfile, Makefile)
  */
 export function detectLanguageFromFileName(fileName: string): string {
-  const lowercaseName = fileName.toLowerCase();
-  const normalizedPath = lowercaseName.replace(/\\/g, "/");
+  const normalizedPath = fileName.replace(/\\/g, "/");
+  const name = normalizedPath.split("/").pop() ?? normalizedPath;
+  const lowercaseName = name.toLowerCase();
 
   if (lowercaseName === ".env" || lowercaseName.startsWith(".env.")) {
     return "dotenv";

@@ -65,9 +65,10 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
   md: "markdown",
   mdx: "markdown",
   markdown: "markdown",
-  sh: "bash",
-  bash: "bash",
-  zsh: "bash",
+  sh: "shell",
+  bash: "shell",
+  zsh: "shell",
+  fish: "shell",
   patch: "diff",
   swift: "swift",
   kt: "kotlin",
@@ -131,10 +132,10 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
 };
 
 const FILENAME_TO_LANGUAGE: Record<string, string> = {
-  ".bashrc": "bash",
-  ".zshrc": "bash",
-  ".bash_profile": "bash",
-  ".profile": "bash",
+  ".bashrc": "shell",
+  ".zshrc": "shell",
+  ".bash_profile": "shell",
+  ".profile": "shell",
   ".dockerignore": "gitignore",
   ".eslintignore": "gitignore",
   ".fdignore": "gitignore",
@@ -174,9 +175,15 @@ function normalizeLanguageId(languageId: string): string {
       return "markdown";
     case "rmd":
       return "rmarkdown";
+    case "bash":
+      return "shell";
     default:
       return languageId;
   }
+}
+
+function getPathFileName(filePath: string): string {
+  return filePath.replace(/\\/g, "/").split("/").pop() ?? filePath;
 }
 
 function getLanguageIdFromExtension(extension: string): string | null {
@@ -278,7 +285,7 @@ export function getLanguageIdFromPath(filePath: string): string | null {
     return normalizeLanguageId(fromRegistry);
   }
 
-  const fileName = filePath.split("/").pop()?.toLowerCase() || "";
+  const fileName = getPathFileName(filePath).toLowerCase();
   const normalizedPath = filePath.replace(/\\/g, "/").toLowerCase();
   if (normalizedPath.endsWith("/.git/info/exclude")) {
     return "gitignore";
@@ -299,6 +306,6 @@ export function getLanguageIdFromPath(filePath: string): string | null {
     return "dockerfile";
   }
 
-  const extension = filePath.split(".").pop()?.toLowerCase() || "";
+  const extension = getPathFileName(filePath).split(".").pop()?.toLowerCase() || "";
   return getLanguageIdFromExtension(extension);
 }

@@ -88,12 +88,26 @@ function getIconDefinitionsForAppearance(contribution: IconThemeContribution) {
 }
 
 function getFileExtensionCandidates(fileName: string): string[] {
-  const parts = fileName.toLowerCase().split(".");
-  if (parts.length < 2 || parts[0] === "") {
+  const normalized = fileName.toLowerCase().split(/[\\/]/).pop() ?? fileName.toLowerCase();
+  const parts = normalized.split(".");
+  if (parts.length < 2) {
     return [];
   }
 
-  return parts.map((_, index) => `.${parts.slice(index).join(".")}`);
+  const candidates = new Set<string>();
+
+  for (let index = 1; index < parts.length; index += 1) {
+    const candidate = `.${parts.slice(index).join(".")}`;
+    if (candidate.length > 1) {
+      candidates.add(candidate);
+    }
+  }
+
+  if (normalized.startsWith(".")) {
+    candidates.add(normalized);
+  }
+
+  return Array.from(candidates);
 }
 
 function toIconThemeDefinition(

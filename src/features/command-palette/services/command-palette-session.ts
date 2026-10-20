@@ -20,10 +20,13 @@ export function attachCommandPaletteSession(session: CommandPaletteSession): () 
  * palette is closed (the command ran from a keybinding) it opens directly on that view.
  */
 export function pushCommandPaletteView(view: CommandPaletteViewId): void {
-  if (activeSession) {
+  const uiState = useUIState.getState();
+
+  if (activeSession && uiState.isCommandPaletteVisible) {
     activeSession.pushView(view);
     return;
   }
 
-  useUIState.getState().openCommandPaletteView(view);
+  activeSession = null;
+  uiState.openCommandPaletteView(view);
 }

@@ -154,6 +154,29 @@ function filenamePatternToRegExp(pattern: string): RegExp {
   return new RegExp(`^${source}$`);
 }
 
+function getFileExtensionCandidates(fileName: string): string[] {
+  const normalized = fileName.toLowerCase();
+  const parts = normalized.split(".");
+  if (parts.length < 2) {
+    return [];
+  }
+
+  const candidates = new Set<string>();
+
+  for (let index = 1; index < parts.length; index += 1) {
+    const candidate = `.${parts.slice(index).join(".")}`;
+    if (candidate.length > 1) {
+      candidates.add(candidate);
+    }
+  }
+
+  if (normalized.startsWith(".")) {
+    candidates.add(normalized);
+  }
+
+  return Array.from(candidates);
+}
+
 export function matchesLanguageContribution(
   filePath: string,
   language: LanguageContribution,
@@ -170,11 +193,12 @@ export function matchesLanguageContribution(
     return true;
   }
 
-  const lastDotIndex = fileName.lastIndexOf(".");
-  if (lastDotIndex === -1) {
+  const extensionCandidates = getFileExtensionCandidates(fileName);
+  if (extensionCandidates.length === 0) {
     return false;
   }
 
-  const fileExt = fileName.substring(lastDotIndex).toLowerCase();
-  return language.extensions.some((extension) => extension.toLowerCase() === fileExt);
+  return language.extensions.some((extension) =>
+    extensionCandidates.includes(extension.toLowerCase()),
+  );
 }
