@@ -100,6 +100,7 @@ export const TerminalEmulator = ({
   const addonsRef = useRef<TerminalAddons | null>(null);
   const shellIntegrationRef = useRef<TerminalShellIntegration | null>(null);
   const linkTooltipRef = useRef<TerminalLinkTooltip | null>(null);
+  const isInitializedRef = useRef(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -323,6 +324,8 @@ export const TerminalEmulator = ({
   }, []);
 
   const disposeTerminalFrontend = useCallback(() => {
+    isInitializedRef.current = false;
+    setIsInitialized(false);
     terminalInputCleanupRef.current();
     terminalInputCleanupRef.current = () => {};
     if (fitFrameRef.current !== null) {
@@ -342,7 +345,7 @@ export const TerminalEmulator = ({
 
   const initializeTerminal = useCallback(async () => {
     const container = terminalContainerRef.current;
-    if (!container || isInitialized || isInitializingRef.current) return;
+    if (!container || isInitializedRef.current || isInitializingRef.current) return;
 
     const rect = container.getBoundingClientRect();
     const isContainerVisible = container.offsetParent !== null;
@@ -608,6 +611,7 @@ export const TerminalEmulator = ({
       // No snapshot replay: xterm is portaled and never remounts mid-session,
       // so the live PTY redrawing via SIGWINCH is the source of truth.
 
+      isInitializedRef.current = true;
       setIsInitialized(true);
       initialized = true;
       finishInitialization();
@@ -724,13 +728,19 @@ export const TerminalEmulator = ({
   ]);
 
   useEffect(() => {
-    if (isInitialized || initializationError || !isVisible || !terminalContainerRef.current) return;
+    if (
+      isInitializedRef.current ||
+      initializationError ||
+      !isVisible ||
+      !terminalContainerRef.current
+    )
+      return;
 
     let rafId: number | null = null;
     const container = terminalContainerRef.current;
 
     const attemptInitialize = () => {
-      if (isInitialized || isInitializingRef.current) return;
+      if (isInitializedRef.current || isInitializingRef.current) return;
 
       const rect = container.getBoundingClientRect();
       const isContainerVisible = container.offsetParent !== null;
@@ -757,6 +767,7 @@ export const TerminalEmulator = ({
     return () => {
       initializationRevisionRef.current += 1;
       isInitializingRef.current = false;
+      isInitializedRef.current = false;
       disposeTerminalFrontend();
     };
   }, [disposeTerminalFrontend]);
