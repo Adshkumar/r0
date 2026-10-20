@@ -17,6 +17,13 @@ describe("language packager", () => {
     expect(rust).not.toHaveProperty("grammar");
   });
 
+  it("uses bundled artwork for offline language catalog entries", () => {
+    const rust = getPackagedLanguageExtensions().find((manifest) => manifest.id === "r0.rust");
+
+    expect(rust?.icon).toBeDefined();
+    expect(rust?.icon).not.toContain("https://adshkumar.is-a.dev/extensions/");
+  });
+
   it("preserves Java language server initialization settings", () => {
     const java = getPackagedLanguageExtensions().find((manifest) => manifest.id === "r0.java");
 

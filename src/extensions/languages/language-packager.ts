@@ -65,6 +65,11 @@ const BUNDLED_LANGUAGE_MANIFESTS = import.meta.glob<ExternalLanguageManifest>(
   ],
   { eager: true, import: "default" },
 );
+const BUNDLED_LANGUAGE_ICONS = import.meta.glob<string>("../../../extensions/official/*/icon.svg", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
 
 type PackagedLanguageEntry = {
   manifest: ExtensionManifest;
@@ -93,12 +98,18 @@ function resolveExtensionAssetUrl(
   fallbackFilename: string,
 ): string {
   const normalized = assetPath?.trim() || fallbackFilename;
+  const relativePath = normalized.replace(/^\.?\//, "");
+  const bundledAsset =
+    BUNDLED_LANGUAGE_ICONS[`../../../extensions/official/${folder}/${relativePath}`];
+  if (bundledAsset) {
+    return bundledAsset;
+  }
 
   if (isAbsoluteAssetUrl(normalized)) {
     return normalized;
   }
 
-  return `${CDN_BASE_URL}/${folder}/${normalized.replace(/^\.?\//, "")}`;
+  return `${CDN_BASE_URL}/${folder}/${relativePath}`;
 }
 
 function createLspConfig(manifest: ExternalLanguageManifest): LspConfiguration | undefined {
