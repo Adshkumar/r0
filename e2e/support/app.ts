@@ -181,17 +181,28 @@ export async function focusEditorAtStart() {
 export async function runPaletteCommand(label: string) {
   await click(MENU_BUTTON);
   await waitForDisplayed(EDIT_MENU_ITEM, "The app menu did not open");
-  await hover(EDIT_MENU_ITEM);
+  await click(EDIT_MENU_ITEM);
   await waitForDisplayed(COMMAND_PALETTE_MENU_ITEM, "The Edit menu did not open");
   await click(COMMAND_PALETTE_MENU_ITEM);
   await waitForDisplayed(PALETTE_INPUT, "The command palette did not open");
+
   const input = await visibleElement(PALETTE_INPUT);
   await input.clear();
   await input.sendKeys(label);
 
   const option = By.xpath(`//*[@role="option"][.//*[normalize-space()="${label}"]]`);
+
   await waitForDisplayed(option, `Command "${label}" is missing from the palette`);
   await click(option);
+
+  if (label === "Preferences: Color Theme") {
+    await waitForDisplayed(
+      By.css('input[placeholder="Search themes..."]'),
+      "The color theme picker did not open",
+    );
+    return;
+  }
+
   await waitForHidden(PALETTE_INPUT, "The command palette did not close");
 }
 
@@ -230,6 +241,10 @@ export async function contextClick(locator: Locator) {
 }
 
 /** Types into the first visible match, which must be an empty, focusable field. */
+export async function clearInput(locator: Locator) {
+  await (await visibleElement(locator)).clear();
+}
+
 export async function typeInto(locator: Locator, value: string) {
   await (await visibleElement(locator)).sendKeys(value);
 }
@@ -330,4 +345,30 @@ export function stagedFiles() {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+}
+export async function waitForSidebarHidden(timeout = UI_TIMEOUT) {
+  await waitUntil(
+    async () => {
+      const panes = await driver().executeScript<
+        Array<{ width: number; text: string; pointerEvents: string }>
+      >(
+        `return Array.from(document.querySelectorAll('.r0-resizable-pane')).map(pane => ({
+          width: pane.getBoundingClientRect().width,
+          text: (pane.innerText || '').slice(0, 80),
+          pointerEvents: getComputedStyle(pane).pointerEvents
+        }));`,
+      );
+
+      const sidebar = panes.find(
+        (pane) =>
+          pane.text.includes("New session") ||
+          pane.text.includes("Projects") ||
+          pane.text.includes("Settings"),
+      );
+
+      return sidebar !== undefined && Math.round(sidebar.width) === 0;
+    },
+    timeout,
+    "The sidebar pane did not collapse to zero width",
+  );
 }

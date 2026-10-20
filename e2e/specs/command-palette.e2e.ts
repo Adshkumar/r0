@@ -3,7 +3,7 @@ import {
   FILE_TREE,
   runPaletteCommand,
   waitForDisplayed,
-  waitForHidden,
+  waitForSidebarHidden,
   waitForProjectTree,
 } from "../support/app.ts";
 import { e2eTest, useAppSession } from "../support/session.ts";
@@ -17,7 +17,7 @@ describe("command palette", () => {
 
   e2eTest("opens and runs a command", async () => {
     await runPaletteCommand("View: Hide Sidebar");
-    await waitForHidden(FILE_TREE, "Hide Sidebar did not hide the file tree");
+    await waitForSidebarHidden();
 
     await runPaletteCommand("View: Show Sidebar");
     await waitForDisplayed(FILE_TREE, "Show Sidebar did not bring the file tree back");

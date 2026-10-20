@@ -5,6 +5,7 @@ import {
   click,
   rootAttribute,
   rootStyleValue,
+  clearInput,
   runPaletteCommand,
   typeInto,
   waitForDisplayed,
@@ -17,13 +18,13 @@ import { e2eTest, useAppSession } from "../support/session.ts";
 
 const THEME_INPUT = By.css('input[placeholder="Search themes..."]');
 
-const LIGHT = { id: "r0-light", name: "r0 Light", type: "light" };
+const LIGHT = { id: "r0-light", name: "R0 Light", type: "light" };
 const DARK = { id: "r0-dark", name: "r0 Dark", type: "dark" };
 type Theme = typeof LIGHT;
 
 function themeOption(name: string) {
   return By.xpath(
-    `//*[@id="theme-selector-results"]//*[@role="option"][.//*[normalize-space()="${name}"]]`,
+    `//*[@id="theme-selector-results"]//*[@role="option"][contains(normalize-space(.), "${name}")]`,
   );
 }
 
@@ -32,6 +33,8 @@ async function switchThemeFromPalette(theme: Theme) {
 
   await runPaletteCommand("Preferences: Color Theme");
   await waitForDisplayed(THEME_INPUT, "The color theme picker did not open");
+
+  await clearInput(THEME_INPUT);
   await typeInto(THEME_INPUT, theme.name);
   await waitForDisplayed(themeOption(theme.name), `The theme picker never listed ${theme.name}`);
   await click(themeOption(theme.name));
