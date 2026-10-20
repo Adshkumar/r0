@@ -412,6 +412,8 @@ jobs:
       - name: Smoke test Windows install and upgrade
         if: matrix.artifact == 'windows-x86_64'
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $setup = Get-ChildItem release-dist -Filter '*-setup.exe' | Select-Object -First 1
           ./scripts/release/windows/smoke-test-installer.ps1 -SetupPath $setup.FullName -UpgradeFromLatestRelease

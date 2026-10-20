@@ -27,9 +27,14 @@ function Invoke-Installer {
 }
 
 if ($UpgradeFromLatestRelease) {
-  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Adshkumar/r0/releases/latest" -Headers @{
+  $headers = @{
     "User-Agent" = "r0-installer-smoke-test"
+    "Accept" = "application/vnd.github+json"
   }
+  if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+    $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN"
+  }
+  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Adshkumar/r0/releases/latest" -Headers $headers
   $previousSetup = $release.assets |
     Where-Object { $_.name -match "^R0_\d+\.\d+\.\d+_x64-setup\.exe$" } |
     Select-Object -First 1
