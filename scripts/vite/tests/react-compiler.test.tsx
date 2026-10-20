@@ -5,7 +5,7 @@ import { runInNewContext } from "node:vm";
 import babel from "@rolldown/plugin-babel";
 import { act, createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { build } from "vite-plus";
+import { type PluginOption, build } from "vite-plus";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { create } from "zustand";
 import { createSelectors } from "../../../src/utils/zustand-selectors";
@@ -38,7 +38,8 @@ it("preserves generated selector hooks through compiled parent renders and store
   const cleanup = vi.fn();
   const applyPlatformClass = vi.fn();
   const useEditorAppStore = createSelectors(create(() => ({ count: 0, actions: { cleanup } })));
-  const result = await build({
+  const babelPlugin = await babel({ presets: [createReactCompilerPreset()] });
+  const buildConfig: import("vite-plus").InlineConfig = {
     configFile: false,
     logLevel: "silent",
     plugins: [
@@ -73,8 +74,8 @@ it("preserves generated selector hooks through compiled parent renders and store
           }
         },
       },
-      babel({ presets: [createReactCompilerPreset()] }),
-    ],
+      babelPlugin,
+    ] as PluginOption[],
     build: {
       write: false,
       minify: false,
@@ -83,7 +84,8 @@ it("preserves generated selector hooks through compiled parent renders and store
         external: ["react", "react/compiler-runtime", storeModule, platformModule],
       },
     },
-  });
+  };
+  const result = await build(buildConfig);
   const outputs = Array.isArray(result) ? result : [result];
   const chunk = outputs
     .flatMap((output) => ("output" in output ? output.output : []))

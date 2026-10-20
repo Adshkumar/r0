@@ -2,7 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { useUIState } from "@/features/layout/stores/ui-state.store";
-import { attachCommandPaletteSession, pushCommandPaletteView } from "../services/command-palette-session";
+import {
+  attachCommandPaletteSession,
+  pushCommandPaletteView,
+} from "../services/command-palette-session";
 
 describe("command palette session", () => {
   beforeEach(() => {
