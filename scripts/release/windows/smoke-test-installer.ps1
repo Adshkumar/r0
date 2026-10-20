@@ -77,8 +77,8 @@ if (-not (Test-Path (Join-Path $installDirectory "r0.exe"))) {
 }
 
 $installedApp = Get-ItemProperty -LiteralPath $uninstallKey
-if ($installedApp.Publisher -ne "Adshkumar") {
-  throw "Publisher is '$($installedApp.Publisher)', expected 'Adshkumar'."
+if ($installedApp.Publisher -ne "Adarsh Kumar") {
+  throw "Publisher is '$($installedApp.Publisher)', expected 'Adarsh Kumar'."
 }
 if ($installedApp.DisplayVersion -ne $version) {
   throw "Installed version is '$($installedApp.DisplayVersion)', expected '$version'."
