@@ -1,0 +1,27 @@
+﻿{
+  "rewrites": [
+    {
+      "source": "/install",
+      "destination": "/install.ps1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/install.ps1",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ]
+}
