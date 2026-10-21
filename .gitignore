@@ -90,3 +90,5 @@ extensions/generated/
 
 # local codex settings
 src-tauri/.claude/settings.local.json
+.vercel
+.env*

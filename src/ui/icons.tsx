@@ -9,18 +9,8 @@ import {
   type RefAttributes,
   type SVGProps,
 } from "react";
-import * as NucleoFill from "nucleo-ui-fill-18";
-import * as Nucleo from "nucleo-ui-outline-18";
+import * as Lucide from "lucide-react";
 
-/**
- * Optical stroke tiers.
- *
- * Nucleo draws every icon on an 18px grid with a stroke measured in grid units,
- * so the same icon renders a 0.83px stroke at 10px and a 2px stroke at 24px.
- * `src/styles/icons.css` pins the stroke to real pixels with
- * `vector-effect: non-scaling-stroke`, and these tiers choose the pixel weight
- * that matches the size the icon is actually rendered at.
- */
 export type IconOptical = "sm" | "md" | "lg";
 
 const OPTICAL_STROKE: Record<IconOptical, string> = {
@@ -37,7 +27,6 @@ export type IconProps = Omit<SVGProps<SVGSVGElement>, "strokeWidth"> & {
   optical?: IconOptical;
   mirrored?: boolean;
   title?: string;
-  /** Render the solid variant, for icons that have one (see `createIconComponent`). */
   filled?: boolean;
 };
 
@@ -52,11 +41,9 @@ function opticalForSize(size: IconProps["size"]): IconOptical {
   return "sm";
 }
 
-function createIconComponent(
-  IconComponent: ComponentType<any>,
-  displayName: string,
-  FilledComponent?: ComponentType<any>,
-): Icon {
+const LucideIcons = Lucide as unknown as Record<string, ComponentType<any>>;
+
+function createIconComponent(IconComponent: ComponentType<any>, displayName: string): Icon {
   const Wrapped = forwardRef<SVGSVGElement, IconProps>(function R0Icon(props, ref) {
     const context = useContext(IconContext);
     const {
@@ -68,6 +55,7 @@ function createIconComponent(
       title,
       ...iconProps
     } = { ...context, ...props };
+
     const nextStyle = {
       ...style,
       "--icon-stroke": OPTICAL_STROKE[optical ?? opticalForSize(size)],
@@ -76,368 +64,261 @@ function createIconComponent(
         : null),
     } as CSSProperties;
 
-    return createElement(filled && FilledComponent ? FilledComponent : IconComponent, {
+    return createElement(IconComponent, {
       ...iconProps,
       "data-r0-icon": "",
+      ...(filled ? { "data-r0-filled": "" } : {}),
       ref,
       size,
       style: nextStyle,
       title,
     });
   });
+
   Wrapped.displayName = displayName;
   return Wrapped as Icon;
 }
 
-export const ActivityIcon = createIconComponent(Nucleo.IconChartActivityOutline18, "ActivityIcon");
-export const ArchiveIcon = createIconComponent(Nucleo.IconArchiveOutline18, "ArchiveIcon");
+export const ActivityIcon = createIconComponent(LucideIcons["Activity"], "ActivityIcon");
+export const ArchiveIcon = createIconComponent(LucideIcons["Archive"], "ArchiveIcon");
 export const ArrowClockwiseIcon = createIconComponent(
-  Nucleo.IconArrowRotateClockwiseOutline18,
+  LucideIcons["RotateCw"],
   "ArrowClockwiseIcon",
 );
 export const ArrowCornerDownLeftIcon = createIconComponent(
-  Nucleo.IconArrowCornerBottomLeftOutline18,
+  LucideIcons["CornerDownLeft"],
   "ArrowCornerDownLeftIcon",
 );
 export const ArrowCounterClockwiseIcon = createIconComponent(
-  Nucleo.IconArrowRotateAnticlockwiseOutline18,
+  LucideIcons["RotateCcw"],
   "ArrowCounterClockwiseIcon",
 );
-export const ArrowDownIcon = createIconComponent(Nucleo.IconArrowDownOutline18, "ArrowDownIcon");
+export const ArrowDownIcon = createIconComponent(LucideIcons["ArrowDown"], "ArrowDownIcon");
 export const ArrowDownToLineIcon = createIconComponent(
-  Nucleo.IconArrowBoldDownToLineOutline18,
+  LucideIcons["ArrowDownToLine"],
   "ArrowDownToLineIcon",
 );
-export const ArrowLeftIcon = createIconComponent(Nucleo.IconArrowLeftOutline18, "ArrowLeftIcon");
-export const ArrowRightIcon = createIconComponent(Nucleo.IconArrowRightOutline18, "ArrowRightIcon");
-export const ArrowUpIcon = createIconComponent(Nucleo.IconArrowUpOutline18, "ArrowUpIcon");
+export const ArrowLeftIcon = createIconComponent(LucideIcons["ArrowLeft"], "ArrowLeftIcon");
+export const ArrowRightIcon = createIconComponent(LucideIcons["ArrowRight"], "ArrowRightIcon");
+export const ArrowUpIcon = createIconComponent(LucideIcons["ArrowUp"], "ArrowUpIcon");
 export const ArrowsClockwiseIcon = createIconComponent(
-  Nucleo.IconArrowsRotateCenterOutline18,
+  LucideIcons["RefreshCw"],
   "ArrowsClockwiseIcon",
 );
-export const ArrowsInIcon = createIconComponent(
-  Nucleo.IconArrowsReduceDiagonalOutline18,
-  "ArrowsInIcon",
-);
+export const ArrowsInIcon = createIconComponent(LucideIcons["Minimize2"], "ArrowsInIcon");
 export const ArrowsLeftRightIcon = createIconComponent(
-  Nucleo.IconArrowsOppositeDirectionXOutline18,
+  LucideIcons["ArrowLeftRight"],
   "ArrowsLeftRightIcon",
 );
-export const ArrowsOutIcon = createIconComponent(
-  Nucleo.IconArrowsExpandDiagonalOutline18,
-  "ArrowsOutIcon",
-);
-export const BellIcon = createIconComponent(Nucleo.IconBellOutline18, "BellIcon");
-export const BoltIcon = createIconComponent(Nucleo.IconBoltLightningOutline18, "BoltIcon");
-export const BoltSlashIcon = createIconComponent(
-  Nucleo.IconBoltLightningSlashOutline18,
-  "BoltSlashIcon",
-);
-export const BookOpenIcon = createIconComponent(Nucleo.IconBookOpenOutline18, "BookOpenIcon");
-export const BracketsCurlyIcon = createIconComponent(
-  Nucleo.IconBracketsCurlyOutline18,
-  "BracketsCurlyIcon",
-);
-export const BrainIcon = createIconComponent(Nucleo.IconBrainOutline18, "BrainIcon");
-export const BroadcastIcon = createIconComponent(Nucleo.IconRadioOutline18, "BroadcastIcon");
-export const BugIcon = createIconComponent(
-  Nucleo.IconBugOutline18,
-  "BugIcon",
-  NucleoFill.IconBugFill18,
-);
-export const CalendarIcon = createIconComponent(Nucleo.IconCalendarOutline18, "CalendarIcon");
+export const ArrowsOutIcon = createIconComponent(LucideIcons["Maximize2"], "ArrowsOutIcon");
+export const BellIcon = createIconComponent(LucideIcons["Bell"], "BellIcon");
+export const BoltIcon = createIconComponent(LucideIcons["Bolt"], "BoltIcon");
+export const BoltSlashIcon = createIconComponent(LucideIcons["ZapOff"], "BoltSlashIcon");
+export const BookOpenIcon = createIconComponent(LucideIcons["BookOpen"], "BookOpenIcon");
+export const BracketsCurlyIcon = createIconComponent(LucideIcons["Braces"], "BracketsCurlyIcon");
+export const BrainIcon = createIconComponent(LucideIcons["Brain"], "BrainIcon");
+export const BroadcastIcon = createIconComponent(LucideIcons["Radio"], "BroadcastIcon");
+export const BugIcon = createIconComponent(LucideIcons["Bug"], "BugIcon");
+export const CalendarIcon = createIconComponent(LucideIcons["Calendar"], "CalendarIcon");
 export const CaseSensitiveIcon = createIconComponent(
-  Nucleo.IconTextAOutline18,
+  LucideIcons["CaseSensitive"],
   "CaseSensitiveIcon",
 );
 export const ChatBubbleTextIcon = createIconComponent(
-  Nucleo.IconChatBubbleContentOutline18,
+  LucideIcons["MessageSquareText"],
   "ChatBubbleTextIcon",
 );
-export const CheckCircleIcon = createIconComponent(
-  Nucleo.IconCircleCheckOutline18,
-  "CheckCircleIcon",
-);
-export const CheckIcon = createIconComponent(Nucleo.IconCheckOutline18, "CheckIcon");
+export const CheckCircleIcon = createIconComponent(LucideIcons["CheckCircle"], "CheckCircleIcon");
+export const CheckIcon = createIconComponent(LucideIcons["Check"], "CheckIcon");
 export const ChevronDoubleLeftIcon = createIconComponent(
-  Nucleo.IconDoubleChevronLeftOutline18,
+  LucideIcons["ChevronsLeft"],
   "ChevronDoubleLeftIcon",
 );
 export const ChevronDoubleRightIcon = createIconComponent(
-  Nucleo.IconDoubleChevronRightOutline18,
+  LucideIcons["ChevronsRight"],
   "ChevronDoubleRightIcon",
 );
 export const ChevronDoubleUpIcon = createIconComponent(
-  Nucleo.IconDoubleChevronUpOutline18,
+  LucideIcons["ChevronsUp"],
   "ChevronDoubleUpIcon",
 );
-export const ChevronDownIcon = createIconComponent(
-  Nucleo.IconChevronDownOutline18,
-  "ChevronDownIcon",
-);
+export const ChevronDownIcon = createIconComponent(LucideIcons["ChevronDown"], "ChevronDownIcon");
 export const ChevronExpandYIcon = createIconComponent(
-  Nucleo.IconChevronExpandYOutline18,
+  LucideIcons["ChevronsUpDown"],
   "ChevronExpandYIcon",
 );
-export const ChevronLeftIcon = createIconComponent(
-  Nucleo.IconChevronLeftOutline18,
-  "ChevronLeftIcon",
-);
+export const ChevronLeftIcon = createIconComponent(LucideIcons["ChevronLeft"], "ChevronLeftIcon");
 export const ChevronRightIcon = createIconComponent(
-  Nucleo.IconChevronRightOutline18,
+  LucideIcons["ChevronRight"],
   "ChevronRightIcon",
 );
-export const ChevronUpIcon = createIconComponent(Nucleo.IconChevronUpOutline18, "ChevronUpIcon");
-export const CircleDotIcon = createIconComponent(Nucleo.IconRecordOutline18, "CircleDotIcon");
+export const ChevronUpIcon = createIconComponent(LucideIcons["ChevronUp"], "ChevronUpIcon");
+export const CircleDotIcon = createIconComponent(LucideIcons["CircleDot"], "CircleDotIcon");
 export const CircleDottedIcon = createIconComponent(
-  Nucleo.IconCircleDottedOutline18,
+  LucideIcons["CircleDashed"],
   "CircleDottedIcon",
 );
-export const CirclesIcon = createIconComponent(Nucleo.IconCirclesOutline18, "CirclesIcon");
-export const ClickIcon = createIconComponent(Nucleo.IconTouchClickOutline18, "ClickIcon");
-export const ClipboardIcon = createIconComponent(Nucleo.IconClipboardOutline18, "ClipboardIcon");
-export const BroomIcon = createIconComponent(Nucleo.IconBroomOutline18, "BroomIcon");
+export const CirclesIcon = createIconComponent(LucideIcons["Blend"], "CirclesIcon");
+export const ClickIcon = createIconComponent(LucideIcons["MousePointerClick"], "ClickIcon");
+export const ClipboardIcon = createIconComponent(LucideIcons["Clipboard"], "ClipboardIcon");
+export const BroomIcon = createIconComponent(LucideIcons["Broom"], "BroomIcon");
 export const ClipboardTextIcon = createIconComponent(
-  Nucleo.IconClipboardContentOutline18,
+  LucideIcons["ClipboardList"],
   "ClipboardTextIcon",
 );
-export const ClockIcon = createIconComponent(Nucleo.IconClockOutline18, "ClockIcon");
+export const ClockIcon = createIconComponent(LucideIcons["Clock"], "ClockIcon");
 export const CloudArrowDownIcon = createIconComponent(
-  Nucleo.IconCloudDownloadOutline18,
+  LucideIcons["CloudDownload"],
   "CloudArrowDownIcon",
 );
-export const CloudIcon = createIconComponent(Nucleo.IconCloudOutline18, "CloudIcon");
-export const CloudSlashIcon = createIconComponent(Nucleo.IconCloudSlashOutline18, "CloudSlashIcon");
-export const CloudWarningIcon = createIconComponent(
-  Nucleo.IconCloudBoltOutline18,
-  "CloudWarningIcon",
-);
-export const CodeBlockIcon = createIconComponent(Nucleo.IconSquareCodeOutline18, "CodeBlockIcon");
-export const CodeIcon = createIconComponent(Nucleo.IconCodeOutline18, "CodeIcon");
-export const ColumnsIcon = createIconComponent(Nucleo.IconTableColsOutline18, "ColumnsIcon");
-export const CopyIcon = createIconComponent(Nucleo.IconCopyOutline18, "CopyIcon");
-export const CreditCardIcon = createIconComponent(Nucleo.IconCreditCardOutline18, "CreditCardIcon");
-export const CrosshairIcon = createIconComponent(Nucleo.IconCrosshairsOutline18, "CrosshairIcon");
-export const CubeIcon = createIconComponent(Nucleo.IconCubeOutline18, "CubeIcon");
-export const DatabaseIcon = createIconComponent(
-  Nucleo.IconDatabaseOutline18,
-  "DatabaseIcon",
-  NucleoFill.IconDatabaseFill18,
-);
-export const DotsIcon = createIconComponent(
-  Nucleo.IconDotsOutline18,
-  "DotsIcon",
-  NucleoFill.IconDotsFill18,
-);
-export const DownloadIcon = createIconComponent(Nucleo.IconDownloadOutline18, "DownloadIcon");
-export const ExtensionsIcon = createIconComponent(
-  Nucleo.IconAppStackOutline18,
-  "ExtensionsIcon",
-  NucleoFill.IconAppStackFill18,
-);
-export const EyeIcon = createIconComponent(Nucleo.IconEyeOutline18, "EyeIcon");
-export const EyeSlashIcon = createIconComponent(Nucleo.IconEyeSlashOutline18, "EyeSlashIcon");
-export const FileCodeIcon = createIconComponent(Nucleo.IconFileSettingsOutline18, "FileCodeIcon");
-export const FileIcon = createIconComponent(Nucleo.IconFileOutline18, "FileIcon");
-export const FilePlusIcon = createIconComponent(Nucleo.IconFilePlusOutline18, "FilePlusIcon");
-export const FileTextIcon = createIconComponent(Nucleo.IconFileContentOutline18, "FileTextIcon");
-export const FilesIcon = createIconComponent(
-  Nucleo.IconFiles2Outline18,
-  "FilesIcon",
-  NucleoFill.IconFiles2Fill18,
-);
-export const FilterIcon = createIconComponent(Nucleo.IconFilterOutline18, "FilterIcon");
+export const CloudIcon = createIconComponent(LucideIcons["Cloud"], "CloudIcon");
+export const CloudSlashIcon = createIconComponent(LucideIcons["CloudOff"], "CloudSlashIcon");
+export const CloudWarningIcon = createIconComponent(LucideIcons["CloudAlert"], "CloudWarningIcon");
+export const CodeBlockIcon = createIconComponent(LucideIcons["SquareCode"], "CodeBlockIcon");
+export const CodeIcon = createIconComponent(LucideIcons["Code"], "CodeIcon");
+export const ColumnsIcon = createIconComponent(LucideIcons["Columns"], "ColumnsIcon");
+export const CopyIcon = createIconComponent(LucideIcons["Copy"], "CopyIcon");
+export const CreditCardIcon = createIconComponent(LucideIcons["CreditCard"], "CreditCardIcon");
+export const CrosshairIcon = createIconComponent(LucideIcons["Crosshair"], "CrosshairIcon");
+export const CubeIcon = createIconComponent(LucideIcons["Box"], "CubeIcon");
+export const DatabaseIcon = createIconComponent(LucideIcons["Database"], "DatabaseIcon");
+export const DotsIcon = createIconComponent(LucideIcons["Ellipsis"], "DotsIcon");
+export const DownloadIcon = createIconComponent(LucideIcons["Download"], "DownloadIcon");
+export const ExtensionsIcon = createIconComponent(LucideIcons["Blocks"], "ExtensionsIcon");
+export const EyeIcon = createIconComponent(LucideIcons["Eye"], "EyeIcon");
+export const EyeSlashIcon = createIconComponent(LucideIcons["EyeOff"], "EyeSlashIcon");
+export const FileCodeIcon = createIconComponent(LucideIcons["FileCode"], "FileCodeIcon");
+export const FileIcon = createIconComponent(LucideIcons["File"], "FileIcon");
+export const FilePlusIcon = createIconComponent(LucideIcons["FilePlus"], "FilePlusIcon");
+export const FileTextIcon = createIconComponent(LucideIcons["FileText"], "FileTextIcon");
+export const FilesIcon = createIconComponent(LucideIcons["Files"], "FilesIcon");
+export const FilterIcon = createIconComponent(LucideIcons["Filter"], "FilterIcon");
 export const FlipHorizontalIcon = createIconComponent(
-  Nucleo.IconFlipHorizontalOutline18,
+  LucideIcons["FlipHorizontal"],
   "FlipHorizontalIcon",
 );
 export const FlipVerticalIcon = createIconComponent(
-  Nucleo.IconFlipVerticalOutline18,
+  LucideIcons["FlipVertical"],
   "FlipVerticalIcon",
 );
-export const FolderIcon = createIconComponent(Nucleo.IconFolderOutline18, "FolderIcon");
-export const FolderOpenIcon = createIconComponent(Nucleo.IconFolderOpenOutline18, "FolderOpenIcon");
-export const FolderPlusIcon = createIconComponent(Nucleo.IconFolderPlusOutline18, "FolderPlusIcon");
-export const FolderStarIcon = createIconComponent(Nucleo.IconFolderStarOutline18, "FolderStarIcon");
-export const FunctionIcon = createIconComponent(Nucleo.IconMathFunctionOutline18, "FunctionIcon");
-export const GearIcon = createIconComponent(Nucleo.IconGearOutline18, "GearIcon");
-export const GitBranchIcon = createIconComponent(
-  Nucleo.IconCodeBranchOutline18,
-  "GitBranchIcon",
-  NucleoFill.IconCodeBranchFill18,
-);
-export const GitCommitIcon = createIconComponent(Nucleo.IconCodeCommitOutline18, "GitCommitIcon");
-export const GitDiffIcon = createIconComponent(Nucleo.IconCodeCompareOutline18, "GitDiffIcon");
-export const GitMergeIcon = createIconComponent(Nucleo.IconCodeMergeOutline18, "GitMergeIcon");
+export const FolderIcon = createIconComponent(LucideIcons["Folder"], "FolderIcon");
+export const FolderOpenIcon = createIconComponent(LucideIcons["FolderOpen"], "FolderOpenIcon");
+export const FolderPlusIcon = createIconComponent(LucideIcons["FolderPlus"], "FolderPlusIcon");
+export const FolderStarIcon = createIconComponent(LucideIcons["FolderCog"], "FolderStarIcon");
+export const FunctionIcon = createIconComponent(LucideIcons["Sigma"], "FunctionIcon");
+export const GearIcon = createIconComponent(LucideIcons["Cog"], "GearIcon");
+export const GitBranchIcon = createIconComponent(LucideIcons["GitBranch"], "GitBranchIcon");
+export const GitCommitIcon = createIconComponent(LucideIcons["GitCommit"], "GitCommitIcon");
+export const GitDiffIcon = createIconComponent(LucideIcons["GitCompare"], "GitDiffIcon");
+export const GitMergeIcon = createIconComponent(LucideIcons["GitMerge"], "GitMergeIcon");
 export const GitPullRequestIcon = createIconComponent(
-  Nucleo.IconCodePullRequestOutline18,
+  LucideIcons["GitPullRequest"],
   "GitPullRequestIcon",
 );
-export const GlobeIcon = createIconComponent(Nucleo.IconGlobeOutline18, "GlobeIcon");
-export const GridIcon = createIconComponent(
-  Nucleo.IconSquareGrid2Outline18,
-  "GridIcon",
-  NucleoFill.IconSquareGrid2Fill18,
-);
-export const HardDrivesIcon = createIconComponent(Nucleo.IconHardDriveOutline18, "HardDrivesIcon");
-export const HashIcon = createIconComponent(Nucleo.IconHashtagOutline18, "HashIcon");
-export const HistoryIcon = createIconComponent(
-  Nucleo.IconClockRotateAnticlockwiseOutline18,
-  "HistoryIcon",
-);
-export const HouseIcon = createIconComponent(Nucleo.IconHouseOutline18, "HouseIcon");
-export const ImageIcon = createIconComponent(Nucleo.IconImageOutline18, "ImageIcon");
-export const InboxIcon = createIconComponent(Nucleo.IconInboxOutline18, "InboxIcon");
-export const InfoIcon = createIconComponent(Nucleo.IconCircleInfoOutline18, "InfoIcon");
-export const KeyIcon = createIconComponent(Nucleo.IconKeyOutline18, "KeyIcon");
-export const KeyboardIcon = createIconComponent(Nucleo.IconKeyboardOutline18, "KeyboardIcon");
-export const LaptopIcon = createIconComponent(Nucleo.IconLaptopOutline18, "LaptopIcon");
-export const LightbulbIcon = createIconComponent(Nucleo.IconLightbulbOutline18, "LightbulbIcon");
-export const LinkIcon = createIconComponent(Nucleo.IconLinkOutline18, "LinkIcon");
-export const ListChecksIcon = createIconComponent(Nucleo.IconCheckListOutline18, "ListChecksIcon");
-export const ListIcon = createIconComponent(Nucleo.IconUnorderedListOutline18, "ListIcon");
-export const LockIcon = createIconComponent(Nucleo.IconLockOutline18, "LockIcon");
-export const LockKeyIcon = createIconComponent(Nucleo.IconLockKeyOutline18, "LockKeyIcon");
-export const LockOpenIcon = createIconComponent(Nucleo.IconLockOpenOutline18, "LockOpenIcon");
-export const MagicWandIcon = createIconComponent(Nucleo.IconMagicWandOutline18, "MagicWandIcon");
-export const MegaphoneIcon = createIconComponent(Nucleo.IconMegaphoneOutline18, "MegaphoneIcon");
-export const MicrophoneIcon = createIconComponent(Nucleo.IconMicrophoneOutline18, "MicrophoneIcon");
-export const MinusCircleIcon = createIconComponent(
-  Nucleo.IconCircleMinusOutline18,
-  "MinusCircleIcon",
-);
-export const MinusIcon = createIconComponent(Nucleo.IconMinusOutline18, "MinusIcon");
-export const MonitorIcon = createIconComponent(Nucleo.IconMonitorOutline18, "MonitorIcon");
-export const MoonIcon = createIconComponent(Nucleo.IconMoonOutline18, "MoonIcon");
-export const NodesIcon = createIconComponent(Nucleo.IconNodesOutline18, "NodesIcon");
+export const GlobeIcon = createIconComponent(LucideIcons["Globe"], "GlobeIcon");
+export const GridIcon = createIconComponent(LucideIcons["Grid"], "GridIcon");
+export const HardDrivesIcon = createIconComponent(LucideIcons["HardDrive"], "HardDrivesIcon");
+export const HashIcon = createIconComponent(LucideIcons["Hash"], "HashIcon");
+export const HistoryIcon = createIconComponent(LucideIcons["History"], "HistoryIcon");
+export const HouseIcon = createIconComponent(LucideIcons["House"], "HouseIcon");
+export const ImageIcon = createIconComponent(LucideIcons["Image"], "ImageIcon");
+export const InboxIcon = createIconComponent(LucideIcons["Inbox"], "InboxIcon");
+export const InfoIcon = createIconComponent(LucideIcons["Info"], "InfoIcon");
+export const KeyIcon = createIconComponent(LucideIcons["Key"], "KeyIcon");
+export const KeyboardIcon = createIconComponent(LucideIcons["Keyboard"], "KeyboardIcon");
+export const LaptopIcon = createIconComponent(LucideIcons["Laptop"], "LaptopIcon");
+export const LightbulbIcon = createIconComponent(LucideIcons["Lightbulb"], "LightbulbIcon");
+export const LinkIcon = createIconComponent(LucideIcons["Link"], "LinkIcon");
+export const ListChecksIcon = createIconComponent(LucideIcons["ListChecks"], "ListChecksIcon");
+export const ListIcon = createIconComponent(LucideIcons["List"], "ListIcon");
+export const LockIcon = createIconComponent(LucideIcons["Lock"], "LockIcon");
+export const LockKeyIcon = createIconComponent(LucideIcons["LockKeyhole"], "LockKeyIcon");
+export const LockOpenIcon = createIconComponent(LucideIcons["LockOpen"], "LockOpenIcon");
+export const MagicWandIcon = createIconComponent(LucideIcons["WandSparkles"], "MagicWandIcon");
+export const MegaphoneIcon = createIconComponent(LucideIcons["Megaphone"], "MegaphoneIcon");
+export const MicrophoneIcon = createIconComponent(LucideIcons["Mic"], "MicrophoneIcon");
+export const MinusCircleIcon = createIconComponent(LucideIcons["MinusCircle"], "MinusCircleIcon");
+export const MinusIcon = createIconComponent(LucideIcons["Minus"], "MinusIcon");
+export const MonitorIcon = createIconComponent(LucideIcons["Monitor"], "MonitorIcon");
+export const MoonIcon = createIconComponent(LucideIcons["Moon"], "MoonIcon");
+export const NodesIcon = createIconComponent(LucideIcons["Workflow"], "NodesIcon");
 export const OpenExternalIcon = createIconComponent(
-  Nucleo.IconOpenExternalOutline18,
+  LucideIcons["ExternalLink"],
   "OpenExternalIcon",
 );
-export const PackageIcon = createIconComponent(
-  Nucleo.IconBoxOutline18,
-  "PackageIcon",
-  NucleoFill.IconBoxFill18,
-);
-export const PaintBrushIcon = createIconComponent(Nucleo.IconBrushOutline18, "PaintBrushIcon");
-export const PaletteIcon = createIconComponent(Nucleo.IconPaletteOutline18, "PaletteIcon");
-export const PaperPlaneIcon = createIconComponent(
-  Nucleo.IconPaperPlane2Outline18,
-  "PaperPlaneIcon",
-);
-export const PauseIcon = createIconComponent(
-  Nucleo.IconCircleHalfDashedPauseOutline18,
-  "PauseIcon",
-);
-export const PenIcon = createIconComponent(Nucleo.IconPen3Outline18, "PenIcon");
-export const PencilIcon = createIconComponent(Nucleo.IconPencilOutline18, "PencilIcon");
-export const PencilLineIcon = createIconComponent(
-  Nucleo.IconPenWriting4Outline18,
-  "PencilLineIcon",
-);
-export const PinIcon = createIconComponent(
-  Nucleo.IconPinTackOutline18,
-  "PinIcon",
-  NucleoFill.IconPinTackFill18,
-);
-export const PinSlashIcon = createIconComponent(Nucleo.IconPinSlashOutline18, "PinSlashIcon");
-export const PlayCircleIcon = createIconComponent(Nucleo.IconCirclePlayOutline18, "PlayCircleIcon");
-export const PlayIcon = createIconComponent(Nucleo.IconMediaPlayOutline18, "PlayIcon");
-export const PlugsConnectedIcon = createIconComponent(
-  Nucleo.IconPlug2Outline18,
-  "PlugsConnectedIcon",
-);
-export const PlusCircleIcon = createIconComponent(Nucleo.IconCirclePlusOutline18, "PlusCircleIcon");
-export const PlusIcon = createIconComponent(Nucleo.IconPlusOutline18, "PlusIcon");
-export const PuzzlePieceIcon = createIconComponent(
-  Nucleo.IconPuzzlePieceOutline18,
-  "PuzzlePieceIcon",
-);
-export const QuestionIcon = createIconComponent(Nucleo.IconCircleQuestionOutline18, "QuestionIcon");
-export const RemoteIcon = createIconComponent(Nucleo.IconComputerOutline18, "RemoteIcon");
-export const RocketIcon = createIconComponent(Nucleo.IconRocketOutline18, "RocketIcon");
-export const RowsIcon = createIconComponent(Nucleo.IconTableRowsOutline18, "RowsIcon");
-export const SaveIcon = createIconComponent(Nucleo.IconFloppyDiskOutline18, "SaveIcon");
-export const ScissorsIcon = createIconComponent(Nucleo.IconScissorsOutline18, "ScissorsIcon");
-export const SearchIcon = createIconComponent(
-  Nucleo.IconMagnifierOutline18,
-  "SearchIcon",
-  NucleoFill.IconMagnifierFill18,
-);
-export const SettingsIcon = createIconComponent(Nucleo.IconGear2Outline18, "SettingsIcon");
-export const ShieldCheckIcon = createIconComponent(
-  Nucleo.IconShieldCheckOutline18,
-  "ShieldCheckIcon",
-);
-export const ShieldIcon = createIconComponent(Nucleo.IconShieldOutline18, "ShieldIcon");
-export const SidebarIcon = createIconComponent(Nucleo.IconSidebarLeftShowOutline18, "SidebarIcon");
-export const SidebarRightIcon = createIconComponent(
-  Nucleo.IconSidebarRightOutline18,
-  "SidebarRightIcon",
-);
-export const SignInIcon = createIconComponent(Nucleo.IconArrowDoorInOutline18, "SignInIcon");
-export const SignOutIcon = createIconComponent(Nucleo.IconArrowDoorOut3Outline18, "SignOutIcon");
-export const SitemapIcon = createIconComponent(Nucleo.IconSitemapOutline18, "SitemapIcon");
-export const SlidersIcon = createIconComponent(Nucleo.IconSlidersOutline18, "SlidersIcon");
-export const SparkleIcon = createIconComponent(
-  Nucleo.IconSparkleOutline18,
-  "SparkleIcon",
-  NucleoFill.IconSparkleFill18,
-);
+export const PackageIcon = createIconComponent(LucideIcons["Package"], "PackageIcon");
+export const PaintBrushIcon = createIconComponent(LucideIcons["Paintbrush"], "PaintBrushIcon");
+export const PaletteIcon = createIconComponent(LucideIcons["Palette"], "PaletteIcon");
+export const PaperPlaneIcon = createIconComponent(LucideIcons["Send"], "PaperPlaneIcon");
+export const PauseIcon = createIconComponent(LucideIcons["Pause"], "PauseIcon");
+export const PenIcon = createIconComponent(LucideIcons["Pen"], "PenIcon");
+export const PencilIcon = createIconComponent(LucideIcons["Pencil"], "PencilIcon");
+export const PencilLineIcon = createIconComponent(LucideIcons["PencilLine"], "PencilLineIcon");
+export const PinIcon = createIconComponent(LucideIcons["Pin"], "PinIcon");
+export const PinSlashIcon = createIconComponent(LucideIcons["PinOff"], "PinSlashIcon");
+export const PlayCircleIcon = createIconComponent(LucideIcons["PlayCircle"], "PlayCircleIcon");
+export const PlayIcon = createIconComponent(LucideIcons["Play"], "PlayIcon");
+export const PlugsConnectedIcon = createIconComponent(LucideIcons["PlugZap"], "PlugsConnectedIcon");
+export const PlusCircleIcon = createIconComponent(LucideIcons["PlusCircle"], "PlusCircleIcon");
+export const PlusIcon = createIconComponent(LucideIcons["Plus"], "PlusIcon");
+export const PuzzlePieceIcon = createIconComponent(LucideIcons["Puzzle"], "PuzzlePieceIcon");
+export const QuestionIcon = createIconComponent(LucideIcons["CircleHelp"], "QuestionIcon");
+export const RemoteIcon = createIconComponent(LucideIcons["MonitorCog"], "RemoteIcon");
+export const RocketIcon = createIconComponent(LucideIcons["Rocket"], "RocketIcon");
+export const RowsIcon = createIconComponent(LucideIcons["Rows"], "RowsIcon");
+export const SaveIcon = createIconComponent(LucideIcons["Save"], "SaveIcon");
+export const ScissorsIcon = createIconComponent(LucideIcons["Scissors"], "ScissorsIcon");
+export const SearchIcon = createIconComponent(LucideIcons["Search"], "SearchIcon");
+export const SettingsIcon = createIconComponent(LucideIcons["Settings"], "SettingsIcon");
+export const ShieldCheckIcon = createIconComponent(LucideIcons["ShieldCheck"], "ShieldCheckIcon");
+export const ShieldIcon = createIconComponent(LucideIcons["Shield"], "ShieldIcon");
+export const SidebarIcon = createIconComponent(LucideIcons["Sidebar"], "SidebarIcon");
+export const SidebarRightIcon = createIconComponent(LucideIcons["PanelRight"], "SidebarRightIcon");
+export const SignInIcon = createIconComponent(LucideIcons["LogIn"], "SignInIcon");
+export const SignOutIcon = createIconComponent(LucideIcons["LogOut"], "SignOutIcon");
+export const SitemapIcon = createIconComponent(LucideIcons["Network"], "SitemapIcon");
+export const SlidersIcon = createIconComponent(LucideIcons["Sliders"], "SlidersIcon");
+export const SparkleIcon = createIconComponent(LucideIcons["Sparkle"], "SparkleIcon");
 export const SquareArrowUpIcon = createIconComponent(
-  Nucleo.IconSquareArrowUpOutline18,
+  LucideIcons["SquareArrowUp"],
   "SquareArrowUpIcon",
 );
-export const SquareIcon = createIconComponent(Nucleo.IconShapeSquareOutline18, "SquareIcon");
-export const StackIcon = createIconComponent(
-  Nucleo.IconStackOutline18,
-  "StackIcon",
-  NucleoFill.IconStackFill18,
-);
-export const StopIcon = createIconComponent(Nucleo.IconCircleHalfDashedStopOutline18, "StopIcon");
-export const SunIcon = createIconComponent(Nucleo.IconSunOutline18, "SunIcon");
-export const TableIcon = createIconComponent(Nucleo.IconTableOutline18, "TableIcon");
-export const TagIcon = createIconComponent(Nucleo.IconTagOutline18, "TagIcon");
-export const TerminalIcon = createIconComponent(Nucleo.IconTerminalOutline18, "TerminalIcon");
+export const SquareIcon = createIconComponent(LucideIcons["Square"], "SquareIcon");
+export const StackIcon = createIconComponent(LucideIcons["Layers"], "StackIcon");
+export const StopIcon = createIconComponent(LucideIcons["CircleStop"], "StopIcon");
+export const SunIcon = createIconComponent(LucideIcons["Sun"], "SunIcon");
+export const TableIcon = createIconComponent(LucideIcons["Table"], "TableIcon");
+export const TagIcon = createIconComponent(LucideIcons["Tag"], "TagIcon");
+export const TerminalIcon = createIconComponent(LucideIcons["Terminal"], "TerminalIcon");
 export const TerminalWindowIcon = createIconComponent(
-  Nucleo.IconSquareTerminalOutline18,
+  LucideIcons["SquareTerminal"],
   "TerminalWindowIcon",
 );
 export const TextAlignJustifyIcon = createIconComponent(
-  Nucleo.IconTextAlignJustifyOutline18,
+  LucideIcons["TextAlignJustify"],
   "TextAlignJustifyIcon",
 );
-export const TextAlignLeftIcon = createIconComponent(
-  Nucleo.IconTextAlignLeftOutline18,
-  "TextAlignLeftIcon",
-);
-export const SelectAllIcon = createIconComponent(Nucleo.IconSelectOutline18, "SelectAllIcon");
-export const TextIcon = createIconComponent(Nucleo.IconTextOutline18, "TextIcon");
+export const TextAlignLeftIcon = createIconComponent(LucideIcons["AlignLeft"], "TextAlignLeftIcon");
+export const SelectAllIcon = createIconComponent(LucideIcons["TextSelect"], "SelectAllIcon");
+export const TextIcon = createIconComponent(LucideIcons["Text"], "TextIcon");
 export const TextIndentIcon = createIconComponent(
-  Nucleo.IconIndentIncreaseOutline18,
+  LucideIcons["ListIndentIncrease"],
   "TextIndentIcon",
 );
-export const TranslateIcon = createIconComponent(Nucleo.IconLanguageOutline18, "TranslateIcon");
-export const TrashIcon = createIconComponent(Nucleo.IconTrashOutline18, "TrashIcon");
-export const UploadIcon = createIconComponent(Nucleo.IconUploadOutline18, "UploadIcon");
-export const UserCircleIcon = createIconComponent(Nucleo.IconCircleUserOutline18, "UserCircleIcon");
-export const UserIcon = createIconComponent(Nucleo.IconUserOutline18, "UserIcon");
-export const UsersIcon = createIconComponent(Nucleo.IconUsersOutline18, "UsersIcon");
+export const TranslateIcon = createIconComponent(LucideIcons["Languages"], "TranslateIcon");
+export const TrashIcon = createIconComponent(LucideIcons["Trash"], "TrashIcon");
+export const UploadIcon = createIconComponent(LucideIcons["Upload"], "UploadIcon");
+export const UserCircleIcon = createIconComponent(LucideIcons["UserCircle"], "UserCircleIcon");
+export const UserIcon = createIconComponent(LucideIcons["User"], "UserIcon");
+export const UsersIcon = createIconComponent(LucideIcons["Users"], "UsersIcon");
 export const WarningCircleIcon = createIconComponent(
-  Nucleo.IconCircleWarningOutline18,
+  LucideIcons["CircleAlert"],
   "WarningCircleIcon",
 );
-export const WarningIcon = createIconComponent(
-  Nucleo.IconTriangleWarningOutline18,
-  "WarningIcon",
-  NucleoFill.IconTriangleWarningFill18,
-);
-export const WindowExpandIcon = createIconComponent(
-  Nucleo.IconOpenInNewWindowOutline18,
-  "WindowExpandIcon",
-);
-export const WrenchIcon = createIconComponent(Nucleo.IconWrenchOutline18, "WrenchIcon");
-export const XCircleIcon = createIconComponent(Nucleo.IconCircleXmarkOutline18, "XCircleIcon");
-export const XIcon = createIconComponent(Nucleo.IconXmarkOutline18, "XIcon");
-export const ZoomInIcon = createIconComponent(Nucleo.IconMagnifierPlusOutline18, "ZoomInIcon");
-export const ZoomOutIcon = createIconComponent(Nucleo.IconMagnifierMinusOutline18, "ZoomOutIcon");
+export const WarningIcon = createIconComponent(LucideIcons["TriangleAlert"], "WarningIcon");
+export const WindowExpandIcon = createIconComponent(LucideIcons["AppWindow"], "WindowExpandIcon");
+export const WrenchIcon = createIconComponent(LucideIcons["Wrench"], "WrenchIcon");
+export const XCircleIcon = createIconComponent(LucideIcons["XCircle"], "XCircleIcon");
+export const XIcon = createIconComponent(LucideIcons["X"], "XIcon");
+export const ZoomInIcon = createIconComponent(LucideIcons["ZoomIn"], "ZoomInIcon");
+export const ZoomOutIcon = createIconComponent(LucideIcons["ZoomOut"], "ZoomOutIcon");

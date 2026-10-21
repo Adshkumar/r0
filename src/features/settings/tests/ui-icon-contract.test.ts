@@ -23,7 +23,9 @@ const sourceFiles = collectSourceFiles(srcRoot).filter(
 );
 
 const iconExports = [
-  ...iconsSource.matchAll(/export const (\w+) = createIconComponent\(\s*Nucleo\.(\w+),/gs),
+  ...iconsSource.matchAll(
+    /export const (\w+) = createIconComponent\(LucideIcons\["([^"]+)"\],\s*"([^"]+)"\);/g,
+  ),
 ].map(([, name, glyph]) => ({ name, glyph }));
 
 describe("ui icon contract", () => {
