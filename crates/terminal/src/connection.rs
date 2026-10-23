@@ -174,21 +174,21 @@ impl TerminalConnection {
    pub fn warm_user_environment() {
    }
 
-   fn build_command(config: &TerminalConfig) -> Result<CommandBuilder> {
-      let default_shell = || {
-         if cfg!(target_os = "windows") {
-            "cmd.exe".to_string()
-         } else {
-            std::env::var("SHELL").unwrap_or_else(|_| {
-               ["/bin/zsh", "/bin/bash"]
-                  .into_iter()
-                  .find(|shell| crate::shell::shell_path_exists(shell))
-                  .unwrap_or("/bin/sh")
-                  .to_string()
-            })
-         }
-      };
+   fn default_shell() -> String {
+      if cfg!(target_os = "windows") {
+         "powershell.exe".to_string()
+      } else {
+         std::env::var("SHELL").unwrap_or_else(|_| {
+            ["/bin/zsh", "/bin/bash"]
+               .into_iter()
+               .find(|shell| crate::shell::shell_path_exists(shell))
+               .unwrap_or("/bin/sh")
+               .to_string()
+         })
+      }
+   }
 
+   fn build_command(config: &TerminalConfig) -> Result<CommandBuilder> {
       let selected_shell_id = config.shell.as_deref();
       let shell_integration_requested = config.command.is_none()
          && config.shell_integration.unwrap_or(true)
@@ -201,7 +201,7 @@ impl TerminalConnection {
             }
             (builder, None)
          } else {
-            let default_shell = default_shell();
+            let default_shell = Self::default_shell();
             let shell_path = Self::resolve_shell_path(selected_shell_id, &default_shell);
             let mut builder = CommandBuilder::new(&shell_path);
             Self::configure_shell_startup(
@@ -893,6 +893,12 @@ mod tests {
          TerminalConnection::windows_builtin_shell_executable("unknown"),
          None
       );
+   }
+
+   #[cfg(target_os = "windows")]
+   #[test]
+   fn windows_terminal_defaults_to_powershell() {
+      assert_eq!(TerminalConnection::default_shell(), "powershell.exe");
    }
 
    #[test]

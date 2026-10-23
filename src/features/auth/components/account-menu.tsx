@@ -92,7 +92,7 @@ export const AccountMenu = memo(function AccountMenu() {
   };
 
   const handleOpenChangelog = async () => {
-    await openExternalUrl(services.githubReleasesBaseUrl);
+    await openExternalUrl(services.releasesUrl);
   };
 
   const handleOpenCommunity = async () => {

@@ -59,7 +59,7 @@ export function useMenuEventsWrapper() {
     },
     onChangelog: async () => {
       const { openUrl } = await import("@tauri-apps/plugin-opener");
-      await openUrl("https://github.com/Adshkumar/r0/releases");
+      await openUrl(getServiceUrls().releasesUrl);
     },
     onWhatsNew: runCommand("help.showWhatsNew"),
     onReportBug: async () => {

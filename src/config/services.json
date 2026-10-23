@@ -1,8 +1,9 @@
 {
   "websiteBaseUrl": "https://adshkumar.is-a.dev",
   "apiBaseUrl": "https://adshkumar.is-a.dev",
-  "docsUrl": "https://adshkumar.is-a.dev/docs",
-  "telemetryDocsUrl": "https://adshkumar.is-a.dev/docs/telemetry",
+  "docsUrl": "https://r0-ide.vercel.app/docs",
+  "telemetryDocsUrl": "https://r0-ide.vercel.app/docs/telemetry",
+  "releasesUrl": "https://r0-ide.vercel.app/releases",
   "pricingUrl": "https://adshkumar.is-a.dev/pricing",
   "dashboardUrl": "https://adshkumar.is-a.dev/dashboard",
   "dashboardBillingUrl": "https://adshkumar.is-a.dev/dashboard/settings/billing",

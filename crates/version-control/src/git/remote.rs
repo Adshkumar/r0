@@ -76,6 +76,16 @@ pub(crate) fn execute_remote_git_command(
 }
 
 fn _git_push(repo_path: String, branch: Option<String>, remote: String) -> Result<()> {
+   if branch.is_none()
+      && let Some(branch) = current_branch_without_upstream(&repo_path)?
+   {
+      return execute_remote_git_command(
+         &repo_path,
+         &["push", "--set-upstream", &remote, &branch],
+         "push",
+      );
+   }
+
    let mut args = vec!["push", &remote];
    let branch_str;
    if let Some(b) = branch {
@@ -84,6 +94,25 @@ fn _git_push(repo_path: String, branch: Option<String>, remote: String) -> Resul
    }
 
    execute_remote_git_command(&repo_path, &args, "push")
+}
+
+fn current_branch_without_upstream(repo_path: &str) -> Result<Option<String>> {
+   let host = RepositoryHost::detect(repo_path);
+   let output = remote_git_command(&host)
+      .args(["status", "--porcelain=v2", "--branch"])
+      .run("status")?;
+   let output = String::from_utf8_lossy(&output.stdout);
+   let branch = output.lines().find_map(|line| {
+      line
+         .strip_prefix("# branch.head ")
+         .filter(|name| *name != "(detached)")
+         .map(str::to_string)
+   });
+   let has_upstream = output
+      .lines()
+      .any(|line| line.starts_with("# branch.upstream "));
+
+   Ok(if has_upstream { None } else { branch })
 }
 
 pub fn git_pull(repo_path: String, branch: Option<String>, remote: String) -> Result<(), String> {
@@ -181,6 +210,63 @@ fn _git_remove_remote(repo_path: String, name: String) -> Result<()> {
 #[cfg(test)]
 mod tests {
    use super::*;
+   use git2::{BranchType, Signature};
+   use std::fs;
+
+   #[test]
+   fn first_push_sets_upstream_for_current_branch() {
+      let temp_dir = tempfile::tempdir().unwrap();
+      let repo_path = temp_dir.path().join("repo");
+      let remote_path = temp_dir.path().join("remote.git");
+      fs::create_dir(&repo_path).unwrap();
+      Repository::init_bare(&remote_path).unwrap();
+
+      let repo = Repository::init(&repo_path).unwrap();
+      let signature = Signature::now("Test User", "test@example.com").unwrap();
+      fs::write(repo_path.join("README.md"), "test").unwrap();
+      let mut index = repo.index().unwrap();
+      index.add_path(Path::new("README.md")).unwrap();
+      let tree_id = index.write_tree().unwrap();
+      let tree = repo.find_tree(tree_id).unwrap();
+      let commit_id = repo
+         .commit(
+            Some("refs/heads/main"),
+            &signature,
+            &signature,
+            "Initial commit",
+            &tree,
+            &[],
+         )
+         .unwrap();
+      repo.set_head("refs/heads/main").unwrap();
+      repo
+         .config()
+         .unwrap()
+         .set_str("push.default", "simple")
+         .unwrap();
+      repo
+         .remote("origin", remote_path.to_str().unwrap())
+         .unwrap();
+
+      _git_push(
+         repo_path.to_string_lossy().into_owned(),
+         None,
+         "origin".to_string(),
+      )
+      .unwrap();
+
+      let branch = repo.find_branch("main", BranchType::Local).unwrap();
+      let upstream = branch.upstream().unwrap();
+      assert_eq!(upstream.name().unwrap(), Some("origin/main"));
+      assert_eq!(upstream.get().target(), Some(commit_id));
+
+      _git_push(
+         repo_path.to_string_lossy().into_owned(),
+         None,
+         "origin".to_string(),
+      )
+      .unwrap();
+   }
 
    #[test]
    fn clone_rejects_empty_repository_urls() {

@@ -125,8 +125,8 @@ describe("help and app menu actions", () => {
     await dispatch("request_feature");
     await vi.waitFor(() => expect(io.openUrl).toHaveBeenCalledTimes(3));
 
-    expect(io.openUrl.mock.calls[0][0]).toMatch(/^https?:\/\//);
-    expect(io.openUrl.mock.calls[1][0]).toBe("https://github.com/Adshkumar/r0/releases");
+    expect(io.openUrl.mock.calls[0][0]).toBe("https://r0-ide.vercel.app/docs");
+    expect(io.openUrl.mock.calls[1][0]).toBe("https://r0-ide.vercel.app/releases");
     expect(io.openUrl.mock.calls[2][0]).toBe(
       "https://github.com/Adshkumar/r0/issues/new?template=02-feature.yml",
     );
