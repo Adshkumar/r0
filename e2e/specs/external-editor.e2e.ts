@@ -20,13 +20,16 @@ const TERMINAL = By.css(".xterm");
 
 // A stand-in "editor" that needs nothing installed: it records the file it was
 // asked to open and exits, which is what closes the external editor tab. The
-// external editor terminal starts the system default shell (bash on Linux,
-// cmd.exe on Windows), and both understand `&&`.
+// E2E session selects cmd.exe on Windows; Linux's default shell also understands `&&`.
 const EDITOR_COMMAND = `echo ${MARKER} $FILE > "${OUTPUT_FILE}" && exit`;
 
 describe("external editor", () => {
   useAppSession("external-editor", {
-    settings: { externalEditor: "custom", customEditorCommand: EDITOR_COMMAND },
+    settings: {
+      externalEditor: "custom",
+      customEditorCommand: EDITOR_COMMAND,
+      ...(process.platform === "win32" ? { terminalDefaultShellId: "cmd" } : {}),
+    },
   });
 
   beforeAll(async () => {

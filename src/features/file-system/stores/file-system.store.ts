@@ -1449,7 +1449,7 @@ const createFileSystemStore = (workspaceId: string): StoreApi<ScopedFileSystemSt
               const connectionId = await commands.createTerminal(
                 {
                   workingDirectory: rootFolderPath || null,
-                  shell: null,
+                  shell: settings.terminalDefaultShellId || null,
                   wslDistribution: null,
                   wslWorkingDirectory: null,
                   environment: null,
