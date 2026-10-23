@@ -18,16 +18,52 @@ r0 is a desktop code editor built with Tauri, Rust, and React. It brings everyda
 tools together in one application: edit code, work with Git, use a terminal, inspect databases,
 and collaborate with AI coding agents without leaving your project.
 
-## Features
+## What r0 can do
 
-- **Code editing:** syntax highlighting, language-server support, and Vim keybindings.
-- **AI coding agents:** work with supported AI providers and agent integrations from the editor.
-- **Git:** review and manage source-control changes alongside your code.
-- **Integrated terminal:** run project commands in the editor.
-- **Database tools:** connect to and inspect supported databases.
-- **Project workflows:** browse files, search your workspace, and work across projects.
-- **Extensions and themes:** customize language support and the editor experience.
-- **Collaboration and managed mode:** use collaboration features and enterprise policy controls.
+### Edit and navigate code
+
+- Edit code with syntax highlighting, language-server features, code navigation, and Vim support.
+- Work with multiple files, tabs, split panes, and workspace layouts.
+- Browse project files, use the command palette and Quick Open, search the workspace, and navigate symbols and references.
+- Review diagnostics and outlines, and use keyboard shortcuts to access common editor and workspace actions.
+- Review local file history and work with Markdown, notebooks, and other supported document previews.
+- Extend language and editor support with installable integrations.
+
+### Work with AI
+
+- Chat with supported AI providers and use agent integrations from the editor.
+- Give agents project context and use supported file, terminal, and editor workflows.
+- Use inline assistance and editing tools, and manage agent sessions from the workbench.
+- Schedule continuous agents, use supported cloud or detached agent workflows, and inspect ACP traffic where available.
+- Configure providers, models, permissions, and related behavior in Settings. Availability depends on provider credentials, installed integrations, and platform support.
+
+### Build, run, and debug
+
+- Use integrated terminal sessions and run project actions without leaving the workspace.
+- Connect to supported language servers and debugging adapters.
+- Browse and manage supported database connections and run queries with the database tools.
+- Open browser surfaces and project previews when the relevant feature is available.
+
+### Work with Git and GitHub
+
+- Inspect repository status and diffs, manage branches, and use source-control workflows.
+- Work with GitHub repositories, pull requests, issues, and Actions from the editor.
+
+### Customize and collaborate
+
+- Install extensions and language integrations; customize themes, file icons, keybindings, and editor settings.
+- Use collaboration, sharing, remote-workspace, WSL, and Docker features where configured and supported.
+- Organize work with project switching, workspace persistence, sidebars, panes, and notifications; managed deployments can apply policy controls.
+
+Feature availability can depend on the operating system, installed extensions, external tools, provider configuration, and workspace type. See the [r0 documentation](https://r0-ide.vercel.app/docs) for setup and usage details.
+
+## Performance and resource use
+
+r0 uses Tauri and Rust for its desktop application and native integrations, with a React-based workbench. Startup is phased: the UI can render while settings and other bootstrap work continue, and several secondary surfaces are code-split and loaded when needed. Background work is scheduled rather than continuously performed where possible; for example, extension catalog update checks are delayed after startup, avoid overlapping checks, and pause while the window is hidden.
+
+Resource use varies with the workspace, open documents, language servers, extensions, AI activity, and operating system. Windows Task Manager may list WebView and language-server processes separately from the main `r0` process, so the main process row alone is not the complete application footprint. Development builds also include development-only instrumentation and are not a reliable comparison with production builds.
+
+The project does not promise a fixed RAM or CPU number. For a meaningful comparison, measure the full r0 process group in a production build in at least three states: idle, with a workspace fully loaded, and while performing a representative task. Record the OS, workspace size, enabled extensions, and whether indexing or language-server startup is still in progress.
 
 ## Download and install
 

@@ -219,22 +219,61 @@ export function buildInstalledExtensionsMap(params: {
 let progressListenerInitialized = false;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const INITIAL_UPDATE_CHECK_DELAY_MS = 5_000;
+let extensionUpdateCheckTimer: ReturnType<typeof setTimeout> | null = null;
+let extensionUpdateCheckInFlight = false;
 
 function scheduleExtensionUpdateChecks(
   loadAvailableExtensions: () => Promise<void>,
   checkForUpdates: () => Promise<string[]>,
 ) {
+  const scheduleNextCheck = (delayMs: number) => {
+    if (extensionUpdateCheckTimer !== null) {
+      clearTimeout(extensionUpdateCheckTimer);
+    }
+    extensionUpdateCheckTimer = setTimeout(() => {
+      extensionUpdateCheckTimer = null;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        scheduleNextCheck(UPDATE_CHECK_INTERVAL_MS);
+        return;
+      }
+      void check(true);
+    }, delayMs);
+  };
+
   const check = async (refreshCatalog: boolean) => {
+    if (extensionUpdateCheckInFlight) return;
+
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      scheduleNextCheck(UPDATE_CHECK_INTERVAL_MS);
+      return;
+    }
+
+    extensionUpdateCheckInFlight = true;
     try {
       if (refreshCatalog) await loadAvailableExtensions();
       await checkForUpdates();
     } catch (error) {
       console.debug("Integration update check failed:", error);
+    } finally {
+      extensionUpdateCheckInFlight = false;
+      scheduleNextCheck(UPDATE_CHECK_INTERVAL_MS);
     }
   };
 
-  setTimeout(() => void check(false), INITIAL_UPDATE_CHECK_DELAY_MS);
-  setInterval(() => void check(true), UPDATE_CHECK_INTERVAL_MS);
+  const handleVisibilityChange = () => {
+    if (typeof document === "undefined") return;
+    if (document.visibilityState === "visible") {
+      scheduleNextCheck(0);
+      return;
+    }
+    if (extensionUpdateCheckTimer !== null) {
+      clearTimeout(extensionUpdateCheckTimer);
+      extensionUpdateCheckTimer = null;
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  scheduleNextCheck(INITIAL_UPDATE_CHECK_DELAY_MS);
 }
 
 export async function initializeExtensionStoreBootstrap(params: {

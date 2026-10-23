@@ -134,12 +134,14 @@ export function ContinuousAgentsRuntime() {
   }, []);
 
   useEffect(() => {
+    if (schedule.length === 0) return;
+
     const interval = window.setInterval(
       () => void runNextDueTask(),
       CONTINUOUS_AGENT_CHECK_INTERVAL_MS,
     );
     return () => window.clearInterval(interval);
-  }, [runNextDueTask]);
+  }, [runNextDueTask, schedule.length]);
 
   return null;
 }

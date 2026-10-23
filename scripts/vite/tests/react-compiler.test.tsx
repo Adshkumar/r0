@@ -12,8 +12,8 @@ import { createSelectors } from "../../../src/utils/zustand-selectors";
 import { createReactCompilerPreset } from "../react-compiler";
 
 const require = createRequire(import.meta.url);
-const entry = "/virtual-compiler-regression.js";
-const selectorEntry = "/virtual-generated-selectors.js";
+const entry = "virtual-compiler-regression.js";
+const selectorEntry = "virtual-generated-selectors.js";
 const storeModule = "@/features/editor/stores/editor-app.store";
 const platformModule = "@/utils/platform";
 const platformHook = path.resolve("src/features/bootstrap/hooks/use-platform-setup.ts");
@@ -46,10 +46,17 @@ it("preserves generated selector hooks through compiled parent renders and store
       {
         name: "compiler-regression-fixture",
         resolveId(id) {
-          if (id === entry || id === selectorEntry) return id;
+          const normalized = id.split("?")[0].replace(/\\/g, "/");
+          if (normalized.endsWith(entry) || normalized.endsWith(selectorEntry)) {
+            return normalized;
+          }
+          if (id === "@/features/editor/stores/editor-app.store") return id;
+          if (id === "@/utils/platform") return id;
+          return undefined;
         },
         load(id) {
-          if (id === entry) {
+          const normalized = id.split("?")[0].replace(/\\/g, "/");
+          if (normalized.endsWith(entry)) {
             return `
               import { createElement } from 'react';
               import { usePlatformSetup } from ${JSON.stringify(platformHook)};
@@ -60,7 +67,7 @@ it("preserves generated selector hooks through compiled parent renders and store
               }
             `;
           }
-          if (id === selectorEntry) {
+          if (normalized.endsWith(selectorEntry)) {
             return `
               import { createElement, useLayoutEffect } from 'react';
               import { useEditorAppStore } from ${JSON.stringify(storeModule)};
@@ -71,6 +78,12 @@ it("preserves generated selector hooks through compiled parent renders and store
                 return createElement('output', null, label + ':' + count);
               }
             `;
+          }
+          if (id === storeModule) {
+            return `export const useEditorAppStore = ${JSON.stringify({ use: { count: () => 0, actions: () => ({ cleanup: () => {} }) } })};`;
+          }
+          if (id === platformModule) {
+            return `export const applyPlatformClass = () => {};`;
           }
         },
       },

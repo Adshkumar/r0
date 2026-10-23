@@ -69,11 +69,23 @@ export function parseSmokeOptions(args: string[], host: NodeJS.Platform): SmokeO
   };
 }
 
+function toNormalizedPath(value: string) {
+  return value.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/$/, "");
+}
+
 export function getSmokeLaunchPath(cwd: string, platform: SmokePlatform, identity: SmokeIdentity) {
+  const root = toNormalizedPath(cwd);
+  const joinSegments = (...segments: string[]) =>
+    segments
+      .reduce((acc, segment) => {
+        const safeSegment = segment.replace(/^\/+|\/+$/g, "");
+        return safeSegment ? `${acc}/${safeSegment}` : acc;
+      }, root || "")
+      .replace(/\/+/g, "/");
+
   switch (platform) {
     case "macos":
-      return path.resolve(
-        cwd,
+      return joinSegments(
         "target",
         "debug",
         "bundle",
@@ -81,8 +93,8 @@ export function getSmokeLaunchPath(cwd: string, platform: SmokePlatform, identit
         smokeTargets[identity].macosAppName,
       );
     case "linux":
-      return path.join(cwd, "target", "debug", "r0");
+      return joinSegments("target", "debug", "r0");
     case "windows":
-      return path.join(cwd, "target", "debug", "r0.exe");
+      return joinSegments("target", "debug", "r0.exe");
   }
 }
