@@ -245,3 +245,51 @@ When a user in R0 IDE clicks **"Check for updates"** (in Settings):
 | **`test "$tag_sha" = "$GITHUB_SHA"` fails in release**                            | The tag was pointed to an older commit instead of the current HEAD.                 | Run `git tag -f vX.Y.Z` on the latest commit and `git push -f origin vX.Y.Z`.                                                               |
 | **Terminal error output has no red color**                                        | The active shell is `cmd.exe` (Command Prompt).                                     | Switch shell to PowerShell (`powershell.exe` or `pwsh.exe`) in Settings or open a new PowerShell tab.                                       |
 | **E2E test times out on Windows during submenu hover**                            | Hovering mouse over native flyout menus is timing-sensitive on headless CI runners. | Use keyboard navigation (e.g. `sendKeys("\uE014")` - right arrow) as implemented in `e2e/support/app.ts`.                                   |
+
+---
+
+## 5. Automated Agent Execution Checklist (For AI Agents / CLI)
+
+When an AI agent (or automated pipeline) is asked to **"release and tag a new version"**, it should execute the following exact commands in sequence:
+
+### Agent Step-by-Step Protocol:
+
+```bash
+# 1. Ensure working directory is clean
+git status
+
+# 2. Bump version across all 4 files (e.g. to 0.18.2)
+bun scripts/release/bump-version.ts 0.18.2
+
+# 3. Synchronize Cargo.lock
+cargo check
+
+# 4. Stage all changes
+git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock
+
+# 5. Commit with strict commitlint compliance (Sentence-case, NO "fix:" prefix, non-empty body)
+git commit -m "Prepare release v0.18.2" -m "Update version files across package.json, tauri.conf.json, and Cargo.toml."
+
+# 6. Push to origin main
+git push origin main
+
+# 7. Create and push the release tag matching ^v[0-9]+\.[0-9]+\.[0-9]+...
+git tag -f v0.18.2
+git push -f origin v0.18.2
+
+# 8. Monitor the Release and CI workflows
+gh run list -L 3
+
+# 9. Once GitHub Actions finishes building, publish the draft release live:
+gh release edit v0.18.2 --draft=false
+
+# 10. Verify release and in-app updater assets:
+gh release view v0.18.2
+```
+
+### Absolute Constraints for Agents:
+
+- **NEVER** use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) in commit headers. Always use sentence-case (e.g. `Prepare release v0.18.2`).
+- **NEVER** create a commit without a `-m "..."` body paragraph.
+- **NEVER** push a tag before pushing the commit to `main`, because `release.yml`'s `verify-ci` step queries CI runs on `main` for that exact commit SHA.
+- **NEVER** leave the release in draft status if you want users' IDEs to find it immediately via **"Check for updates"**. Always execute `gh release edit <tag> --draft=false`.
