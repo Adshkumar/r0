@@ -1,9 +1,8 @@
 import { beforeAll, describe } from "bun:test";
 import {
-  FILE_TREE,
   runPaletteCommand,
-  waitForDisplayed,
   waitForSidebarHidden,
+  waitForSidebarShown,
   waitForProjectTree,
 } from "../support/app.ts";
 import { e2eTest, useAppSession } from "../support/session.ts";
@@ -20,6 +19,6 @@ describe("command palette", () => {
     await waitForSidebarHidden();
 
     await runPaletteCommand("View: Show Sidebar");
-    await waitForDisplayed(FILE_TREE, "Show Sidebar did not bring the file tree back");
+    await waitForSidebarShown();
   });
 });

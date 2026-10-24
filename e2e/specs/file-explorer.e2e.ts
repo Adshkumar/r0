@@ -59,6 +59,7 @@ async function renameFromContextMenu(currentName: string, newName: string) {
   await clickMenuItem("Rename");
 
   await waitForDisplayed(renameInput, "The rename field never appeared");
+  await click(renameInput);
   // The field fills in the current name; whether it arrives selected is
   // timing dependent, so clear it from the end before typing.
   await waitUntil(
@@ -66,7 +67,6 @@ async function renameFromContextMenu(currentName: string, newName: string) {
     UI_TIMEOUT,
     "The rename field never showed the current name",
   );
-  await click(renameInput);
   await typeText(Key.END + Key.BACK_SPACE.repeat(currentName.length + 2));
   await typeInto(renameInput, newName);
   await waitUntil(

@@ -14,6 +14,7 @@ export const EDITOR_LINES = By.css(".cm-editor .cm-content");
 const WORKBENCH = By.css('[data-slot="workbench-title-row"]');
 const PALETTE_INPUT = By.css('input[placeholder="Search commands and actions..."]');
 const MENU_BUTTON = By.css('button[aria-label="Menu"]');
+const FILE_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="File"]');
 const EDIT_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="Edit"]');
 const COMMAND_PALETTE_MENU_ITEM = By.xpath(
   '//*[@role="menuitem"][.//span[normalize-space(.)="Command Palette"]]',
@@ -181,6 +182,8 @@ export async function focusEditorAtStart() {
 export async function runPaletteCommand(label: string) {
   await click(MENU_BUTTON);
   await waitForDisplayed(EDIT_MENU_ITEM, "The app menu did not open");
+  // Base UI ignores submenu hover until the pointer has entered the parent popup.
+  await hover(FILE_MENU_ITEM);
   await hover(EDIT_MENU_ITEM);
   await waitUntil(
     async () => (await attribute(EDIT_MENU_ITEM, "aria-expanded")) === "true",
@@ -353,27 +356,16 @@ export function stagedFiles() {
 }
 export async function waitForSidebarHidden(timeout = UI_TIMEOUT) {
   await waitUntil(
-    async () => {
-      const panes = await driver().executeScript<
-        Array<{ width: number; text: string; pointerEvents: string }>
-      >(
-        `return Array.from(document.querySelectorAll('.r0-resizable-pane')).map(pane => ({
-          width: pane.getBoundingClientRect().width,
-          text: (pane.innerText || '').slice(0, 80),
-          pointerEvents: getComputedStyle(pane).pointerEvents
-        }));`,
-      );
-
-      const sidebar = panes.find(
-        (pane) =>
-          pane.text.includes("New session") ||
-          pane.text.includes("Projects") ||
-          pane.text.includes("Settings"),
-      );
-
-      return sidebar !== undefined && Math.round(sidebar.width) === 0;
-    },
+    () => isDisplayed(By.css('button[aria-label="Show sidebar"]')),
     timeout,
-    "The sidebar pane did not collapse to zero width",
+    "The sidebar did not enter the hidden state",
+  );
+}
+
+export async function waitForSidebarShown(timeout = UI_TIMEOUT) {
+  await waitUntil(
+    () => isDisplayed(By.css('button[aria-label="Hide sidebar"]')),
+    timeout,
+    "The sidebar did not enter the shown state",
   );
 }
