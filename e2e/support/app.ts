@@ -14,7 +14,6 @@ export const EDITOR_LINES = By.css(".cm-editor .cm-content");
 const WORKBENCH = By.css('[data-slot="workbench-title-row"]');
 const PALETTE_INPUT = By.css('input[placeholder="Search commands and actions..."]');
 const MENU_BUTTON = By.css('button[aria-label="Menu"]');
-const FILE_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="File"]');
 const EDIT_MENU_ITEM = By.xpath('//*[@role="menuitem"][normalize-space(.)="Edit"]');
 const COMMAND_PALETTE_MENU_ITEM = By.xpath(
   '//*[@role="menuitem"][.//span[normalize-space(.)="Command Palette"]]',
@@ -182,9 +181,8 @@ export async function focusEditorAtStart() {
 export async function runPaletteCommand(label: string) {
   await click(MENU_BUTTON);
   await waitForDisplayed(EDIT_MENU_ITEM, "The app menu did not open");
-  // Base UI ignores submenu hover until the pointer has entered the parent popup.
-  await hover(FILE_MENU_ITEM);
-  await hover(EDIT_MENU_ITEM);
+  // Use keyboard navigation to avoid flaky submenu hover state.
+  await (await visibleElement(EDIT_MENU_ITEM)).sendKeys("\uE014");
   await waitUntil(
     async () => (await attribute(EDIT_MENU_ITEM, "aria-expanded")) === "true",
     UI_TIMEOUT,
