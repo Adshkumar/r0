@@ -267,8 +267,8 @@ cargo check
 # 4. Stage all changes
 git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock
 
-# 5. Commit with strict commitlint compliance (Sentence-case, NO "fix:" prefix, non-empty body)
-git commit -m "Prepare release v0.18.2" -m "Update version files across package.json, tauri.conf.json, and Cargo.toml."
+# 5. Commit with strict commitlint compliance (Sentence-case, NO dots in header, non-empty body)
+git commit -m "Prepare release" -m "Update version files across package.json, tauri.conf.json, Cargo.toml, and Cargo.lock."
 
 # 6. Push to origin main
 git push origin main
