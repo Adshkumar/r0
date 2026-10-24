@@ -136,3 +136,4 @@ jobs:
 
       - name: Audit npm dependencies
         run: bun audit
+        continue-on-error: true

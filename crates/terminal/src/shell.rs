@@ -171,14 +171,6 @@ impl Shell {
          let wsl_executable = shell_exe_in_path("wsl.exe");
          let mut shells = vec![
             Shell {
-               id: "cmd".into(),
-               name: "Command Prompt".into(),
-               exec_win: shell_exe_in_path("cmd.exe"),
-               exec_unix: None,
-               kind: Some("windows".into()),
-               wsl_distribution: None,
-            },
-            Shell {
                id: "powershell".into(),
                name: "Windows PowerShell".into(),
                exec_win: shell_exe_in_path("powershell.exe"),
@@ -190,6 +182,14 @@ impl Shell {
                id: "pwsh".into(),
                name: "PowerShell Core".into(),
                exec_win: shell_exe_in_path("pwsh.exe"),
+               exec_unix: None,
+               kind: Some("windows".into()),
+               wsl_distribution: None,
+            },
+            Shell {
+               id: "cmd".into(),
+               name: "Command Prompt".into(),
+               exec_win: shell_exe_in_path("cmd.exe"),
                exec_unix: None,
                kind: Some("windows".into()),
                wsl_distribution: None,
