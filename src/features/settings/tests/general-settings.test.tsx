@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
   return {
     toasts: [] as { type: string; message: string }[],
     check: vi.fn(),
+    openInfo: vi.fn(),
     relaunch: vi.fn(async () => {}),
     openUrl: vi.fn(async (_url: string) => {}),
     writeText: vi.fn(async (_text: string) => {}),
@@ -41,6 +42,16 @@ vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: mocks.openUrl }));
 vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({ writeText: mocks.writeText }));
 vi.mock("@/features/telemetry/services/telemetry", () => ({
   recordUpdateCheckTelemetry: vi.fn(async () => true),
+}));
+vi.mock("@/features/settings/stores/whats-new.store", () => ({
+  useWhatsNewStore: {
+    getState: () => ({
+      actions: {
+        queuePendingUpdate: vi.fn(),
+        openInfo: mocks.openInfo,
+      },
+    }),
+  },
 }));
 
 import { commands } from "@/bindings/commands";
@@ -133,14 +144,23 @@ describe("general settings", () => {
       available: true,
       version: "2.0.0",
       currentVersion: "1.4.0",
-      rawJson: {},
+      rawJson: { notes: "Added workspace restore." },
     });
     await render();
 
     await click(button("Check for updates"));
     expect(rowDescription("Version")).toBe("R0 1.4.0 · 2.0.0 available");
+    expect(button("View release notes")).toBeTruthy();
     expect(button("Install 2.0.0")).toBeTruthy();
     expect(mocks.toasts).toEqual([]);
+
+    await click(button("View release notes"));
+    expect(mocks.openInfo).toHaveBeenCalledWith({
+      version: "2.0.0",
+      previousVersion: "1.4.0",
+      body: "Added workspace restore.",
+      date: undefined,
+    });
   });
 
   it("surfaces an update check error", async () => {

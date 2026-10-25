@@ -7,6 +7,8 @@
     ·
     <a href="https://r0-ide.vercel.app/docs">Documentation</a>
     ·
+    <a href="https://r0-ide.vercel.app/releases">Changelog</a>
+    ·
     <a href="https://github.com/Adshkumar/r0/issues">Report an issue</a>
   </p>
   <img src="public/screenshot.png" alt="Screenshot of the r0 editor" width="800">
@@ -122,10 +124,12 @@ Apple silicon or `x64` for Intel. Open the disk image and move r0 into Applicati
 
 r0 checks for updates automatically after startup and periodically while it is running. To check
 manually, open **Settings → General → Check for updates**. When a newer compatible release is
-available, r0 offers it for download and installation. If no update is available, Settings shows
-**Up to date** and the manual check confirms that you're on the latest version. If the check
-cannot reach the update service, r0 reports the check failure instead of claiming that the app
-is current.
+available, choose **View release notes** to review its new features before installing, or install
+it directly. After updating, open **What's New** from the account menu to review the installed
+release notes. The [online changelog](https://r0-ide.vercel.app/releases) lists published releases.
+If no update is available, Settings shows **Up to date** and the manual check confirms that you're
+on the latest version. If the check cannot reach the update service, r0 reports the check failure
+instead of claiming that the app is current.
 
 ## Build from source
 

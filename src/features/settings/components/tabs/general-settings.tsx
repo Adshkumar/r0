@@ -64,6 +64,7 @@ export const GeneralSettings = () => {
     downloadProgress,
     checkForUpdates,
     downloadAndInstall,
+    viewReleaseNotes,
   } = useUpdater(false);
   const updateChannel = useSettingsStore((state) => state.settings.updateChannel);
   const updateSetting = useSettingsStore((state) => state.actions.updateSetting);
@@ -192,17 +193,26 @@ export const GeneralSettings = () => {
         <SettingRow label="Version" description={updateStatus}>
           <div className="flex flex-wrap justify-end gap-2">
             {available ? (
-              <Button
-                onClick={downloadAndInstall}
-                disabled={downloading || installing}
-                variant="accent"
-              >
-                {downloading
-                  ? "Downloading..."
-                  : installing
-                    ? "Installing..."
-                    : `${updateMode === "notify" ? "Download" : "Install"} ${updateInfo?.version ?? "update"}`}
-              </Button>
+              <>
+                <Button
+                  onClick={viewReleaseNotes}
+                  disabled={downloading || installing}
+                  variant="outline"
+                >
+                  View release notes
+                </Button>
+                <Button
+                  onClick={downloadAndInstall}
+                  disabled={downloading || installing}
+                  variant="accent"
+                >
+                  {downloading
+                    ? "Downloading..."
+                    : installing
+                      ? "Installing..."
+                      : `${updateMode === "notify" ? "Download" : "Install"} ${updateInfo?.version ?? "update"}`}
+                </Button>
+              </>
             ) : updateMode === "external" ? (
               <span>Managed externally</span>
             ) : (
