@@ -1,5 +1,3 @@
-import path from "node:path";
-
 export type SmokeIdentity = "stable" | "smoke";
 export type SmokePlatform = "macos" | "linux" | "windows";
 

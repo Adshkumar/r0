@@ -68,7 +68,7 @@ export interface FsActions {
   // CRUD operations
   createFile: (directoryPath: string, fileName: string) => Promise<string>;
   createDirectory: (parentPath: string, folderName: string) => Promise<string>;
-  deleteFile: (path: string) => Promise<void>;
+  deleteFile: (path: string, isDirectory?: boolean) => Promise<void>;
 
   // Setter methods
   setFiles: (newFiles: FileEntry[]) => void;
