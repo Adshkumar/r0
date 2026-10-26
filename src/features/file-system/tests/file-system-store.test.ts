@@ -386,6 +386,14 @@ describe("deleting, moving and renaming", () => {
     expect(mocks.mutations.deletePath).toHaveBeenCalledWith(`${root}/src`, true);
   });
 
+  it("passes the directory flag through handleDeletePath for folder deletions", async () => {
+    setWorkspace([dir(`${root}/src`, [])]);
+
+    await fs().handleDeletePath(`${root}/src`, true);
+
+    expect(mocks.mutations.deletePath).toHaveBeenCalledWith(`${root}/src`, true);
+  });
+
   it("keeps the tree unchanged when the delete fails", async () => {
     setWorkspace([file(`${root}/a.ts`)]);
     mocks.mutations.deletePath.mockRejectedValue(new Error("busy"));

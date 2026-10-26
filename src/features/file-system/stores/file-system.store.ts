@@ -1922,8 +1922,8 @@ const createFileSystemStore = (workspaceId: string): StoreApi<ScopedFileSystemSt
         return get().createDirectory(dirPath, folderName);
       },
 
-      handleDeletePath: async (targetPath: string, _isDirectory: boolean) => {
-        return get().deleteFile(targetPath);
+      handleDeletePath: async (targetPath: string, isDirectory: boolean) => {
+        return get().deleteFile(targetPath, isDirectory);
       },
 
       refreshDirectory: async (directoryPath: string, options?: { force?: boolean }) => {
@@ -2209,10 +2209,11 @@ const createFileSystemStore = (workspaceId: string): StoreApi<ScopedFileSystemSt
         return folderPath;
       },
 
-      deleteFile: async (path: string) => {
+      deleteFile: async (path: string, isDirectory?: boolean) => {
         const entry = findFileInTree(get().files, path);
-        await getWorkspaceEntryMutationProvider(path).deletePath(path, !!entry?.isDir);
-        invalidateFileTreeGitIgnoreCache(entry?.isDir ? undefined : path);
+        const directoryFlag = isDirectory ?? !!entry?.isDir;
+        await getWorkspaceEntryMutationProvider(path).deletePath(path, directoryFlag);
+        invalidateFileTreeGitIgnoreCache(directoryFlag ? undefined : path);
 
         const { buffers, actions } = useBufferStore.getStore(workspaceId).getState();
         buffers
