@@ -95,9 +95,9 @@ if cfg!(windows) {
 
 A version bump must be synchronized across **4 files**:
 
-1. [`package.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/package.json) (`"version": "0.18.1"`)
-2. [`src-tauri/tauri.conf.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/tauri.conf.json) (`"version": "0.18.1"`)
-3. [`src-tauri/Cargo.toml`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/Cargo.toml) (`version = "0.18.1"`)
+1. [`package.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/package.json) (`"version": "0.18.3"`)
+2. [`src-tauri/tauri.conf.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/tauri.conf.json) (`"version": "0.18.3"`)
+3. [`src-tauri/Cargo.toml`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/Cargo.toml) (`version = "0.18.3"`)
 4. [`Cargo.lock`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/Cargo.lock) (synchronized via `cargo check`)
 
 You can run the built-in release bump script:
@@ -105,7 +105,7 @@ You can run the built-in release bump script:
 ```bash
 bun scripts/release/bump-version.ts <new-version>
 # Example:
-bun scripts/release/bump-version.ts 0.18.2
+bun scripts/release/bump-version.ts 0.18.3
 cargo check
 ```
 
@@ -150,10 +150,10 @@ The release tag must match the semantic version pattern `^v[0-9]+\.[0-9]+\.[0-9]
 
 ```bash
 # Create or update tag:
-git tag -f v0.18.1
+git tag -f v0.18.3
 
 # Push tag to GitHub:
-git push -f origin v0.18.1
+git push -f origin v0.18.3
 ```
 
 ---
@@ -163,13 +163,13 @@ git push -f origin v0.18.1
 When the tag is pushed, `.github/workflows/release.yml` triggers the release pipeline:
 
 ```
-[Tag Push: v0.18.1]
+[Tag Push: v0.18.3]
         │
         ▼
    verify-ci (Job)
         │
         ├─► Validates tag regex: ^v[0-9]+\.[0-9]+\.[0-9]+...
-        ├─► Verifies: git rev-parse "refs/tags/v0.18.1" == GITHUB_SHA
+        ├─► Verifies: git rev-parse "refs/tags/v0.18.3" == GITHUB_SHA
         └─► Runs: bun scripts/release/ci-gate.ts "$tag_sha"
                  │
                  ▼
@@ -207,7 +207,7 @@ By default, the workflow produces a **draft release** on GitHub so the maintaine
 To make it public immediately from your terminal:
 
 ```bash
-gh release edit v0.18.1 --draft=false
+gh release edit v0.18.3 --draft=false
 ```
 
 _(Or set GitHub Repository Variable `AUTO_PUBLISH_RELEASE=true` in GitHub repo settings to publish automatically)._
@@ -258,8 +258,8 @@ When an AI agent (or automated pipeline) is asked to **"release and tag a new ve
 # 1. Ensure working directory is clean
 git status
 
-# 2. Bump version across all 4 files (e.g. to 0.18.2)
-bun scripts/release/bump-version.ts 0.18.2
+# 2. Bump version across all 4 files (e.g. to 0.18.3)
+bun scripts/release/bump-version.ts 0.18.3
 
 # 3. Synchronize Cargo.lock
 cargo check
@@ -274,22 +274,22 @@ git commit -m "Prepare release" -m "Update version files across package.json, ta
 git push origin main
 
 # 7. Create and push the release tag matching ^v[0-9]+\.[0-9]+\.[0-9]+...
-git tag -f v0.18.2
-git push -f origin v0.18.2
+git tag -f v0.18.3
+git push -f origin v0.18.3
 
 # 8. Monitor the Release and CI workflows
 gh run list -L 3
 
 # 9. Once GitHub Actions finishes building, publish the draft release live:
-gh release edit v0.18.2 --draft=false
+gh release edit v0.18.3 --draft=false
 
 # 10. Verify release and in-app updater assets:
-gh release view v0.18.2
+gh release view v0.18.3
 ```
 
 ### Absolute Constraints for Agents:
 
-- **NEVER** use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) in commit headers. Always use sentence-case (e.g. `Prepare release v0.18.2`).
+- **NEVER** use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) in commit headers. Always use sentence-case (e.g. `Prepare release v0.18.3`).
 - **NEVER** create a commit without a `-m "..."` body paragraph.
 - **NEVER** push a tag before pushing the commit to `main`, because `release.yml`'s `verify-ci` step queries CI runs on `main` for that exact commit SHA.
 - **NEVER** leave the release in draft status if you want users' IDEs to find it immediately via **"Check for updates"**. Always execute `gh release edit <tag> --draft=false`.
