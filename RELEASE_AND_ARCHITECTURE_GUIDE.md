@@ -93,20 +93,21 @@ if cfg!(windows) {
 
 ### Step 1: Version Bumping
 
-A version bump must be synchronized across **4 files**:
+A release version is synchronized across **4 files**:
 
-1. [`package.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/package.json) (`"version": "0.18.3"`)
-2. [`src-tauri/tauri.conf.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/tauri.conf.json) (`"version": "0.18.3"`)
-3. [`src-tauri/Cargo.toml`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/Cargo.toml) (`version = "0.18.3"`)
-4. [`Cargo.lock`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/Cargo.lock) (synchronized via `cargo check`)
+1. [`package.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/package.json)
+2. [`src-tauri/tauri.conf.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/tauri.conf.json)
+3. [`src-tauri/Cargo.toml`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/Cargo.toml)
+4. [`Cargo.lock`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/Cargo.lock)
 
-You can run the built-in release bump script:
+The release command updates these files together. It also synchronizes the numeric Windows MSI version in `tauri.conf.json`, runs `cargo check -p r0` to update `Cargo.lock`, creates the release commit, pushes `main`, waits for the required CI checks, then creates and pushes the version tag. Do not bump these files or force-update tags by hand.
+
+For the current patch release, the version changes from `0.18.3` to `0.18.4`:
 
 ```bash
-bun scripts/release/bump-version.ts <new-version>
-# Example:
-bun scripts/release/bump-version.ts 0.18.3
-cargo check
+bun scripts/release.ts patch --dry-run
+# Review the proposed version and file changes, then run:
+bun scripts/release.ts patch
 ```
 
 ---
@@ -134,48 +135,30 @@ git commit -m "Add new terminal color theme and settings option" -m "Introduce c
 
 ---
 
-### Step 3: Push to `main`
+### Step 3: Push and Tag the Release
 
-Always push your changes to `origin/main` first so that GitHub Actions triggers CI:
-
-```bash
-git push origin main
-```
+The release script pushes the version commit to `origin/main`, waits for the CI workflow on that exact commit, then creates and pushes the matching tag (for this release, `v0.18.4`). Tags must match `^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[1-9][0-9]*)?$`. Never force-update a release tag. If CI fails or times out, the script stops without tagging.
 
 ---
 
-### Step 4: Tagging the Release
-
-The release tag must match the semantic version pattern `^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[1-9][0-9]*)?$`.
-
-```bash
-# Create or update tag:
-git tag -f v0.18.3
-
-# Push tag to GitHub:
-git push -f origin v0.18.3
-```
-
----
-
-### Step 5: How CI Gating & Release Workflows Run
+### Step 4: How CI Gating & Release Workflows Run
 
 When the tag is pushed, `.github/workflows/release.yml` triggers the release pipeline:
 
 ```
-[Tag Push: v0.18.3]
+[Tag Push: v0.18.4]
         │
         ▼
    verify-ci (Job)
         │
         ├─► Validates tag regex: ^v[0-9]+\.[0-9]+\.[0-9]+...
-        ├─► Verifies: git rev-parse "refs/tags/v0.18.3" == GITHUB_SHA
+        ├─► Verifies: git rev-parse "refs/tags/v0.18.4" == GITHUB_SHA
         └─► Runs: bun scripts/release/ci-gate.ts "$tag_sha"
                  │
                  ▼
-        Waits for CI (ci.yml) to complete on that commit:
-        • Bun — typecheck, frontend check (Required)
-        • Rust — fmt, check, clippy, test (Required)
+        Requires CI (ci.yml) to succeed on that commit:
+        • Bun — typecheck, frontend check, frontend tests
+        • Rust — fmt, check, clippy, Rust tests
         • Audit — cargo audit, bun audit
                  │
         ┌────────┴────────┐
@@ -201,20 +184,19 @@ When the tag is pushed, `.github/workflows/release.yml` triggers the release pip
 
 ---
 
-### Step 6: Publishing Draft Releases
+### Step 5: Publishing Draft Releases
 
-By default, the workflow produces a **draft release** on GitHub so the maintainer can review assets.
-To make it public immediately from your terminal:
+The workflow creates the release assets and verifies them. It publishes automatically only when the repository variable `AUTO_PUBLISH_RELEASE` is set to `true`; otherwise the release remains a draft for review. To publish after checking the release assets:
 
 ```bash
-gh release edit v0.18.3 --draft=false
+gh release edit v0.18.4 --draft=false
 ```
 
-_(Or set GitHub Repository Variable `AUTO_PUBLISH_RELEASE=true` in GitHub repo settings to publish automatically)._
+Set the repository variable `AUTO_PUBLISH_RELEASE=true` to publish automatically on future releases.
 
 ---
 
-### Step 7: In-App Updates in R0 IDE
+### Step 6: In-App Updates in R0 IDE
 
 In [`src-tauri/tauri.conf.json`](file:///c:/Users/adars/OneDrive/Desktop/r-0/r0/src-tauri/tauri.conf.json):
 
@@ -242,7 +224,7 @@ When a user in R0 IDE clicks **"Check for updates"** (in Settings):
 | **Commitlint: `header must be sentence-case without a conventional type prefix`** | Header starts with `fix:` or `feat:`.                                               | Use plain sentence case like `Fix terminal error highlighting` with a second `-m` body.                                                     |
 | **Commitlint: `body's lines must not be longer than 100 characters`**             | Long unbroken string or URL in commit message body.                                 | Wrap lines in the commit message body to < 100 chars.                                                                                       |
 | **`Release blocked: CI failure for <sha>`**                                       | An audit or check job failed on the release commit.                                 | Check `gh run view <run_id> --log-failed`. For advisory npm audit warnings, ensure `continue-on-error: true` is on `bun audit` in `ci.yml`. |
-| **`test "$tag_sha" = "$GITHUB_SHA"` fails in release**                            | The tag was pointed to an older commit instead of the current HEAD.                 | Run `git tag -f vX.Y.Z` on the latest commit and `git push -f origin vX.Y.Z`.                                                               |
+| **`test "$tag_sha" = "$GITHUB_SHA"` fails in release**                            | The tag does not point at the commit that triggered the workflow.                   | Stop and inspect the tag and workflow SHA. Do not force-update a published release tag; rerun from the intended commit.                     |
 | **Terminal error output has no red color**                                        | The active shell is `cmd.exe` (Command Prompt).                                     | Switch shell to PowerShell (`powershell.exe` or `pwsh.exe`) in Settings or open a new PowerShell tab.                                       |
 | **E2E test times out on Windows during submenu hover**                            | Hovering mouse over native flyout menus is timing-sensitive on headless CI runners. | Use keyboard navigation (e.g. `sendKeys("\uE014")` - right arrow) as implemented in `e2e/support/app.ts`.                                   |
 
@@ -250,46 +232,30 @@ When a user in R0 IDE clicks **"Check for updates"** (in Settings):
 
 ## 5. Automated Agent Execution Checklist (For AI Agents / CLI)
 
-When an AI agent (or automated pipeline) is asked to **"release and tag a new version"**, it should execute the following exact commands in sequence:
+When an AI agent (or automated pipeline) is asked to **"release and tag a new version"**, use the repository release script. For this release, that is `v0.18.4`:
 
 ### Agent Step-by-Step Protocol:
 
 ```bash
-# 1. Ensure working directory is clean
-git status
+# 1. Preview the patch release and confirm the next version is v0.18.4.
+bun scripts/release.ts patch --dry-run
 
-# 2. Bump version across all 4 files (e.g. to 0.18.3)
-bun scripts/release/bump-version.ts 0.18.3
+# 2. Run the release. This checks readiness, updates versions, commits, pushes
+#    main, waits for CI, and then creates and pushes v0.18.4.
+bun scripts/release.ts patch
 
-# 3. Synchronize Cargo.lock
-cargo check
+# 3. Monitor the release workflow and verify its assets.
+gh run list --repo Adshkumar/r0 --limit 10
+bun scripts/release/release-assets.mjs verify --tag v0.18.4 --repo Adshkumar/r0
+gh release view v0.18.4 --repo Adshkumar/r0
 
-# 4. Stage all changes
-git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml Cargo.lock
-
-# 5. Commit with strict commitlint compliance (Sentence-case, NO dots in header, non-empty body)
-git commit -m "Prepare release" -m "Update version files across package.json, tauri.conf.json, Cargo.toml, and Cargo.lock."
-
-# 6. Push to origin main
-git push origin main
-
-# 7. Create and push the release tag matching ^v[0-9]+\.[0-9]+\.[0-9]+...
-git tag -f v0.18.3
-git push -f origin v0.18.3
-
-# 8. Monitor the Release and CI workflows
-gh run list -L 3
-
-# 9. Once GitHub Actions finishes building, publish the draft release live:
-gh release edit v0.18.3 --draft=false
-
-# 10. Verify release and in-app updater assets:
-gh release view v0.18.3
+# 4. Publish only after reviewing the release assets and notes.
+gh release edit v0.18.4 --repo Adshkumar/r0 --draft=false
 ```
 
 ### Absolute Constraints for Agents:
 
-- **NEVER** use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) in commit headers. Always use sentence-case (e.g. `Prepare release v0.18.3`).
-- **NEVER** create a commit without a `-m "..."` body paragraph.
-- **NEVER** push a tag before pushing the commit to `main`, because `release.yml`'s `verify-ci` step queries CI runs on `main` for that exact commit SHA.
-- **NEVER** leave the release in draft status if you want users' IDEs to find it immediately via **"Check for updates"**. Always execute `gh release edit <tag> --draft=false`.
+- **NEVER** use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) in commit headers. Release commits are created by the release script.
+- **NEVER** create a release tag manually or force-update an existing release tag.
+- **NEVER** bypass the release script's clean-tree, CI, and version checks.
+- Releases remain drafts unless `AUTO_PUBLISH_RELEASE=true`; review assets before publishing so the in-app updater can see the release.
