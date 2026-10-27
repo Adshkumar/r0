@@ -56,7 +56,9 @@ export function StreamIdentity({
           <span className="text-subtle-foreground @max-[240px]/identity:hidden">
             {model.repoName} /{" "}
           </span>
-          <span className="font-medium text-foreground">{model.branch || "detached"}</span>
+          <span className="font-medium text-foreground">
+            {model.isDetached ? "Detached HEAD" : model.branch || "detached"}
+          </span>
         </span>
         <ChevronDownIcon className="size-3 text-subtle-foreground" />
       </StreamContextButton>
@@ -169,7 +171,8 @@ export function StreamComposer({ model }: { model: SourceControlModel }) {
   const targetFiles = willStageAll ? model.unstaged : model.staged;
   const additions = targetFiles.reduce((sum, file) => sum + file.additions, 0);
   const deletions = targetFiles.reduce((sum, file) => sum + file.deletions, 0);
-  const canCommit = !!message.trim() && targetFiles.length > 0 && !model.isCommitting;
+  const canCommit =
+    !!message.trim() && targetFiles.length > 0 && !model.isCommitting && !model.isDetached;
 
   const submit = async (options: { andPush?: boolean; stageAll?: boolean } = {}) => {
     if (!canCommit) return;
@@ -196,8 +199,9 @@ export function StreamComposer({ model }: { model: SourceControlModel }) {
     },
   ];
 
-  const scopeLabel =
-    model.files.length === 0
+  const scopeLabel = model.isDetached
+    ? "Switch to a branch to commit"
+    : model.files.length === 0
       ? "Nothing to commit"
       : willStageAll
         ? `All ${model.unstaged.length}`

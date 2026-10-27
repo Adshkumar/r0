@@ -108,6 +108,12 @@ fn current_branch_without_upstream(repo_path: &str) -> Result<Option<String>> {
          .filter(|name| *name != "(detached)")
          .map(str::to_string)
    });
+   if output
+      .lines()
+      .any(|line| line == "# branch.head (detached)")
+   {
+      bail!("Cannot push from detached HEAD. Create or switch to a branch before pushing.");
+   }
    let has_upstream = output
       .lines()
       .any(|line| line.starts_with("# branch.upstream "));

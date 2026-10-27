@@ -215,6 +215,10 @@ export function useSourceControlModel({
   const commit = useCallback(
     async (message: string, options: { stageAll?: boolean; andPush?: boolean } = {}) => {
       if (!activeRepoPath || !message.trim() || isCommitting) return false;
+      if (gitStatus?.branch === "HEAD") {
+        toast.error("Create or switch to a branch before committing.");
+        return false;
+      }
       setIsCommitting(true);
       try {
         if (options.stageAll && unstaged.length > 0) {
@@ -241,7 +245,7 @@ export function useSourceControlModel({
         setIsCommitting(false);
       }
     },
-    [activeRepoPath, isCommitting, refresh, unstaged],
+    [activeRepoPath, gitStatus?.branch, isCommitting, refresh, unstaged],
   );
 
   const generateMessage = useCallback(
@@ -271,6 +275,10 @@ export function useSourceControlModel({
   const runRemote = useCallback(
     async (action: RemoteAction) => {
       if (!activeRepoPath || remoteAction) return;
+      if (action === "push" && gitStatus?.branch === "HEAD") {
+        toast.error("Create or switch to a branch before pushing.");
+        return;
+      }
       setRemoteAction(action);
       try {
         const result =
@@ -289,7 +297,7 @@ export function useSourceControlModel({
         setRemoteAction(null);
       }
     },
-    [activeRepoPath, refresh, remoteAction],
+    [activeRepoPath, gitStatus?.branch, refresh, remoteAction],
   );
 
   const checkout = useCallback(
@@ -405,6 +413,7 @@ export function useSourceControlModel({
     hasStatus: !!gitStatus,
     isLoading,
     branch: gitStatus?.branch ?? "",
+    isDetached: gitStatus?.branch === "HEAD",
     ahead,
     behind,
     suggestedRemote,
