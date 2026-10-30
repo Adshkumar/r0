@@ -1,5 +1,5 @@
 /**
- * Pages of the adshkumar.is-a.dev website the web app links to. The app is served from the website's own
+ * Pages of the website the web app links to. The app is served from the website's own
  * origin under /app, so these are plain same-origin paths.
  */
 export const WEBSITE_PAGES = {

@@ -157,10 +157,14 @@ describe("website api", () => {
   });
 
   it("sends sign-in back to where the user is in the app", () => {
-    expect(getSignInUrl({ pathname: "/app/", search: "" })).toBe("/auth/sign-in?next=%2Fapp%2F");
-    expect(getSignInUrl({ pathname: "/app/files", search: "?a=1" })).toBe(
-      "/auth/sign-in?next=%2Fapp%2Ffiles%3Fa%3D1",
+    expect(getSignInUrl({ pathname: "/app/", search: "" })).toBe(
+      "https://r0-ide.vercel.app/auth?next=%2Fapp%2F",
     );
-    expect(getSignInUrl({ pathname: "/elsewhere", search: "" })).toBe("/auth/sign-in?next=%2Fapp");
+    expect(getSignInUrl({ pathname: "/app/files", search: "?a=1" })).toBe(
+      "https://r0-ide.vercel.app/auth?next=%2Fapp%2Ffiles%3Fa%3D1",
+    );
+    expect(getSignInUrl({ pathname: "/elsewhere", search: "" })).toBe(
+      "https://r0-ide.vercel.app/auth?next=%2Fapp",
+    );
   });
 });

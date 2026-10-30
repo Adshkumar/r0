@@ -96,7 +96,7 @@ describe("GitHub repository step", () => {
     const view = await render();
     fireEvent.click(view.getByRole("button", { name: /Sign In/ }));
 
-    expect(assign).toHaveBeenCalledWith("/auth/sign-in?next=%2Fapp%2F");
+    expect(assign).toHaveBeenCalledWith("https://r0-ide.vercel.app/auth?next=%2Fapp%2F");
     vi.restoreAllMocks();
   });
 
