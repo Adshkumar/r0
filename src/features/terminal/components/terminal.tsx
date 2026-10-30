@@ -392,7 +392,7 @@ export const TerminalEmulator = ({
         fontSize: effectiveTerminalFontSize,
         lineHeight: terminalLineHeight,
         letterSpacing: effectiveTerminalLetterSpacing,
-        cursorBlink: terminalCursorBlink,
+        cursorBlink: terminalCursorBlink && isActive && isVisible,
         cursorStyle: terminalCursorStyle,
         cursorWidth: effectiveTerminalCursorWidth,
         cursorInactiveStyle: terminalCursorInactiveStyle,
@@ -694,7 +694,7 @@ export const TerminalEmulator = ({
       options.letterSpacing = effectiveTerminalLetterSpacing;
       options.scrollback = terminalScrollback;
       options.minimumContrastRatio = terminalMinimumContrastRatio;
-      options.cursorBlink = terminalCursorBlink;
+      options.cursorBlink = terminalCursorBlink && isActive && isVisible;
       options.cursorStyle = terminalCursorStyle;
       options.cursorWidth = effectiveTerminalCursorWidth;
       options.cursorInactiveStyle = terminalCursorInactiveStyle;
@@ -725,7 +725,18 @@ export const TerminalEmulator = ({
     terminalMacOptionIsMeta,
     terminalRightClickSelectsWord,
     fitTerminal,
+    isActive,
+    isVisible,
   ]);
+
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    const shouldBlink = terminalCursorBlink && isActive && isVisible;
+    if (terminal.options.cursorBlink !== shouldBlink) {
+      terminal.options.cursorBlink = shouldBlink;
+    }
+  }, [terminalCursorBlink, isActive, isVisible]);
 
   useEffect(() => {
     if (
@@ -736,26 +747,33 @@ export const TerminalEmulator = ({
     )
       return;
 
-    let rafId: number | null = null;
+    let cancelled = false;
     const container = terminalContainerRef.current;
 
     const attemptInitialize = () => {
-      if (isInitializedRef.current || isInitializingRef.current) return;
+      if (cancelled || isInitializedRef.current || isInitializingRef.current) return;
 
       const rect = container.getBoundingClientRect();
       const isContainerVisible = container.offsetParent !== null;
       if (rect.width <= 0 || rect.height <= 0 || !isContainerVisible) {
-        rafId = requestAnimationFrame(attemptInitialize);
         return;
       }
 
       void initializeTerminal();
     };
 
-    rafId = requestAnimationFrame(attemptInitialize);
+    attemptInitialize();
+
+    if (isInitializedRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      attemptInitialize();
+    });
+    observer.observe(container);
 
     return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
+      cancelled = true;
+      observer.disconnect();
     };
   }, [initializeTerminal, initializationError, isInitialized, isVisible]);
 

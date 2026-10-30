@@ -15,7 +15,7 @@ export function getSignInUrl(location: Pick<Location, "pathname" | "search"> = w
   const next = location.pathname.startsWith("/app")
     ? `${location.pathname}${location.search}`
     : "/app";
-  return `/auth/sign-in?next=${encodeURIComponent(next)}`;
+  return `https://r0-ide.vercel.app/auth?next=${encodeURIComponent(next)}`;
 }
 
 /** Leaves the app for the sign-in page; it brings the user back once signed in. */

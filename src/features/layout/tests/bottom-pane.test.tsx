@@ -141,12 +141,22 @@ afterEach(async () => {
 });
 
 describe("bottom pane", () => {
-  it("keeps the terminal mounted in the project folder and stays hidden until shown", async () => {
+  it("loads the terminal only when shown and keeps it mounted afterward", async () => {
     await render();
+    expect(view().queryByRole("region", { name: "Terminals" })).toBeNull();
+    await show("terminal", false);
+    expect(view().queryByRole("region", { name: "Terminals" })).toBeNull();
+    await show("terminal");
     expect(view().getByRole("region", { name: "Terminals" }).dataset.directory).toBe("/repo");
     expect(view().getByRole("separator", { name: "Resize bottom pane" })).toBeTruthy();
-    await show("terminal");
     expect(visible()).toBe(true);
+
+    await show("buffers");
+    expect(view().getByRole("region", { name: "Terminals" }).parentElement?.className).toContain(
+      "hidden",
+    );
+    await show("terminal");
+    expect(view().getByRole("region", { name: "Terminals" })).toBeTruthy();
 
     setFeatures({ terminal: false });
     await flush();

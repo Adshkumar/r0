@@ -1,13 +1,26 @@
 use crate::git::{GitCommand, GitRemote, IntoStringError, RepositoryHost};
 use anyhow::{Context, Result, bail};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use git2::Repository;
 use std::path::Path;
 
 pub fn git_clone(repository_url: String, destination_path: String) -> Result<(), String> {
-   _git_clone(repository_url, destination_path).into_string_error()
+   git_clone_with_github_token(repository_url, destination_path, None)
 }
 
-fn _git_clone(repository_url: String, destination_path: String) -> Result<()> {
+pub fn git_clone_with_github_token(
+   repository_url: String,
+   destination_path: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_clone(repository_url, destination_path, github_token).into_string_error()
+}
+
+fn _git_clone(
+   repository_url: String,
+   destination_path: String,
+   github_token: Option<String>,
+) -> Result<()> {
    let repository_url = repository_url.trim();
    if repository_url.is_empty() {
       bail!("Repository URL cannot be empty");
@@ -39,7 +52,7 @@ fn _git_clone(repository_url: String, destination_path: String) -> Result<()> {
    }
 
    let host = RepositoryHost::detect(&parent.to_string_lossy());
-   let command = remote_git_command(&host);
+   let command = remote_git_command(&host, github_token.as_deref());
    let destination_argument = command.argument_path(&destination_path);
    command
       .arg("clone")
@@ -51,38 +64,91 @@ fn _git_clone(repository_url: String, destination_path: String) -> Result<()> {
 }
 
 pub fn git_push(repo_path: String, branch: Option<String>, remote: String) -> Result<(), String> {
-   _git_push(repo_path, branch, remote).into_string_error()
+   git_push_with_github_token(repo_path, branch, remote, None)
+}
+
+pub fn git_push_with_github_token(
+   repo_path: String,
+   branch: Option<String>,
+   remote: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_push_with_token(repo_path, branch, remote, github_token.as_deref()).into_string_error()
 }
 
 /// A git command that never waits for interactive credential prompts.
-fn remote_git_command(host: &RepositoryHost) -> GitCommand {
-   host
+fn remote_git_command(host: &RepositoryHost, github_token: Option<&str>) -> GitCommand {
+   let command = host
       .git()
       .env("GIT_TERMINAL_PROMPT", "0")
       .env("GCM_INTERACTIVE", "never")
       .env("SSH_ASKPASS_REQUIRE", "never")
-      .env("GIT_SSH_COMMAND", "ssh -oBatchMode=yes")
+      .env("GIT_SSH_COMMAND", "ssh -oBatchMode=yes");
+   match github_token.filter(|token| !token.trim().is_empty()) {
+      Some(token) => add_github_http_auth(command, token),
+      None => command,
+   }
 }
 
-pub(crate) fn execute_remote_git_command(
+fn add_github_http_auth(command: GitCommand, token: &str) -> GitCommand {
+   let index = std::env::var("GIT_CONFIG_COUNT")
+      .ok()
+      .and_then(|count| count.parse::<usize>().ok())
+      .unwrap_or_default();
+   let authorization = STANDARD.encode(format!("x-access-token:{token}"));
+   let mut command = command;
+   for config_index in 0..index {
+      for name in [
+         format!("GIT_CONFIG_KEY_{config_index}"),
+         format!("GIT_CONFIG_VALUE_{config_index}"),
+      ] {
+         if let Some(value) = std::env::var_os(&name) {
+            command = command.env(&name, value);
+         }
+      }
+   }
+   command
+      .env("GIT_CONFIG_COUNT", index.saturating_add(1).to_string())
+      .env(
+         &format!("GIT_CONFIG_KEY_{index}"),
+         "http.https://github.com/.extraheader",
+      )
+      .env(
+         &format!("GIT_CONFIG_VALUE_{index}"),
+         format!("AUTHORIZATION: basic {authorization}"),
+      )
+}
+
+pub(crate) fn execute_remote_git_command_with_github_token(
    repo_path: &str,
    args: &[&str],
    operation: &str,
+   github_token: Option<&str>,
 ) -> Result<()> {
-   remote_git_command(&RepositoryHost::detect(repo_path))
+   remote_git_command(&RepositoryHost::detect(repo_path), github_token)
       .args(args)
       .run(operation)?;
    Ok(())
 }
 
 fn _git_push(repo_path: String, branch: Option<String>, remote: String) -> Result<()> {
+   _git_push_with_token(repo_path, branch, remote, None)
+}
+
+fn _git_push_with_token(
+   repo_path: String,
+   branch: Option<String>,
+   remote: String,
+   github_token: Option<&str>,
+) -> Result<()> {
    if branch.is_none()
       && let Some(branch) = current_branch_without_upstream(&repo_path)?
    {
-      return execute_remote_git_command(
+      return execute_remote_git_command_with_github_token(
          &repo_path,
          &["push", "--set-upstream", &remote, &branch],
          "push",
+         github_token,
       );
    }
 
@@ -93,12 +159,12 @@ fn _git_push(repo_path: String, branch: Option<String>, remote: String) -> Resul
       args.push(&branch_str);
    }
 
-   execute_remote_git_command(&repo_path, &args, "push")
+   execute_remote_git_command_with_github_token(&repo_path, &args, "push", github_token)
 }
 
 fn current_branch_without_upstream(repo_path: &str) -> Result<Option<String>> {
    let host = RepositoryHost::detect(repo_path);
-   let output = remote_git_command(&host)
+   let output = remote_git_command(&host, None)
       .args(["status", "--porcelain=v2", "--branch"])
       .run("status")?;
    let output = String::from_utf8_lossy(&output.stdout);
@@ -122,10 +188,24 @@ fn current_branch_without_upstream(repo_path: &str) -> Result<Option<String>> {
 }
 
 pub fn git_pull(repo_path: String, branch: Option<String>, remote: String) -> Result<(), String> {
-   _git_pull(repo_path, branch, remote).into_string_error()
+   git_pull_with_github_token(repo_path, branch, remote, None)
 }
 
-fn _git_pull(repo_path: String, branch: Option<String>, remote: String) -> Result<()> {
+pub fn git_pull_with_github_token(
+   repo_path: String,
+   branch: Option<String>,
+   remote: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_pull(repo_path, branch, remote, github_token.as_deref()).into_string_error()
+}
+
+fn _git_pull(
+   repo_path: String,
+   branch: Option<String>,
+   remote: String,
+   github_token: Option<&str>,
+) -> Result<()> {
    let mut args = vec!["pull", &remote];
    let branch_str;
    if let Some(b) = branch {
@@ -133,14 +213,22 @@ fn _git_pull(repo_path: String, branch: Option<String>, remote: String) -> Resul
       args.push(&branch_str);
    }
 
-   execute_remote_git_command(&repo_path, &args, "pull")
+   execute_remote_git_command_with_github_token(&repo_path, &args, "pull", github_token)
 }
 
 pub fn git_fetch(repo_path: String, remote: Option<String>) -> Result<(), String> {
-   _git_fetch(repo_path, remote).into_string_error()
+   git_fetch_with_github_token(repo_path, remote, None)
 }
 
-fn _git_fetch(repo_path: String, remote: Option<String>) -> Result<()> {
+pub fn git_fetch_with_github_token(
+   repo_path: String,
+   remote: Option<String>,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_fetch(repo_path, remote, github_token.as_deref()).into_string_error()
+}
+
+fn _git_fetch(repo_path: String, remote: Option<String>, github_token: Option<&str>) -> Result<()> {
    let mut args = vec!["fetch"];
    let remote_str;
    if let Some(r) = remote {
@@ -148,7 +236,7 @@ fn _git_fetch(repo_path: String, remote: Option<String>) -> Result<()> {
       args.push(&remote_str);
    }
 
-   execute_remote_git_command(&repo_path, &args, "fetch")
+   execute_remote_git_command_with_github_token(&repo_path, &args, "fetch", github_token)
 }
 
 pub fn git_get_remotes(repo_path: String) -> Result<Vec<GitRemote>, String> {
@@ -276,7 +364,7 @@ mod tests {
 
    #[test]
    fn clone_rejects_empty_repository_urls() {
-      let result = _git_clone(" ".to_string(), "/tmp/r0-clone-target".to_string());
+      let result = _git_clone(" ".to_string(), "/tmp/r0-clone-target".to_string(), None);
       assert!(result.is_err());
    }
 
@@ -285,6 +373,7 @@ mod tests {
       let result = _git_clone(
          "https://github.com/Adshkumar/r0.git".to_string(),
          "r0-clone-target".to_string(),
+         None,
       );
       assert!(result.is_err());
    }
@@ -294,11 +383,13 @@ mod tests {
       let result = _git_clone(
          "ext::sh -c cp".to_string(),
          "/tmp/r0-clone-target".to_string(),
+         None,
       );
       assert!(result.unwrap_err().to_string().contains("ext transport"));
       let result = _git_clone(
          "EXT::sh -c cp".to_string(),
          "/tmp/r0-clone-target".to_string(),
+         None,
       );
       assert!(result.unwrap_err().to_string().contains("ext transport"));
    }

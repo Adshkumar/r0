@@ -1,13 +1,17 @@
 import { TerminalErrorBoundary } from "./terminal-error-boundary";
 import { WorkspaceStoreScopeContext } from "@/features/workspace/stores/create-workspace-scoped-store";
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useTerminalSlotsStore } from "../stores/terminal-slots.store";
 import { type TerminalStore, useTerminalStore } from "../stores/terminal.store";
 import { workspaceRuntimeRegistry } from "@/features/workspace/services/workspace-runtime-registry";
 import { emitAppEvent } from "@/utils/app-events";
-import { TerminalEmulator } from "./terminal";
+import { Spinner } from "@/ui/spinner";
+
+const TerminalEmulator = lazy(() =>
+  import("./terminal").then((module) => ({ default: module.TerminalEmulator })),
+);
 
 // Renders all live terminal frontends at app root. Each session owns a stable
 // wrapper <div> that's reparented (via raw appendChild) into whichever slot
@@ -114,19 +118,27 @@ function TerminalPortal({ sessionId, workspaceId }: { sessionId: string; workspa
 
   return createPortal(
     <TerminalErrorBoundary>
-      <TerminalEmulator
-        sessionId={sessionId}
-        isActive={slot?.isActive ?? false}
-        isVisible={slot?.isVisible ?? false}
-        shell={metadata?.shell}
-        initialCommand={metadata?.initialCommand}
-        environment={metadata?.environment}
-        workingDirectory={metadata?.workingDirectory}
-        remoteConnectionId={metadata?.remoteConnectionId}
-        onTerminalExit={metadata?.onTerminalExit}
-        onTerminalRef={slot?.onTerminalRef}
-        onReady={slot?.onReady}
-      />
+      <Suspense
+        fallback={
+          <div className="flex size-full items-center justify-center">
+            <Spinner label="Loading terminal" showLabel />
+          </div>
+        }
+      >
+        <TerminalEmulator
+          sessionId={sessionId}
+          isActive={slot?.isActive ?? false}
+          isVisible={slot?.isVisible ?? false}
+          shell={metadata?.shell}
+          initialCommand={metadata?.initialCommand}
+          environment={metadata?.environment}
+          workingDirectory={metadata?.workingDirectory}
+          remoteConnectionId={metadata?.remoteConnectionId}
+          onTerminalExit={metadata?.onTerminalExit}
+          onTerminalRef={slot?.onTerminalRef}
+          onReady={slot?.onReady}
+        />
+      </Suspense>
     </TerminalErrorBoundary>,
     wrapper,
   );

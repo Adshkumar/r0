@@ -46,6 +46,10 @@ import { BOTTOM_PANE_ID } from "../constants/pane";
 import { usePaneStore } from "../stores/pane.store";
 import type { PaneGroup } from "../types/pane.types";
 import type { EditorContent, TerminalContent } from "../types/pane-content.types";
+import {
+  EditorBufferShellCache,
+  type EditorBufferShell,
+} from "../services/editor-buffer-shell-cache";
 import { getPaneView, prefetchPaneViews, renderPaneView } from "../services/pane-view-registry";
 import {
   getOrCreatePaneDropTarget,
@@ -138,36 +142,13 @@ function prefetchPaneSurfaces() {
 }
 const MIN_CAROUSEL_CARD_WIDTH = 320;
 const CAROUSEL_OUTER_GAP_PX = 160;
-type EditorBufferShell = Pick<EditorContent, "id" | "path" | "name" | "type" | "readOnly">;
 type PaneRenderBuffer = Exclude<Buffer, EditorContent> | EditorBufferShell;
 
-const editorBufferShellCache = new Map<string, EditorBufferShell>();
-
-function getEditorBufferShell(buffer: EditorContent): EditorBufferShell {
-  const cached = editorBufferShellCache.get(buffer.id);
-  if (
-    cached &&
-    cached.path === buffer.path &&
-    cached.name === buffer.name &&
-    cached.readOnly === buffer.readOnly
-  ) {
-    return cached;
-  }
-
-  const shell = {
-    id: buffer.id,
-    path: buffer.path,
-    name: buffer.name,
-    type: buffer.type,
-    readOnly: buffer.readOnly,
-  } satisfies EditorBufferShell;
-  editorBufferShellCache.set(buffer.id, shell);
-  return shell;
-}
+const editorBufferShellCache = new EditorBufferShellCache();
 
 function toPaneRenderBuffer(buffer: Buffer | undefined): PaneRenderBuffer | undefined {
   if (!buffer) return undefined;
-  if (buffer.type === "editor") return getEditorBufferShell(buffer);
+  if (buffer.type === "editor") return editorBufferShellCache.get(buffer);
   return buffer;
 }
 

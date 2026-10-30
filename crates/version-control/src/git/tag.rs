@@ -1,6 +1,7 @@
 use crate::git::{
-   CheckoutResult, GitTag, IntoStringError, RepositoryHost, execute_remote_git_command,
-   format_git_time, status::has_unstaged_changes_with_cli,
+   CheckoutResult, GitTag, IntoStringError, RepositoryHost,
+   execute_remote_git_command_with_github_token, format_git_time,
+   status::has_unstaged_changes_with_cli,
 };
 use anyhow::{Context, Result};
 use git2::{Repository, Status};
@@ -163,14 +164,29 @@ fn _git_delete_tag(repo_path: String, name: String) -> Result<()> {
 }
 
 pub fn git_push_tag(repo_path: String, name: String, remote: String) -> Result<(), String> {
-   _git_push_tag(repo_path, name, remote).into_string_error()
+   git_push_tag_with_github_token(repo_path, name, remote, None)
 }
 
-fn _git_push_tag(repo_path: String, name: String, remote: String) -> Result<()> {
-   execute_remote_git_command(
+pub fn git_push_tag_with_github_token(
+   repo_path: String,
+   name: String,
+   remote: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_push_tag(repo_path, name, remote, github_token.as_deref()).into_string_error()
+}
+
+fn _git_push_tag(
+   repo_path: String,
+   name: String,
+   remote: String,
+   github_token: Option<&str>,
+) -> Result<()> {
+   execute_remote_git_command_with_github_token(
       &repo_path,
       &["push", &remote, &format!("refs/tags/{name}")],
       "push tag",
+      github_token,
    )
 }
 
@@ -179,14 +195,29 @@ pub fn git_delete_remote_tag(
    name: String,
    remote: String,
 ) -> Result<(), String> {
-   _git_delete_remote_tag(repo_path, name, remote).into_string_error()
+   git_delete_remote_tag_with_github_token(repo_path, name, remote, None)
 }
 
-fn _git_delete_remote_tag(repo_path: String, name: String, remote: String) -> Result<()> {
-   execute_remote_git_command(
+pub fn git_delete_remote_tag_with_github_token(
+   repo_path: String,
+   name: String,
+   remote: String,
+   github_token: Option<String>,
+) -> Result<(), String> {
+   _git_delete_remote_tag(repo_path, name, remote, github_token.as_deref()).into_string_error()
+}
+
+fn _git_delete_remote_tag(
+   repo_path: String,
+   name: String,
+   remote: String,
+   github_token: Option<&str>,
+) -> Result<()> {
+   execute_remote_git_command_with_github_token(
       &repo_path,
       &["push", &remote, &format!(":refs/tags/{name}")],
       "delete remote tag",
+      github_token,
    )
 }
 

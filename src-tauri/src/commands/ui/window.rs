@@ -219,8 +219,8 @@ pub fn configure_app_window(window: &tauri::WebviewWindow) {
    #[cfg(target_os = "windows")]
    {
       let _ = window.set_decorations(false);
-      if let Err(error) = set_window_material(window, true, None) {
-         log::warn!("Failed to initialize Windows window transparency: {error}");
+      if let Err(error) = set_window_material(window, false, None) {
+         log::warn!("Failed to initialize Windows window material: {error}");
       }
    }
 
@@ -300,7 +300,7 @@ pub fn set_native_window_appearance(
       window
          .set_theme((!follow_system.unwrap_or(false)).then_some(theme))
          .map_err(|e| format!("Failed to set window theme: {e}"))?;
-      let default_transparency = cfg!(target_os = "windows");
+      let default_transparency = false;
       set_window_material(
          &window,
          transparency_enabled.unwrap_or(default_transparency),

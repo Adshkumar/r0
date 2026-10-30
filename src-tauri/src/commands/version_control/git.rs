@@ -21,9 +21,20 @@ fn short_repo_path(path: &str) -> String {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn git_clone(repository_url: String, destination_path: String) -> Result<(), String> {
-   run_blocking(move || git_backend::git_clone(repository_url, backend_path(destination_path)))
-      .await
+pub async fn git_clone(
+   app: tauri::AppHandle,
+   repository_url: String,
+   destination_path: String,
+) -> Result<(), String> {
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_clone_with_github_token(
+         repository_url,
+         backend_path(destination_path),
+         github_token,
+      )
+   })
+   .await
 }
 
 #[tauri::command]
@@ -207,27 +218,45 @@ pub fn git_delete_branch(repo_path: String, branch_name: String) -> Result<(), S
 #[tauri::command]
 #[specta::specta]
 pub async fn git_push(
+   app: tauri::AppHandle,
    repo_path: String,
    branch: Option<String>,
    remote: String,
 ) -> Result<(), String> {
-   run_blocking(move || git_backend::git_push(backend_path(repo_path), branch, remote)).await
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_push_with_github_token(backend_path(repo_path), branch, remote, github_token)
+   })
+   .await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn git_pull(
+   app: tauri::AppHandle,
    repo_path: String,
    branch: Option<String>,
    remote: String,
 ) -> Result<(), String> {
-   run_blocking(move || git_backend::git_pull(backend_path(repo_path), branch, remote)).await
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_pull_with_github_token(backend_path(repo_path), branch, remote, github_token)
+   })
+   .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn git_fetch(repo_path: String, remote: Option<String>) -> Result<(), String> {
-   run_blocking(move || git_backend::git_fetch(backend_path(repo_path), remote)).await
+pub async fn git_fetch(
+   app: tauri::AppHandle,
+   repo_path: String,
+   remote: Option<String>,
+) -> Result<(), String> {
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_fetch_with_github_token(backend_path(repo_path), remote, github_token)
+   })
+   .await
 }
 
 #[tauri::command]
@@ -354,19 +383,42 @@ pub fn git_delete_tag(repo_path: String, name: String) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn git_push_tag(repo_path: String, name: String, remote: String) -> Result<(), String> {
-   run_blocking(move || git_backend::git_push_tag(backend_path(repo_path), name, remote)).await
+pub async fn git_push_tag(
+   app: tauri::AppHandle,
+   repo_path: String,
+   name: String,
+   remote: String,
+) -> Result<(), String> {
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_push_tag_with_github_token(
+         backend_path(repo_path),
+         name,
+         remote,
+         github_token,
+      )
+   })
+   .await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn git_delete_remote_tag(
+   app: tauri::AppHandle,
    repo_path: String,
    name: String,
    remote: String,
 ) -> Result<(), String> {
-   run_blocking(move || git_backend::git_delete_remote_tag(backend_path(repo_path), name, remote))
-      .await
+   run_blocking(move || {
+      let github_token = super::github_token::resolve_github_token(&app).token;
+      git_backend::git_delete_remote_tag_with_github_token(
+         backend_path(repo_path),
+         name,
+         remote,
+         github_token,
+      )
+   })
+   .await
 }
 
 #[tauri::command]

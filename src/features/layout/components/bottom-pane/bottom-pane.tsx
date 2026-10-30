@@ -11,15 +11,16 @@ import {
   getInternalTabDragData,
   getInternalTabDragHover,
 } from "@/features/tabs/services/internal-tab-drag";
-import TerminalContainer from "@/features/terminal/components/terminal-container";
 import { cn } from "@/utils/cn";
 import { useProjectStore } from "@/features/workspace/stores/project.store";
 import { useUIState } from "@/features/layout/stores/ui-state.store";
 import { WorkbenchFullscreenSurface } from "@/ui/workbench-fullscreen-surface";
+import { Spinner } from "@/ui/spinner";
 import { emitAppEvent, onAppEvent } from "@/utils/app-events";
 import { BottomBufferPane } from "./bottom-buffer-pane";
 
 const DebuggerView = lazy(() => import("@/features/debugger/components/debugger-view"));
+const TerminalContainer = lazy(() => import("@/features/terminal/components/terminal-container"));
 
 const BottomPane = () => {
   const isBottomPaneVisible = useUIState((state) => state.isBottomPaneVisible);
@@ -42,8 +43,15 @@ const BottomPane = () => {
   const [height, setHeight] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [terminalMounted, setTerminalMounted] = useState(false);
   const [isInternalHoverTarget, setIsInternalHoverTarget] = useState(false);
   const paneFrameRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isBottomPaneVisible && bottomPaneActiveTab === "terminal") {
+      setTerminalMounted(true);
+    }
+  }, [bottomPaneActiveTab, isBottomPaneVisible]);
 
   const closeBottomPane = useCallback(() => {
     setIsFullScreen(false);
@@ -236,14 +244,25 @@ const BottomPane = () => {
       onDrop={handleDrop}
     >
       <div className="h-full overflow-hidden">
-        {/* Terminal Container - Always mounted to preserve terminal sessions */}
-        {terminalEnabled && (
-          <TerminalContainer
-            currentDirectory={rootFolderPath}
-            className={cn("h-full", bottomPaneActiveTab === "terminal" ? "block" : "hidden")}
-            onFullScreen={() => setIsFullScreen(!isFullScreen)}
-            isFullScreen={isFullScreen}
-          />
+        {terminalEnabled && terminalMounted && (
+          <div className={cn("h-full", bottomPaneActiveTab === "terminal" ? "block" : "hidden")}>
+            <Suspense
+              fallback={
+                bottomPaneActiveTab === "terminal" ? (
+                  <div className="flex h-full items-center justify-center">
+                    <Spinner label="Loading terminal" showLabel />
+                  </div>
+                ) : null
+              }
+            >
+              <TerminalContainer
+                currentDirectory={rootFolderPath}
+                className="h-full"
+                onFullScreen={() => setIsFullScreen(!isFullScreen)}
+                isFullScreen={isFullScreen}
+              />
+            </Suspense>
+          </div>
         )}
 
         {debuggerEnabled && bottomPaneActiveTab === "debugger" && (

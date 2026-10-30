@@ -13,7 +13,7 @@ export const usePerformanceExperiments = createSelectors(
   create<PerformanceExperiments>()(
     persist(
       (set) => ({
-        showMonitor: import.meta.env.DEV,
+        showMonitor: false,
         actions: {
           toggleMonitor: () => set((state) => ({ showMonitor: !state.showMonitor })),
         },
