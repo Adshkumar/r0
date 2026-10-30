@@ -120,9 +120,10 @@ impl CodexAppServer {
          .stdout(Stdio::piped())
          .stderr(Stdio::piped());
 
-      if let Some(path) = user_shell_path() {
-         let current = std::env::var("PATH").unwrap_or_default();
-         command.env("PATH", format!("{current}:{path}"));
+      if let Some(path) = user_shell_path()
+         && let Some(path) = extended_path(std::env::var_os("PATH"), path.into())
+      {
+         command.env("PATH", path);
       }
 
       let mut child = match command.spawn() {
@@ -166,9 +167,7 @@ impl CodexAppServer {
       });
       let stderr_task = tokio::spawn(async move {
          let mut lines = BufReader::new(stderr).lines();
-         while let Ok(Some(line)) = lines.next_line().await {
-            log::warn!("[Codex app-server] {line}");
-         }
+         while lines.next_line().await.is_ok_and(|line| line.is_some()) {}
       });
 
       *self.process.lock().await = Some(CodexProcess {
@@ -930,9 +929,34 @@ fn configure_background_process(command: &mut Command) {
    }
 }
 
+fn extended_path(
+   current: Option<std::ffi::OsString>,
+   extra: PathBuf,
+) -> Option<std::ffi::OsString> {
+   let current = current.unwrap_or_default();
+   std::env::join_paths(std::env::split_paths(&current).chain(std::iter::once(extra))).ok()
+}
+
 #[cfg(test)]
 mod tests {
    use super::*;
+
+   #[test]
+   fn extends_path_using_the_platform_separator() {
+      let current = std::env::join_paths([PathBuf::from("first"), PathBuf::from("second")])
+         .expect("join current path");
+      let extended =
+         extended_path(Some(current), PathBuf::from("user-bin")).expect("join extended path");
+
+      assert_eq!(
+         std::env::split_paths(&extended).collect::<Vec<_>>(),
+         vec![
+            PathBuf::from("first"),
+            PathBuf::from("second"),
+            PathBuf::from("user-bin")
+         ]
+      );
+   }
 
    #[test]
    fn refreshes_codex_installation_status_in_both_directions() {
