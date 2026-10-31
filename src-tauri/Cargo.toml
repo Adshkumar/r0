@@ -1,6 +1,6 @@
 [package]
 name = "r0"
-version = "0.18.4"
+version = "0.18.5"
 description = "r0 code editor"
 authors = ["Adarsh Kumar"]
 edition = "2024"
