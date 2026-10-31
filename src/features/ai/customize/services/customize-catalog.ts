@@ -148,9 +148,11 @@ function agentBrand(id: string, iconUrl: string | null | undefined): CustomizeBr
 export function buildCustomizeAgents({
   agents,
   codexInstalled,
+  hiddenAgentIds = [],
 }: {
   agents: readonly AgentConfig[];
   codexInstalled: boolean;
+  hiddenAgentIds?: readonly string[];
 }): CustomizeAgent[] {
   const codex = BUILT_IN_AI_INTEGRATIONS.map((integration) => ({
     id: integration.id,
@@ -163,6 +165,7 @@ export function buildCustomizeAgents({
     isFeatured: true,
     unavailableReason: codexInstalled ? undefined : "Install the Codex CLI to use it here",
     isCodex: true,
+    isHidden: hiddenAgentIds.includes(integration.id),
   }));
   const acpAgents = agents.map((agent) => ({
     id: agent.id,
@@ -178,6 +181,7 @@ export function buildCustomizeAgents({
         ? undefined
         : (agent.registry?.unavailableReason ?? "Cannot be installed automatically"),
     isCodex: false,
+    isHidden: hiddenAgentIds.includes(agent.id),
   }));
   return [...codex, ...acpAgents].sort(
     (left, right) =>
@@ -240,7 +244,7 @@ export function buildInstalledNavigationItems(
       brand: entry?.brand,
     })),
     ...agents
-      .filter((agent) => agent.isInstalled)
+      .filter((agent) => agent.isInstalled && !agent.isHidden)
       .map((agent) => ({
         id: `agents${INSTALLED_ITEM_SEPARATOR}${agent.id}`,
         section: "agents" as const,

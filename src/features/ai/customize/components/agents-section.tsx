@@ -2,6 +2,7 @@ import { getAgentCli } from "@/features/ai/services/agent-clis";
 import type { PendingAgentAction } from "@/features/ai/services/agent-options";
 import { openAgentCliInTerminal } from "@/features/ai/services/open-agent-cli-in-terminal";
 import { useAgentCatalogStore } from "@/features/ai/stores/agent-catalog.store";
+import { useSettingsStore } from "@/features/settings/stores/settings.store";
 import { Alert, AlertActions, AlertDescription, AlertTitle } from "@/ui/alert";
 import Badge from "@/ui/badge";
 import { Button } from "@/ui/button";
@@ -23,6 +24,7 @@ const BUSY_LABELS = { install: "Installing", update: "Updating", uninstall: "Rem
 
 export function agentMenuItems(agent: CustomizeAgent): MenuItem[] {
   const { runAgentAction } = useAgentCatalogStore.getState().actions;
+  const updateSetting = useSettingsStore.getState().actions.updateSetting;
 
   const items: MenuItem[] = [];
   if (agent.updateAvailable) {
@@ -42,7 +44,27 @@ export function agentMenuItems(agent: CustomizeAgent): MenuItem[] {
       onClick: () => void openAgentCliInTerminal(agent.id),
     });
   }
-  if (agent.canInstall) {
+  const supportsInstalledVisibility = agent.id === "codex" || agent.id === "github-copilot-cli";
+  if (supportsInstalledVisibility) {
+    if (items.length > 0) items.push(menuSeparator("uninstall-separator"));
+    items.push({
+      id: "uninstall",
+      label: agent.isHidden ? "Add to Installed" : "Remove from Installed",
+      icon: <TrashIcon />,
+      tone: agent.isHidden ? undefined : "destructive",
+      onClick: () => {
+        if (agent.isHidden) {
+          const hidden = useSettingsStore.getState().settings.hiddenAgentIds;
+          void updateSetting(
+            "hiddenAgentIds",
+            hidden.filter((id) => id !== agent.id),
+          );
+        } else {
+          void runAgentAction(agent.id, agent.name, "uninstall");
+        }
+      },
+    });
+  } else if (agent.canInstall) {
     if (items.length > 0) items.push(menuSeparator("uninstall-separator"));
     items.push({
       id: "uninstall",
@@ -75,7 +97,7 @@ function AgentAction({
     return (
       <CustomizeAddButton
         label={`Install ${agent.name}`}
-        busy={Boolean(pendingAction)}
+        busy={pendingAction?.agentId === agent.id}
         onClick={() =>
           void useAgentCatalogStore
             .getState()
@@ -124,7 +146,8 @@ export function AgentsSection({
   const status = useAgentCatalogStore.use.agents();
   const pendingAction = useAgentCatalogStore.use.pendingAction();
   const refresh = useAgentCatalogStore.use.actions().refresh;
-  const visible = tab === "installed" ? agents.filter((agent) => agent.isInstalled) : agents;
+  const visible =
+    tab === "installed" ? agents.filter((agent) => agent.isInstalled && !agent.isHidden) : agents;
   const groups = groupCustomizeAgents(visible, query);
 
   const loadError = status.error ? (

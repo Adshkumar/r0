@@ -45,8 +45,10 @@ export function AgentsSummarySection() {
   const codex = useAgentCatalogStore.use.codex();
   const refresh = useAgentCatalogStore.use.actions().refresh;
   const skills = useSettingsStore((state) => state.settings.aiSkills);
+  const hiddenAgentIds = useSettingsStore((state) => state.settings.hiddenAgentIds);
   const installedAgents =
-    (agents.data?.filter((agent) => agent.installed).length ?? 0) + (codex.data?.installed ? 1 : 0);
+    (agents.data?.filter((agent) => agent.installed).length ?? 0) +
+    (codex.data?.installed && !hiddenAgentIds.includes("codex") ? 1 : 0);
 
   useEffect(() => {
     void refresh();

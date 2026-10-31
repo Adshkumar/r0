@@ -47,6 +47,7 @@ export interface CustomizeAgent {
   /** Why it cannot be installed from here, when it cannot. */
   unavailableReason?: string;
   isCodex: boolean;
+  isHidden?: boolean;
 }
 
 /** An entry of the navigation's Installed group. */

@@ -134,6 +134,8 @@ export interface Settings {
   aiAgentMaxSteps: number;
   aiUserRules: string;
   aiSkills: AIChatSkill[];
+  /** Agents hidden from Customize's Installed list without uninstalling their CLI. */
+  hiddenAgentIds: string[];
   /** MCP servers offered to agents. Secrets live in secure storage, not here. */
   mcpServers: McpServerSetting[];
   v0DesignSystems: LegacyV0DesignSystemProfile[];

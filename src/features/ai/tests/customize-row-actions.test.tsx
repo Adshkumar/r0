@@ -200,11 +200,29 @@ describe("agent rows", () => {
     useAgentCatalogStore.setState({ actions });
   });
 
-  it("signs in to Codex with its own CLI flow", () => {
+  it("shows Uninstall for Codex", () => {
     const items = agentMenuItems(customizeAgent({ id: "codex", name: "Codex", isCodex: true }));
-    expect(labels(items)).toEqual(["Sign in with Codex CLI", "Uninstall"]);
+    expect(labels(items)).toEqual(["Sign in with Codex CLI", "Remove from Installed"]);
     click(items, "sign-in");
     expect(mocks.openCli).toHaveBeenCalledWith("codex");
+  });
+
+  it("lets GitHub Copilot be removed from Installed", () => {
+    const runAgentAction = vi.fn(async () => {});
+    const actions = useAgentCatalogStore.getState().actions;
+    useAgentCatalogStore.setState({ actions: { ...actions, runAgentAction } });
+
+    const items = agentMenuItems(
+      customizeAgent({ id: "github-copilot-cli", name: "GitHub Copilot", canInstall: true }),
+    );
+    expect(labels(items)).toEqual(["Sign in with GitHub Copilot CLI", "Remove from Installed"]);
+    click(items, "uninstall");
+    expect(runAgentAction).toHaveBeenCalledWith(
+      "github-copilot-cli",
+      "GitHub Copilot",
+      "uninstall",
+    );
+    useAgentCatalogStore.setState({ actions });
   });
 });
 

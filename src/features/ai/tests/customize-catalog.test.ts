@@ -182,6 +182,15 @@ describe("agents", () => {
     expect(byId.get("claude-acp")?.brand).toMatchObject({ kind: "image" });
   });
 
+  it("marks hidden ACP agents so Installed removals persist", () => {
+    const copilot = buildCustomizeAgents({
+      codexInstalled: false,
+      agents: [agent({ id: "github-copilot-cli", name: "GitHub Copilot", installed: true })],
+      hiddenAgentIds: ["github-copilot-cli"],
+    });
+    expect(copilot.find((item) => item.id === "github-copilot-cli")?.isHidden).toBe(true);
+  });
+
   it("lists installed servers and agents in the navigation and routes back to them", () => {
     const items = buildInstalledNavigationItems(
       [server({ id: "s1", name: "github", transport: "http", url: "https://x" })],

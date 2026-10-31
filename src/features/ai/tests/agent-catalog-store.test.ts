@@ -95,24 +95,59 @@ describe("agent catalog", () => {
     expect(state().pendingAction).toBeNull();
   });
 
-  it("uninstalls an agent and says when a global install is still on the PATH", async () => {
+  it("removes Copilot from Installed when a global install remains after uninstall", async () => {
     vi.spyOn(commands, "uninstallAcpAgent")
-      .mockResolvedValueOnce({ id: "gemini", name: "gemini", installed: false } as never)
-      .mockResolvedValueOnce({ id: "gemini", name: "gemini", installed: true } as never);
+      .mockResolvedValueOnce({
+        id: "github-copilot-cli",
+        name: "copilot",
+        installed: false,
+      } as never)
+      .mockResolvedValueOnce({
+        id: "github-copilot-cli",
+        name: "copilot",
+        installed: true,
+      } as never);
 
-    await state().actions.runAgentAction("gemini", "Gemini CLI", "uninstall");
-    expect(toast.success).toHaveBeenCalledWith("Gemini CLI uninstalled");
+    await state().actions.runAgentAction("github-copilot-cli", "GitHub Copilot", "uninstall");
+    expect(toast.success).toHaveBeenCalledWith("GitHub Copilot uninstalled");
 
-    await state().actions.runAgentAction("gemini", "Gemini CLI", "uninstall");
-    expect(toast.info).toHaveBeenCalledWith("Gemini CLI managed install removed", {
-      description: "A global installation is still detected on your PATH.",
+    await state().actions.runAgentAction("github-copilot-cli", "GitHub Copilot", "uninstall");
+    expect(toast.success).toHaveBeenCalledWith("GitHub Copilot removed from Installed", {
+      description: "The detected Copilot CLI is managed by another installation.",
     });
+  });
+
+  it("removes Codex from R0 without uninstalling its external CLI", async () => {
+    useAgentCatalogStore.setState({
+      codex: {
+        data: {
+          installed: true,
+          version: "1.0",
+          running: false,
+          initialized: true,
+          state: "ready",
+          error: null,
+          cwd: null,
+          threadId: null,
+          turnId: null,
+          account: null,
+        },
+        status: "ready",
+        error: null,
+        updatedAt: Date.now(),
+      },
+    });
+
+    await state().actions.runAgentAction("codex", "Codex", "uninstall");
+    expect(toast.success).toHaveBeenCalledWith("Codex removed from Installed", {
+      description: "The Codex CLI is managed outside R0 and remains installed.",
+    });
+    expect(state().codex.data?.installed).toBe(true);
   });
 
   it("ignores actions for built-in agents and while another runs", async () => {
     const install = vi.spyOn(commands, "installAcpAgent");
     await state().actions.runAgentAction("custom", "R0", "install");
-    await state().actions.runAgentAction("codex", "Codex", "install");
     useAgentCatalogStore.setState({ pendingAction: { agentId: "x", action: "install" } });
     await state().actions.runAgentAction("gemini", "Gemini", "install");
     expect(install).not.toHaveBeenCalled();

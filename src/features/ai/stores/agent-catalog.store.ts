@@ -1,6 +1,7 @@
 import { commands } from "@/bindings/commands";
 import { create } from "zustand";
 import { toast } from "sonner";
+import { useSettingsStore } from "@/features/settings/stores/settings.store";
 import { CodexIntegrationService } from "@/features/ai/integrations/codex/codex-integration-service";
 import type { CodexIntegrationStatus } from "@/features/ai/integrations/codex/codex-types";
 import { CODEX_INTEGRATION_ID } from "@/features/ai/integrations/integration-registry";
@@ -79,6 +80,13 @@ export const useAgentCatalogStore = createSelectors(
     }
     const refreshCodex = (force = false) =>
       load("codex", () => CodexIntegrationService.status(), force);
+    const hideAgentFromInstalled = async (agentId: string) => {
+      const hiddenAgentIds = useSettingsStore.getState().settings.hiddenAgentIds;
+      if (hiddenAgentIds.includes(agentId)) return;
+      await useSettingsStore
+        .getState()
+        .actions.updateSetting("hiddenAgentIds", [...hiddenAgentIds, agentId]);
+    };
     // `fromRegistry` downloads the ACP Registry again instead of using the hourly copy.
     const refreshAgents = (force = false, fromRegistry = false) =>
       load(
@@ -102,11 +110,19 @@ export const useAgentCatalogStore = createSelectors(
           if (agentId === "custom" || get().pendingAction) return;
           if (agentId === CODEX_INTEGRATION_ID) {
             if (action === "uninstall") {
-              toast.info(`${agentName} managed install removed`, {
-                description: "A global installation is still detected on your PATH.",
-              });
-            } else {
-              toast.success(`${agentName} ${AGENT_ACTION_PAST_TENSE[action]}`);
+              set({ pendingAction: { agentId, action } });
+              try {
+                await hideAgentFromInstalled(agentId);
+                toast.success(`${agentName} removed from Installed`, {
+                  description: "The Codex CLI is managed outside R0 and remains installed.",
+                });
+              } catch (error) {
+                toast.error(`Failed to ${action} ${agentName}`, {
+                  description: getAgentErrorMessage(error),
+                });
+              } finally {
+                set({ pendingAction: null });
+              }
             }
             return;
           }
@@ -121,6 +137,13 @@ export const useAgentCatalogStore = createSelectors(
               },
             });
             if (action === "uninstall" && updated.installed) {
+              if (agentId === "github-copilot-cli") {
+                await hideAgentFromInstalled(agentId);
+                toast.success(`${agentName} removed from Installed`, {
+                  description: "The detected Copilot CLI is managed by another installation.",
+                });
+                return;
+              }
               toast.info(`${agentName} managed install removed`, {
                 description: "A global installation is still detected on your PATH.",
               });

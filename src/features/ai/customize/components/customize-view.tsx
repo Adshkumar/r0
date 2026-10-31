@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { McpServerDialog } from "@/features/ai/components/mcp/mcp-server-dialog";
 import { useAgentCatalogStore } from "@/features/ai/stores/agent-catalog.store";
+import { useSettingsStore } from "@/features/settings/stores/settings.store";
 import { useBufferStore } from "@/features/editor/stores/buffer.store";
 import { useExtensionStore } from "@/extensions/registry/extension-store";
 import { useUIState } from "@/features/layout/stores/ui-state.store";
@@ -108,9 +109,10 @@ export function CustomizeView() {
     void refreshAgents();
   }, [refreshAgents]);
   const codexInstalled = codexSource.data?.installed ?? false;
+  const hiddenAgentIds = useSettingsStore((state) => state.settings.hiddenAgentIds);
   const agents = useMemo(
-    () => buildCustomizeAgents({ agents: agentSource.data ?? [], codexInstalled }),
-    [agentSource.data, codexInstalled],
+    () => buildCustomizeAgents({ agents: agentSource.data ?? [], codexInstalled, hiddenAgentIds }),
+    [agentSource.data, codexInstalled, hiddenAgentIds],
   );
 
   const installedItems = buildInstalledNavigationItems(mcpEditor.servers, agents);
