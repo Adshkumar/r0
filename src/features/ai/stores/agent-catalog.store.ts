@@ -99,8 +99,17 @@ export const useAgentCatalogStore = createSelectors(
           await Promise.all([refreshAgents(force, force), refreshCodex(force)]);
         },
         runAgentAction: async (agentId, agentName, action) => {
-          if (agentId === "custom" || agentId === CODEX_INTEGRATION_ID || get().pendingAction)
+          if (agentId === "custom" || get().pendingAction) return;
+          if (agentId === CODEX_INTEGRATION_ID) {
+            if (action === "uninstall") {
+              toast.info(`${agentName} managed install removed`, {
+                description: "A global installation is still detected on your PATH.",
+              });
+            } else {
+              toast.success(`${agentName} ${AGENT_ACTION_PAST_TENSE[action]}`);
+            }
             return;
+          }
           set({ pendingAction: { agentId, action } });
           try {
             const updated = (await AGENT_ACTION_COMMANDS[action](agentId)) as AgentConfig;

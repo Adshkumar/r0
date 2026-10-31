@@ -1,27 +1,14 @@
-import { toast } from "sonner";
-import { signInToCodex, signOutOfCodex } from "@/features/ai/integrations/codex/codex-account-api";
 import { getAgentCli } from "@/features/ai/services/agent-clis";
-import {
-  getAgentErrorMessage,
-  type PendingAgentAction,
-} from "@/features/ai/services/agent-options";
+import type { PendingAgentAction } from "@/features/ai/services/agent-options";
 import { openAgentCliInTerminal } from "@/features/ai/services/open-agent-cli-in-terminal";
 import { useAgentCatalogStore } from "@/features/ai/stores/agent-catalog.store";
-import { useUIState } from "@/features/layout/stores/ui-state.store";
 import { Alert, AlertActions, AlertDescription, AlertTitle } from "@/ui/alert";
 import Badge from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { menuSeparator, type MenuItem } from "@/ui/dropdown";
 import { EmptyState } from "@/ui/empty";
 import { GroupedSection } from "@/ui/grouped-section";
-import {
-  ArrowUpIcon,
-  ChatBubbleTextIcon,
-  SettingsIcon,
-  SignInIcon,
-  SignOutIcon,
-  TrashIcon,
-} from "@/ui/icons";
+import { ArrowUpIcon, ChatBubbleTextIcon, SignInIcon, TrashIcon } from "@/ui/icons";
 import { Spinner } from "@/ui/spinner";
 import { groupCustomizeAgents } from "../services/customize-catalog";
 import type { CustomizeAgent, CustomizeTab } from "../types/customize.types";
@@ -34,41 +21,8 @@ import {
 
 const BUSY_LABELS = { install: "Installing", update: "Updating", uninstall: "Removing" } as const;
 
-async function runCodexAccountAction(action: () => Promise<unknown>, failure: string) {
-  try {
-    await action();
-  } catch (error) {
-    toast.error(failure, { description: getAgentErrorMessage(error) });
-  }
-}
-
 export function agentMenuItems(agent: CustomizeAgent): MenuItem[] {
   const { runAgentAction } = useAgentCatalogStore.getState().actions;
-
-  if (agent.isCodex) {
-    return [
-      {
-        id: "sign-in",
-        label: "Sign in with ChatGPT",
-        icon: <SignInIcon />,
-        onClick: () =>
-          void runCodexAccountAction(signInToCodex, "Couldn't start the Codex sign-in"),
-      },
-      {
-        id: "sign-out",
-        label: "Sign out",
-        icon: <SignOutIcon />,
-        onClick: () => void runCodexAccountAction(signOutOfCodex, "Couldn't sign out of Codex"),
-      },
-      menuSeparator("settings-separator"),
-      {
-        id: "settings",
-        label: "Codex settings…",
-        icon: <SettingsIcon />,
-        onClick: () => useUIState.getState().openSettings("ai-agents", "Codex"),
-      },
-    ];
-  }
 
   const items: MenuItem[] = [];
   if (agent.updateAvailable) {

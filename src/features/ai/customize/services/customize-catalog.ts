@@ -158,7 +158,7 @@ export function buildCustomizeAgents({
     description: integration.description,
     brand: agentBrand(integration.id, null),
     isInstalled: codexInstalled,
-    canInstall: false,
+    canInstall: codexInstalled,
     updateAvailable: false,
     isFeatured: true,
     unavailableReason: codexInstalled ? undefined : "Install the Codex CLI to use it here",

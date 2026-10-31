@@ -200,13 +200,11 @@ describe("agent rows", () => {
     useAgentCatalogStore.setState({ actions });
   });
 
-  it("signs in and out of Codex with its own account flow", () => {
+  it("signs in to Codex with its own CLI flow", () => {
     const items = agentMenuItems(customizeAgent({ id: "codex", name: "Codex", isCodex: true }));
-    expect(labels(items)).toEqual(["Sign in with ChatGPT", "Sign out", "Codex settings…"]);
+    expect(labels(items)).toEqual(["Sign in with Codex CLI", "Uninstall"]);
     click(items, "sign-in");
-    click(items, "sign-out");
-    expect(mocks.signIn).toHaveBeenCalled();
-    expect(mocks.signOut).toHaveBeenCalled();
+    expect(mocks.openCli).toHaveBeenCalledWith("codex");
   });
 });
 
