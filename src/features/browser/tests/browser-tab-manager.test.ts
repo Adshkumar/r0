@@ -326,6 +326,7 @@ describe("workbench UI over a browser page", () => {
 
     const toaster = document.createElement("ol");
     toaster.setAttribute("data-sonner-toaster", "");
+    document.getElementById("root")?.append(toaster);
     const toast = place(document.createElement("li"), {
       left: 300,
       top: 380,
@@ -334,7 +335,6 @@ describe("workbench UI over a browser page", () => {
     });
     (toast as HTMLElement).style.backgroundColor = "rgb(30, 30, 30)";
     toaster.append(toast);
-    document.getElementById("root")?.append(toaster);
     await settle();
 
     expect(lastLayout("browser-0")).toEqual([

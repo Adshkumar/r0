@@ -144,6 +144,7 @@ async function release() {
   const isDryRun = rawArgs.includes("--dry-run");
   const releaseArgs = rawArgs.filter((arg) => arg !== "--dry-run");
   const tagOnly = process.env.RELEASE_TAG_ONLY === "1";
+  const existingVersion = process.env.RELEASE_EXISTING_VERSION === "1";
 
   if (!process.env.RELEASE_SKIP_CHECKS) {
     log("Running release checks...\n", "magenta");
@@ -161,8 +162,17 @@ async function release() {
 
   info(`Current version: ${currentVersion}`);
 
-  const newVersion = getNextVersion(currentVersion, releaseArgs);
+  const newVersion = existingVersion ? currentVersion : getNextVersion(currentVersion, releaseArgs);
   info(`New version: ${newVersion}`);
+
+  if (existingVersion) {
+    const localTag = await $`git show-ref --verify --quiet refs/tags/v${newVersion}`.nothrow();
+    const remoteTag =
+      await $`git ls-remote --exit-code --tags origin refs/tags/v${newVersion}`.nothrow();
+    if (localTag.exitCode === 0 || remoteTag.exitCode === 0) {
+      error(`Release tag v${newVersion} already exists`);
+    }
+  }
 
   log("\nFetching recent commits...\n", "yellow");
   const commits = await getCommitsSinceLastTag();
@@ -180,11 +190,21 @@ async function release() {
   }
 
   log("\n  This will:", "yellow");
-  log(
-    `  1. Update package.json, tauri.conf.json, Cargo.toml, and Cargo.lock to v${newVersion}`,
-    "yellow",
-  );
-  if (isDryRun) {
+  if (existingVersion) {
+    log(`  1. Validate CI for the current v${newVersion} commit`, "yellow");
+    log(`  2. Create and push tag v${newVersion}\n`, "yellow");
+  } else {
+    log(
+      `  1. Update package.json, tauri.conf.json, Cargo.toml, and Cargo.lock to v${newVersion}`,
+      "yellow",
+    );
+  }
+  if (existingVersion) {
+    log(
+      "  This resumes a version commit that was already pushed without its release tag.\n",
+      "yellow",
+    );
+  } else if (isDryRun) {
     log("  2. Verify the working tree diff locally", "yellow");
     log("  3. Restore all touched files without commit, tag, or push\n", "yellow");
   } else if (tagOnly) {
@@ -205,6 +225,22 @@ async function release() {
       log("Cancelled", "yellow");
       process.exit(0);
     }
+  }
+
+  if (existingVersion) {
+    const releaseSha = (await $`git rev-parse HEAD`.text()).trim();
+    log(`\nValidating CI for existing v${newVersion} commit ${releaseSha}...\n`, "magenta");
+    await waitForReleaseCi(releaseSha);
+    if ((await $`git rev-parse HEAD`.text()).trim() !== releaseSha) {
+      throw new Error("HEAD changed during CI validation; refusing to tag another commit");
+    }
+    await checkWorkingDirectory();
+    await $`git tag v${newVersion} ${releaseSha}`;
+    success(`Created tag: v${newVersion}`);
+    await $`git push origin v${newVersion}`;
+    success("Pushed tag");
+    log(`\nRelease process complete. GitHub Actions will build draft v${newVersion}.\n`, "green");
+    return;
   }
 
   const originalFiles = new Map<string, string>();
