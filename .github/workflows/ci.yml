@@ -63,8 +63,9 @@ jobs:
 
       # The Oct. 31 nightly triggers E0391 in zvariant_utils on Unix.
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@nightly-2026-10-29
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-10-29
           components: rustfmt, clippy, llvm-tools-preview
 
       - name: Install cargo-llvm-cov
