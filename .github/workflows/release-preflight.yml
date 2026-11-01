@@ -58,6 +58,11 @@ jobs:
 
           bun scripts/release/release-assets.mjs
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-29
+
       - name: Validate Rust targets
         run: |
           set -euo pipefail

@@ -199,9 +199,10 @@ jobs:
         with:
           bun-version: 1.3.14
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@1.99.0
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-10-29
           targets: ${{ matrix.target }}
 
       - name: Ensure Rust target is installed

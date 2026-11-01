@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # The Oct. 31 nightly triggers E0391 in zvariant_utils on Unix.
+      # Keep CI on the nightly that passes the zvariant_utils build on Unix.
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -123,7 +123,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-29
 
       - name: Install cargo-audit
         uses: taiki-e/install-action@cargo-audit
