@@ -61,8 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The Oct. 31 nightly triggers E0391 in zvariant_utils on Unix.
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@nightly-2026-10-29
         with:
           components: rustfmt, clippy, llvm-tools-preview
 

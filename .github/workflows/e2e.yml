@@ -59,7 +59,7 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@nightly-2026-10-29
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
