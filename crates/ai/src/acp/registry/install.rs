@@ -24,6 +24,8 @@ use std::{
 /// Agent builds larger than this are refused.
 const MAX_DOWNLOAD_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// A version directory name: the version, made safe for a path, and a short hash of what was
 /// installed (the archive URL and checksum, or the npm package), so a re-published version with
@@ -312,6 +314,11 @@ pub fn install_npm(
       .map_err(|error| error.to_string())?;
 
       let mut command = Command::new(node);
+      #[cfg(windows)]
+      {
+         use std::os::windows::process::CommandExt;
+         command.creation_flags(CREATE_NO_WINDOW);
+      }
       command
          .arg(npm_cli)
          .args([

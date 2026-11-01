@@ -17,13 +17,17 @@ import { GroupedSection } from "@/ui/grouped-section";
 import {
   ArrowUpIcon,
   ChatBubbleTextIcon,
+  PlusIcon,
   SettingsIcon,
   SignInIcon,
   SignOutIcon,
   TrashIcon,
 } from "@/ui/icons";
 import { Spinner } from "@/ui/spinner";
-import { groupCustomizeAgents } from "../services/customize-catalog";
+import {
+  filterInstalledCustomizeAgents,
+  groupCustomizeAgents,
+} from "../services/customize-catalog";
 import type { CustomizeAgent, CustomizeTab } from "../types/customize.types";
 import {
   CustomizeAddButton,
@@ -89,13 +93,14 @@ export function agentMenuItems(agent: CustomizeAgent): MenuItem[] {
     });
   }
   if (agent.canInstall) {
-    if (items.length > 0) items.push(menuSeparator("uninstall-separator"));
+    if (items.length > 0) items.push(menuSeparator("install-separator"));
     items.push({
-      id: "uninstall",
-      label: "Uninstall",
-      icon: <TrashIcon />,
-      tone: "destructive",
-      onClick: () => void runAgentAction(agent.id, agent.name, "uninstall"),
+      id: agent.isManaged ? "uninstall" : "install",
+      label: agent.isManaged ? "Uninstall" : "Install managed copy",
+      icon: agent.isManaged ? <TrashIcon /> : <PlusIcon />,
+      tone: agent.isManaged ? "destructive" : undefined,
+      onClick: () =>
+        void runAgentAction(agent.id, agent.name, agent.isManaged ? "uninstall" : "install"),
     });
   }
   return items;
@@ -170,7 +175,7 @@ export function AgentsSection({
   const status = useAgentCatalogStore.use.agents();
   const pendingAction = useAgentCatalogStore.use.pendingAction();
   const refresh = useAgentCatalogStore.use.actions().refresh;
-  const visible = tab === "installed" ? agents.filter((agent) => agent.isInstalled) : agents;
+  const visible = tab === "installed" ? filterInstalledCustomizeAgents(agents) : agents;
   const groups = groupCustomizeAgents(visible, query);
 
   const loadError = status.error ? (

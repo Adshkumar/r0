@@ -40,6 +40,8 @@ export interface CustomizeAgent {
   description: string;
   brand?: CustomizeBrand;
   isInstalled: boolean;
+  /** The ACP agent has an app-managed install; Codex is a separate built-in integration. */
+  isManaged: boolean;
   canInstall: boolean;
   updateAvailable: boolean;
   /** R0 ships it, rather than only the ACP Registry listing it. */

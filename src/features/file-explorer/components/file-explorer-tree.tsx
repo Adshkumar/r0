@@ -124,7 +124,7 @@ interface FileExplorerTreeProps {
     fileName: string,
   ) => void | string | Promise<string | undefined>;
   onCreateNewFolderInDirectory?: (directoryPath: string, folderName: string) => void;
-  onDeletePath?: (path: string, isDir: boolean) => void;
+  onDeletePath?: (path: string, isDir: boolean) => void | Promise<void>;
   onGenerateImage?: (directoryPath: string) => void;
   onUpdateFiles?: (files: FileEntry[]) => void;
   onRenamePath?: (path: string, newName?: string) => void;
@@ -272,6 +272,12 @@ function FileExplorerTreeComponent({
   const showAlertDialog = useCallback((title: string, message: string) => {
     setAlertDialog({ title, message });
   }, []);
+
+  const showDeleteError = useCallback(
+    (error: unknown) =>
+      showAlertDialog("Delete Failed", error instanceof Error ? error.message : String(error)),
+    [showAlertDialog],
+  );
 
   const handleMoveError = useCallback(
     (message: string) => showAlertDialog("Move Failed", message),
@@ -952,9 +958,9 @@ function FileExplorerTreeComponent({
         return;
       }
 
-      void Promise.resolve(onDeletePath?.(candidate.path, candidate.isDir));
+      void Promise.resolve(onDeletePath?.(candidate.path, candidate.isDir)).catch(showDeleteError);
     },
-    [fileTreeSettings.confirmBeforeFileDelete, onDeletePath],
+    [fileTreeSettings.confirmBeforeFileDelete, onDeletePath, showDeleteError],
   );
 
   const { setContextMenu, handleContextMenu, contextMenuElement } = useFileExplorerContextMenu({
@@ -1125,10 +1131,13 @@ function FileExplorerTreeComponent({
     try {
       await Promise.resolve(onDeletePath?.(deleteCandidate.path, deleteCandidate.isDir));
       setDeleteCandidate(null);
+    } catch (error) {
+      setDeleteCandidate(null);
+      showDeleteError(error);
     } finally {
       setIsDeletingPath(false);
     }
-  }, [deleteCandidate, onDeletePath]);
+  }, [deleteCandidate, onDeletePath, showDeleteError]);
 
   useEffect(() => {
     if (!activePath || !fileOpenBenchmark.has(activePath)) return;

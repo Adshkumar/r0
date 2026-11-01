@@ -7,6 +7,7 @@ import {
   buildMcpCatalogGroups,
   buildSkillCatalogRows,
   createMcpDraftFromCatalog,
+  filterInstalledCustomizeAgents,
   findCatalogEntry,
   groupCustomizeAgents,
   isCatalogServer,
@@ -141,7 +142,20 @@ describe("agents", () => {
   const agents = buildCustomizeAgents({
     codexInstalled: false,
     agents: [
-      agent({ id: "zed", name: "Zed Agent", source: "registry", installed: true }),
+      agent({
+        id: "zed",
+        name: "Zed Agent",
+        source: "registry",
+        installed: true,
+        managed: true,
+      }),
+      agent({
+        id: "global-agent",
+        name: "Global Agent",
+        source: "extension",
+        installed: true,
+        managed: false,
+      }),
       agent({ id: "gemini-cli", name: "Gemini CLI", source: "extension" }),
       agent({
         id: "locked",
@@ -154,6 +168,7 @@ describe("agents", () => {
         id: "claude-acp",
         name: "Claude",
         installed: true,
+        managed: true,
         updateAvailable: true,
       }),
     ],
@@ -164,6 +179,7 @@ describe("agents", () => {
       "claude-acp",
       "codex",
       "gemini-cli",
+      "global-agent",
       "locked",
       "zed",
     ]);
@@ -180,6 +196,23 @@ describe("agents", () => {
     expect(byId.get("locked")?.unavailableReason).toBe("No build for this platform");
     expect(byId.get("claude-acp")).toMatchObject({ updateAvailable: true });
     expect(byId.get("claude-acp")?.brand).toMatchObject({ kind: "image" });
+    expect(byId.get("global-agent")).toMatchObject({
+      isInstalled: true,
+      isManaged: false,
+      updateAvailable: false,
+    });
+  });
+
+  it("shows installed Codex and managed agents, but not unmanaged global agents", () => {
+    const installedAgents = agents.map((agent) =>
+      agent.isCodex ? { ...agent, isInstalled: true } : agent,
+    );
+
+    expect(filterInstalledCustomizeAgents(installedAgents).map((item) => item.id)).toEqual([
+      "claude-acp",
+      "codex",
+      "zed",
+    ]);
   });
 
   it("lists installed servers and agents in the navigation and routes back to them", () => {

@@ -113,7 +113,8 @@ export const useAgentCatalogStore = createSelectors(
             });
             if (action === "uninstall" && updated.installed) {
               toast.info(`${agentName} managed install removed`, {
-                description: "A global installation is still detected on your PATH.",
+                description:
+                  "A global CLI remains available in Catalog; only the managed copy was removed.",
               });
             } else {
               toast.success(`${agentName} ${AGENT_ACTION_PAST_TENSE[action]}`);

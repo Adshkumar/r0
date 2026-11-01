@@ -105,7 +105,7 @@ describe("agent catalog", () => {
 
     await state().actions.runAgentAction("gemini", "Gemini CLI", "uninstall");
     expect(toast.info).toHaveBeenCalledWith("Gemini CLI managed install removed", {
-      description: "A global installation is still detected on your PATH.",
+      description: "A global CLI remains available in Catalog; only the managed copy was removed.",
     });
   });
 

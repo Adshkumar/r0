@@ -158,6 +158,7 @@ export function buildCustomizeAgents({
     description: integration.description,
     brand: agentBrand(integration.id, null),
     isInstalled: codexInstalled,
+    isManaged: false,
     canInstall: false,
     updateAvailable: false,
     isFeatured: true,
@@ -170,8 +171,9 @@ export function buildCustomizeAgents({
     description: agent.description ?? "ACP-compatible coding agent",
     brand: agentBrand(agent.id, agent.icon),
     isInstalled: agent.installed,
+    isManaged: agent.managed,
     canInstall: agent.canInstall,
-    updateAvailable: agent.installed && agent.canInstall && agent.updateAvailable,
+    updateAvailable: agent.installed && agent.managed && agent.canInstall && agent.updateAvailable,
     isFeatured: agent.source !== "registry",
     unavailableReason:
       agent.installed || agent.canInstall
@@ -196,6 +198,10 @@ export function groupCustomizeAgents(
     { id: "featured", label: "Featured", rows: visible.filter((agent) => agent.isFeatured) },
     { id: "registry", label: "ACP Registry", rows: visible.filter((agent) => !agent.isFeatured) },
   ].filter((group) => group.rows.length > 0);
+}
+
+export function filterInstalledCustomizeAgents(agents: readonly CustomizeAgent[]) {
+  return agents.filter((agent) => agent.isInstalled && (agent.isCodex || agent.isManaged));
 }
 
 export interface SkillCatalogRow {
@@ -227,7 +233,7 @@ export function filterPersonalSkills(skills: readonly AIChatSkill[], query = "")
 
 const INSTALLED_ITEM_SEPARATOR = ":";
 
-/** The navigation's Installed group: configured MCP servers, then installed agents. */
+/** The navigation's Installed group: configured MCP servers and app-managed agents. */
 export function buildInstalledNavigationItems(
   servers: readonly McpServerSetting[],
   agents: readonly CustomizeAgent[],
@@ -240,7 +246,7 @@ export function buildInstalledNavigationItems(
       brand: entry?.brand,
     })),
     ...agents
-      .filter((agent) => agent.isInstalled)
+      .filter((agent) => agent.isInstalled && (agent.isCodex || agent.isManaged))
       .map((agent) => ({
         id: `agents${INSTALLED_ITEM_SEPARATOR}${agent.id}`,
         section: "agents" as const,

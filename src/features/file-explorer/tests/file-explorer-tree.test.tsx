@@ -473,6 +473,19 @@ describe("file explorer tree", () => {
     expect(within(document.body).queryByText(/delete the file/)).toBeNull();
   });
 
+  it("shows a clear error when deleting a file fails", async () => {
+    handlers.onDeletePath.mockRejectedValueOnce(new Error("Permission denied"));
+    await render();
+    await openContextMenu("/repo/README.md");
+    await chooseMenuItem("Delete");
+    await act(async () => within(document.body).getByRole("button", { name: "Delete" }).click());
+    await flush();
+
+    expect(within(document.body).getByText("Delete Failed")).toBeTruthy();
+    expect(within(document.body).getByText("Permission denied")).toBeTruthy();
+    expect(within(document.body).queryByText(/delete the file "README.md"/)).toBeNull();
+  });
+
   it("deletes straight away when confirmation is turned off", async () => {
     useSettingsStore.setState((state) => ({
       settings: { ...state.settings, confirmBeforeFileDelete: false },

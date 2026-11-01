@@ -76,6 +76,12 @@ describe("Tauri security surface", () => {
     }
   });
 
+  it("allows the file explorer to remove selected local files and folders", () => {
+    expect(
+      permissionIds(readJson<Capability>(path.join(tauriDir, "capabilities/main.json"))),
+    ).toContain("fs:allow-remove");
+  });
+
   it("gives remote pages no capabilities", () => {
     // Browser tabs are wry webviews outside Tauri's webview manager and talk to the
     // workbench only through their own bridge, so no capability needs remote URLs.

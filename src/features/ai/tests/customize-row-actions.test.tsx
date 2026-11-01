@@ -95,6 +95,7 @@ function customizeAgent(changes: Partial<CustomizeAgent>): CustomizeAgent {
     name: "Gemini CLI",
     description: "",
     isInstalled: true,
+    isManaged: true,
     canInstall: true,
     updateAvailable: false,
     isFeatured: true,
@@ -197,6 +198,19 @@ describe("agent rows", () => {
     expect(runAgentAction).toHaveBeenCalledWith("gemini-cli", "Gemini CLI", "update");
     expect(runAgentAction).toHaveBeenCalledWith("gemini-cli", "Gemini CLI", "uninstall");
     expect(mocks.openCli).toHaveBeenCalledWith("gemini-cli");
+    useAgentCatalogStore.setState({ actions });
+  });
+
+  it("offers a managed install, not uninstall, for a globally installed agent", () => {
+    const runAgentAction = vi.fn(async () => {});
+    const actions = useAgentCatalogStore.getState().actions;
+    useAgentCatalogStore.setState({ actions: { ...actions, runAgentAction } });
+
+    const items = agentMenuItems(customizeAgent({ isInstalled: true, isManaged: false }));
+    expect(labels(items)).toEqual(["Sign in with Gemini CLI", "Install managed copy"]);
+    click(items, "install");
+    expect(runAgentAction).toHaveBeenCalledWith("gemini-cli", "Gemini CLI", "install");
+    expect(items.some((item) => item.id === "uninstall")).toBe(false);
     useAgentCatalogStore.setState({ actions });
   });
 
