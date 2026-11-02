@@ -186,6 +186,12 @@ export const featureBoundaries: FeatureBoundaryConfig = {
     diagnostics: {
       "components/diagnostics-activity-control.tsx": ACTIVITY_CHROME,
     },
+    diagrams: {
+      "components/diagram-preview.tsx":
+        "Mermaid diagram editor and preview mounted by the code editor.",
+      "components/diagram-studio-controls.tsx":
+        "Mermaid view, template and history controls mounted by the code editor.",
+    },
     editor: {
       "stores/buffer-index.ts":
         "Cached id/path lookups over the buffer list, used next to the buffer store.",
@@ -342,6 +348,7 @@ export const featureBoundaries: FeatureBoundaryConfig = {
         "auth",
         "debugger",
         "diagnostics",
+        "diagrams",
         "editor",
         "file-explorer",
         "file-system",
@@ -381,6 +388,10 @@ export const featureBoundaries: FeatureBoundaryConfig = {
       shell: ["bootstrap", "command-palette", "quick-open", "web-workbench"],
     },
     tierOverrides: {
+      "diagrams/services/diagram-ai-edit.ts": {
+        tier: "features",
+        reason: "AI-backed editing integration used by the core-tier diagram editor.",
+      },
       "keymaps/commands/**": {
         tier: "shell",
         reason: "Command definitions and their actions; they call into every feature.",

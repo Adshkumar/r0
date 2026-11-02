@@ -27,6 +27,7 @@ import {
   getRenderableMermaidSource,
   needsSequenceDiagramDeclaration,
 } from "../services/mermaid-source";
+import { requestMermaidEdit } from "../services/diagram-ai-edit";
 import { PaneResizeHandle } from "@/features/panes/components/pane-resize-handle";
 import {
   MERMAID_THEME_PRESETS,
@@ -502,25 +503,17 @@ export function DiagramPreview({
     setGenerationError(null);
 
     try {
-      const { requestInlineEdit } =
-        await import("@/features/ai/intelligence/services/intelligence-text-service");
-      const { editedText } = await requestInlineEdit(
-        {
-          model: "",
-          beforeSelection: "",
-          selectedText: sourceAtRequest,
-          afterSelection: "",
-          instruction: [
-            "Create or revise the Mermaid diagram to satisfy the user's request.",
-            "For edits, preserve unrelated nodes, edges, identifiers, and labels; make the smallest targeted change possible.",
-            "Use Mermaid syntax supported by Mermaid 12. Return only Mermaid source, without Markdown fences or explanation.",
-            request,
-          ].join("\n\n"),
-          filePath,
-          languageId: "mermaid",
-        },
-        { signal: controller.signal },
-      );
+      const editedText = await requestMermaidEdit({
+        filePath,
+        source: sourceAtRequest,
+        instruction: [
+          "Create or revise the Mermaid diagram to satisfy the user's request.",
+          "For edits, preserve unrelated nodes, edges, identifiers, and labels; make the smallest targeted change possible.",
+          "Use Mermaid syntax supported by Mermaid 12. Return only Mermaid source, without Markdown fences or explanation.",
+          request,
+        ].join("\n\n"),
+        signal: controller.signal,
+      });
       if (controller.signal.aborted) return;
 
       const generated = normalizeGeneratedDiagram(editedText);
