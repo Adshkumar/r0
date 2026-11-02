@@ -127,6 +127,26 @@ export function createNewFile(): void {
   useFileSystemStore.getState().handleCreateNewFile();
 }
 
+export async function createNewDiagram(): Promise<void> {
+  const { DIAGRAM_TEMPLATES } = await import("@/features/diagrams/services/diagram-document");
+  const bufferStore = useBufferStore.getState();
+  const diagramCount = bufferStore.buffers.filter(
+    (buffer) => buffer.path.startsWith("untitled:") && /\.mmd$/i.test(buffer.path),
+  ).length;
+  const name =
+    diagramCount === 0 ? "Untitled Diagram.mmd" : `Untitled Diagram ${diagramCount + 1}.mmd`;
+  const bufferId = bufferStore.actions.openBuffer(
+    `untitled:${name}`,
+    name,
+    DIAGRAM_TEMPLATES[0].content,
+    false,
+    undefined,
+    false,
+    true,
+  );
+  bufferStore.actions.setActiveBuffer(bufferId);
+}
+
 /** The native folder dialog the File menu's "Open Folder" item shows. */
 export async function openFolderDialog(): Promise<void> {
   await useFileSystemStore.getState().handleOpenFolder();

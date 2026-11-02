@@ -65,10 +65,10 @@ export function PaneResizeHandle({
       const secondPane = nextPaneRef.current;
 
       if (firstPane) {
-        firstPane.style.flexGrow = String(sizes[0]);
+        firstPane.style.flex = `${sizes[0]} 1 0%`;
       }
       if (secondPane) {
-        secondPane.style.flexGrow = String(sizes[1]);
+        secondPane.style.flex = `${sizes[1]} 1 0%`;
       }
     };
 

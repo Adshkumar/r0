@@ -13,6 +13,7 @@ import {
   closeTabsToLeft,
   closeTabsToRight,
   createNewFile,
+  createNewDiagram,
   openFolderDialog,
   saveActiveFileAs,
   showNewTab,
@@ -144,6 +145,31 @@ describe("file command actions", () => {
     expect(createFile).not.toHaveBeenCalled();
     expect(useBufferStore.getState().buffers.map((buffer) => buffer.id)).toEqual(["a", "b"]);
     createFile.mockRestore();
+  });
+
+  it("creates an untitled Mermaid diagram with a starter template", async () => {
+    await createNewDiagram();
+    await createNewDiagram();
+
+    expect(useBufferStore.getState().buffers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "editor",
+          name: "Untitled Diagram.mmd",
+          path: "untitled:Untitled Diagram.mmd",
+          content: expect.stringContaining("flowchart TD"),
+          isVirtual: true,
+        }),
+        expect.objectContaining({
+          type: "editor",
+          name: "Untitled Diagram 2.mmd",
+          path: "untitled:Untitled Diagram 2.mmd",
+          content: expect.stringContaining("flowchart TD"),
+          isVirtual: true,
+        }),
+      ]),
+    );
+    usePaneStore.getState().actions.reset();
   });
 
   it("opens the system folder dialog for Open Folder", async () => {

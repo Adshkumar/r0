@@ -1,7 +1,7 @@
 import "./styles.css";
 import { pathExists } from "@/utils/local-files";
 import { openExternalBrowserUrl } from "@/utils/external-navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { editorAPI } from "@/features/editor/services/editor-api";
 import { useBufferText } from "@/features/editor/hooks/use-buffer-text";
@@ -20,6 +20,11 @@ import {
 import { useHighlightedMarkdown } from "./hooks/use-highlighted-markdown";
 import { useProjectStore } from "@/features/workspace/stores/project.store";
 import { useBufferIdOrActive } from "@/features/panes/hooks/use-pane-buffer-state";
+import {
+  cancelMermaidRender,
+  renderMermaidSvg,
+} from "@/features/diagrams/services/mermaid-renderer";
+import { useDiagramTheme } from "@/features/diagrams/hooks/use-diagram-theme";
 
 const MARKDOWN_PREVIEW_PARSE_DELAY_MS = 150;
 
@@ -31,6 +36,8 @@ export function MarkdownPreview({
   isActiveSurface?: boolean;
 }) {
   const targetBufferId = useBufferIdOrActive(bufferId);
+  const mermaidRenderOwnerId = useId();
+  const diagramTheme = useDiagramTheme();
   const { sourceBufferId, sourceBufferPath } = useBufferStore(
     useShallow((state) => {
       const activeBuffer = getBufferById(state.buffers, targetBufferId);
@@ -71,6 +78,53 @@ export function MarkdownPreview({
   useLayoutEffect(() => {
     if (contentRef.current) renderMarkdownBlocks(contentRef.current, renderedBlocks);
   }, [renderedBlocks]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    let cancelled = false;
+    const codeBlocks = Array.from(content.querySelectorAll("pre > code.language-mermaid"));
+    const renderKeys: string[] = [];
+    for (const [index, code] of codeBlocks.entries()) {
+      const pre = code.parentElement;
+      if (!pre) continue;
+
+      const container = document.createElement("div");
+      container.className =
+        "my-4 flex max-w-full justify-center overflow-x-auto rounded-md border border-divider bg-background p-3";
+      container.setAttribute("aria-label", "Mermaid diagram");
+      const source = code.textContent ?? "";
+      const renderKey = `markdown-preview:${mermaidRenderOwnerId}:${index}`;
+      renderKeys.push(renderKey);
+      pre.replaceWith(container);
+
+      void renderMermaidSvg(source, renderKey, diagramTheme)
+        .then((svg) => {
+          if (cancelled || !container.isConnected) return;
+          container.innerHTML = svg;
+          const renderedSvg = container.querySelector("svg");
+          if (renderedSvg) {
+            renderedSvg.style.maxWidth = "100%";
+            renderedSvg.style.height = "auto";
+          }
+        })
+        .catch((error: unknown) => {
+          if (cancelled || !container.isConnected) return;
+          const message = document.createElement("p");
+          message.setAttribute("role", "alert");
+          message.className = "whitespace-pre-wrap text-destructive ui-text-sm";
+          message.textContent =
+            error instanceof Error ? error.message : "Unable to render this Mermaid diagram.";
+          container.replaceChildren(message);
+        });
+    }
+
+    return () => {
+      cancelled = true;
+      for (const renderKey of renderKeys) cancelMermaidRender(renderKey);
+    };
+  }, [diagramTheme, mermaidRenderOwnerId, renderedBlocks]);
 
   useEffect(() => {
     if (isActiveSurface) containerRef.current?.focus({ preventScroll: true });

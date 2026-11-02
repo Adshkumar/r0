@@ -492,6 +492,19 @@ export function CodeMirrorEditor({
   }, [buffer?.id]);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !view || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => view.requestMeasure());
+    observer.observe(container);
+    const handleWindowResize = () => view.requestMeasure();
+    window.addEventListener("resize", handleWindowResize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, [view]);
+
+  useEffect(() => {
     const session = sessionRef.current;
     if (!session) return;
     let cancelled = false;

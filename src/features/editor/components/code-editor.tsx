@@ -59,6 +59,33 @@ import {
 } from "@/features/panes/hooks/use-pane-buffer-state";
 import { loadEditorFeatures } from "../services/editor-feature-registry";
 import { fileOpenBenchmark } from "../services/file-open-benchmark";
+import { DiagramPreview } from "@/features/diagrams/components/diagram-preview";
+import { DiagramStudioControls } from "@/features/diagrams/components/diagram-studio-controls";
+import { openLocalHistoryForPath } from "@/features/local-history/services/open-local-history";
+import { applyDiagramSourceEdit } from "@/features/diagrams/services/apply-diagram-source-edit";
+import {
+  isMermaidDiagramPath,
+  shouldConfirmTemplateReplacement,
+  type DiagramViewMode,
+} from "@/features/diagrams/services/diagram-document";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/ui/alert-dialog";
+import { PaneResizeHandle } from "@/features/panes/components/pane-resize-handle";
+import {
+  getDefaultDiagramWorkspacePreferences,
+  readDiagramDocumentPreferences,
+  readDiagramWorkspacePreferences,
+  saveDiagramDocumentPreferences,
+  saveDiagramWorkspacePreferences,
+} from "@/features/diagrams/services/diagram-layout";
 
 // Contributed editor features load with the editor, so the first editor rarely waits on them.
 void loadEditorFeatures();
@@ -145,6 +172,13 @@ const CodeEditor = ({
   );
   const [codeLensViewportHeight, setCodeLensViewportHeight] = useState(600);
   const [codeLensScrollTop, setCodeLensScrollTop] = useState(0);
+  const [diagramViewMode, setDiagramViewMode] = useState<DiagramViewMode>("split");
+  const [pendingDiagramTemplate, setPendingDiagramTemplate] = useState<string | null>(null);
+  const [diagramSplitRatio, setDiagramSplitRatio] = useState(
+    () => readDiagramWorkspacePreferences().splitRatio,
+  );
+  const [isCompactDiagramWorkspace, setIsCompactDiagramWorkspace] = useState(false);
+  const diagramSplitRef = useRef<HTMLDivElement>(null);
   const showInlineCodeLensesRef = useRef(false);
   const { setChangeHandler, setActiveEditorViewKey } = useEditorStateStore.use.actions();
 
@@ -189,6 +223,21 @@ const CodeEditor = ({
   const zoomedLineHeight = calculateLineHeight(zoomedFontSize, editorLineHeight);
 
   const filePath = activeBuffer?.path || "";
+  const isMermaidDiagram = activeBuffer?.type === "editor" && isMermaidDiagramPath(filePath);
+
+  useEffect(() => {
+    const preferences = readDiagramDocumentPreferences(filePath);
+    setDiagramViewMode(preferences.viewMode);
+    setDiagramSplitRatio(preferences.splitRatio);
+  }, [activeBufferId, filePath]);
+
+  const handleDiagramViewModeChange = useCallback(
+    (mode: DiagramViewMode) => {
+      setDiagramViewMode(mode);
+      saveDiagramDocumentPreferences(filePath, { viewMode: mode });
+    },
+    [filePath],
+  );
   fileOpenBenchmark.markOnce(filePath, "editor-chunk-ready");
   const onChange = activeBuffer
     ? (onContentChange ?? (isActiveSurface ? handleContentChange : () => {}))
@@ -212,16 +261,53 @@ const CodeEditor = ({
   const isPreviewBuffer = useIsBufferPreview(activeBuffer?.id);
   const showMarkdownPreview =
     activeBuffer?.type === "markdownPreview" || activeBuffer?.isMarkdownPreview === true;
+  const showDiagramPreview = isMermaidDiagram && isActiveSurface && diagramViewMode !== "source";
   const showNotebookEditor =
     activeBuffer?.type === "editor" && filePath.toLowerCase().endsWith(".ipynb");
   const enableInteractiveServices =
-    isActiveSurface && !isPreviewBuffer && !readOnly && !showNotebookEditor && !showMarkdownPreview;
+    isActiveSurface &&
+    !isPreviewBuffer &&
+    !readOnly &&
+    !showNotebookEditor &&
+    !showMarkdownPreview &&
+    !(isMermaidDiagram && diagramViewMode === "preview");
   const enableRichEditorServices = enableInteractiveServices;
   const enableCodeLens = enableRichEditorServices && codeLensEnabled;
 
   const showHtmlPreview = activeBuffer?.type === "htmlPreview";
   const showCsvPreview = activeBuffer?.type === "csvPreview";
   const showSvgPreview = activeBuffer?.type === "svgPreview";
+
+  useEffect(() => {
+    const container = diagramSplitRef.current;
+    if (!isMermaidDiagram || !container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setIsCompactDiagramWorkspace(entry.contentRect.width < 720);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isMermaidDiagram]);
+
+  const applyDiagramTemplate = useCallback(
+    (content: string) => {
+      if (!activeBufferId || readOnly) return;
+      applyDiagramSourceEdit(activeBufferId, content);
+      setPendingDiagramTemplate(null);
+    },
+    [activeBufferId, readOnly],
+  );
+
+  const handleInsertDiagramTemplate = useCallback(
+    (content: string) => {
+      if (!activeBufferId || readOnly) return;
+      if (shouldConfirmTemplateReplacement(getValue(), content)) {
+        setPendingDiagramTemplate(content);
+        return;
+      }
+      applyDiagramTemplate(content);
+    },
+    [activeBufferId, applyDiagramTemplate, getValue, readOnly],
+  );
 
   useEffect(() => {
     if (!isActiveSurface) return;
@@ -550,90 +636,151 @@ const CodeEditor = ({
             editorViewKey={editorViewKey}
             bufferId={activeBufferId ?? undefined}
             filePathOverride={breadcrumbProps?.filePathOverride ?? filePath}
+            rightContent={
+              isMermaidDiagram ? (
+                <>
+                  <DiagramStudioControls
+                    mode={diagramViewMode}
+                    onModeChange={handleDiagramViewModeChange}
+                    onInsertTemplate={handleInsertDiagramTemplate}
+                    onOpenHistory={
+                      filePath.includes("://") ? undefined : () => openLocalHistoryForPath(filePath)
+                    }
+                    disabled={readOnly}
+                  />
+                  {breadcrumbProps?.rightContent}
+                </>
+              ) : (
+                breadcrumbProps?.rightContent
+              )
+            }
           />
         )}
 
         <div className="flex min-h-0 min-w-0 flex-1">
           <div
-            ref={editorRef}
-            className={`editor-container relative min-h-0 min-w-0 flex-1 overflow-hidden ${className || ""}`}
-            data-zoom-level={zoomLevel}
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              // Zoom is now applied via font size scaling in Editor component
-              // to avoid subpixel rendering mismatches between text and positioned elements
-            }}
+            ref={diagramSplitRef}
+            className={`flex min-h-0 min-w-0 flex-1 ${isCompactDiagramWorkspace ? "flex-col" : "flex-row"}`}
+            data-pane-split-container={
+              isMermaidDiagram && diagramViewMode === "split" ? "true" : undefined
+            }
           >
-            {/* Code Lens */}
-            {showInlineCodeLenses && (
-              <CodeLensOverlay
-                ref={codeLensRef}
-                lenses={inlineCodeLenses}
-                fontSize={zoomedFontSize}
-                lineHeight={zoomedLineHeight}
-                scrollTop={codeLensScrollTop}
-                viewportHeight={codeLensViewportHeight}
-                contentLeft={codeLensContentLeft}
-                getLineText={getCodeLensLineText}
-                onExecute={handleCodeLensExecute}
-                resolveModelPosition={resolveModelPosition}
-              />
-            )}
-
-            {/* Rename Input */}
-            {enableRichEditorServices && rename.renameState && (
-              <RenameInput
-                ref={renameInputRef}
-                symbol={rename.renameState.symbol}
-                line={rename.renameState.line}
-                column={rename.renameState.column}
-                fontSize={zoomedFontSize}
-                lineHeight={zoomedLineHeight}
-                charWidth={zoomedFontSize * 0.6}
-                resolveModelPosition={resolveModelPosition}
-                inputRef={rename.inputRef}
-                onSubmit={(newName) => void rename.executeRename(newName)}
-                onCancel={rename.cancelRename}
-              />
-            )}
-
-            {/* Main editor - absolute positioned to fill container */}
-            <div className="absolute inset-0 bg-background">
-              {showMarkdownPreview ? (
-                <MarkdownPreview
-                  bufferId={activeBufferId ?? undefined}
-                  isActiveSurface={isActiveSurface}
-                />
-              ) : showHtmlPreview ? (
-                <HtmlPreview />
-              ) : showCsvPreview ? (
-                <CsvPreview />
-              ) : showSvgPreview ? (
-                <SvgPreview bufferId={activeBufferId ?? undefined} />
-              ) : showNotebookEditor ? (
-                <NotebookEditor />
-              ) : (
-                <CodeMirrorEditor
-                  bufferId={activeBufferId ?? undefined}
-                  viewStateKey={editorViewKey ?? undefined}
-                  isActiveSurface={isActiveSurface}
-                  isPreviewMode={isPreviewBuffer}
-                  readOnly={readOnly}
-                  scrollable={scrollable}
-                  backgroundLayer={backgroundLayer}
-                  onReadonlySurfaceClick={onReadonlySurfaceClick}
-                  highlightMatches={highlightMatches}
-                  currentHighlightIndex={currentHighlightIndex}
-                  lineNumberStart={lineNumberStart}
-                  lineNumberMap={lineNumberMap}
-                  onContentChange={onContentChange ? onChange : undefined}
-                  onDocumentChange={onDocumentChange}
-                  onScrollOffsetChange={syncLspOverlayTransform}
-                  onModelPositionResolverChange={handleModelPositionResolverChange}
+            <div
+              ref={editorRef}
+              className={`editor-container relative min-h-0 min-w-0 overflow-hidden ${isMermaidDiagram && isActiveSurface && diagramViewMode === "preview" ? "hidden" : "flex-1"} ${isMermaidDiagram && isActiveSurface && diagramViewMode === "split" ? (isCompactDiagramWorkspace ? "min-h-40 basis-0" : "min-w-60 basis-0 border-divider border-r") : ""} ${className || ""}`}
+              data-zoom-level={zoomLevel}
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                ...(isMermaidDiagram && isActiveSurface && diagramViewMode === "split"
+                  ? { flex: `${100 - diagramSplitRatio} 1 0%` }
+                  : {}),
+                // Zoom is now applied via font size scaling in Editor component
+                // to avoid subpixel rendering mismatches between text and positioned elements
+              }}
+            >
+              {/* Code Lens */}
+              {showInlineCodeLenses && (
+                <CodeLensOverlay
+                  ref={codeLensRef}
+                  lenses={inlineCodeLenses}
+                  fontSize={zoomedFontSize}
+                  lineHeight={zoomedLineHeight}
+                  scrollTop={codeLensScrollTop}
+                  viewportHeight={codeLensViewportHeight}
+                  contentLeft={codeLensContentLeft}
+                  getLineText={getCodeLensLineText}
+                  onExecute={handleCodeLensExecute}
+                  resolveModelPosition={resolveModelPosition}
                 />
               )}
+
+              {/* Rename Input */}
+              {enableRichEditorServices && rename.renameState && (
+                <RenameInput
+                  ref={renameInputRef}
+                  symbol={rename.renameState.symbol}
+                  line={rename.renameState.line}
+                  column={rename.renameState.column}
+                  fontSize={zoomedFontSize}
+                  lineHeight={zoomedLineHeight}
+                  charWidth={zoomedFontSize * 0.6}
+                  resolveModelPosition={resolveModelPosition}
+                  inputRef={rename.inputRef}
+                  onSubmit={(newName) => void rename.executeRename(newName)}
+                  onCancel={rename.cancelRename}
+                />
+              )}
+
+              {/* Main editor - absolute positioned to fill container */}
+              <div className="absolute inset-0 bg-background">
+                {showMarkdownPreview ? (
+                  <MarkdownPreview
+                    bufferId={activeBufferId ?? undefined}
+                    isActiveSurface={isActiveSurface}
+                  />
+                ) : showHtmlPreview ? (
+                  <HtmlPreview />
+                ) : showCsvPreview ? (
+                  <CsvPreview />
+                ) : showSvgPreview ? (
+                  <SvgPreview bufferId={activeBufferId ?? undefined} />
+                ) : showNotebookEditor ? (
+                  <NotebookEditor />
+                ) : (
+                  <CodeMirrorEditor
+                    bufferId={activeBufferId ?? undefined}
+                    viewStateKey={editorViewKey ?? undefined}
+                    isActiveSurface={isActiveSurface}
+                    isPreviewMode={isPreviewBuffer}
+                    readOnly={readOnly}
+                    scrollable={scrollable}
+                    backgroundLayer={backgroundLayer}
+                    onReadonlySurfaceClick={onReadonlySurfaceClick}
+                    highlightMatches={highlightMatches}
+                    currentHighlightIndex={currentHighlightIndex}
+                    lineNumberStart={lineNumberStart}
+                    lineNumberMap={lineNumberMap}
+                    onContentChange={onContentChange ? onChange : undefined}
+                    onDocumentChange={onDocumentChange}
+                    onScrollOffsetChange={syncLspOverlayTransform}
+                    onModelPositionResolverChange={handleModelPositionResolverChange}
+                  />
+                )}
+              </div>
             </div>
+            {isMermaidDiagram && isActiveSurface && diagramViewMode === "split" ? (
+              <PaneResizeHandle
+                direction={isCompactDiagramWorkspace ? "vertical" : "horizontal"}
+                initialSizes={[100 - diagramSplitRatio, diagramSplitRatio]}
+                resizeHandleCount={1}
+                onReset={() => {
+                  const defaults = getDefaultDiagramWorkspacePreferences();
+                  setDiagramSplitRatio(defaults.splitRatio);
+                  saveDiagramWorkspacePreferences({ splitRatio: defaults.splitRatio });
+                  saveDiagramDocumentPreferences(filePath, {
+                    splitRatio: defaults.splitRatio,
+                  });
+                }}
+                onResize={([, previewShare]) => {
+                  const preferences = saveDiagramWorkspacePreferences({
+                    splitRatio: previewShare,
+                  });
+                  setDiagramSplitRatio(preferences.splitRatio);
+                  saveDiagramDocumentPreferences(filePath, {
+                    splitRatio: preferences.splitRatio,
+                  });
+                }}
+              />
+            ) : null}
+            {showDiagramPreview && activeBufferId ? (
+              <DiagramPreview
+                bufferId={activeBufferId}
+                filePath={filePath}
+                readOnly={readOnly}
+                splitRatio={diagramViewMode === "split" ? diagramSplitRatio : undefined}
+              />
+            ) : null}
           </div>
           {outline && showOutlineSetting && activeBufferId ? (
             <aside
@@ -646,6 +793,36 @@ const CodeEditor = ({
           ) : null}
         </div>
       </div>
+
+      <AlertDialog
+        open={pendingDiagramTemplate !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDiagramTemplate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace this diagram?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This document already contains Mermaid source. Replacing it with the selected template
+              will change the current contents. You can undo the replacement afterward.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep current source</AlertDialogCancel>
+            <AlertDialogAction
+              variant="accent"
+              onClick={() => {
+                if (pendingDiagramTemplate !== null) {
+                  applyDiagramTemplate(pendingDiagramTemplate);
+                }
+              }}
+            >
+              Replace source
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Debug overlay for scroll monitoring */}
       {enableInteractiveServices && <ScrollDebugOverlay />}

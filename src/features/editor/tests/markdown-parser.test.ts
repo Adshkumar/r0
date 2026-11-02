@@ -62,6 +62,13 @@ Body text`,
     expect(html).not.toContain("language-{r setup}");
   });
 
+  it("preserves Mermaid fenced code blocks for safe diagram rendering", () => {
+    const html = parseMarkdown("```mermaid\nflowchart TD\n  Start --> Finish\n```");
+
+    expect(html).toContain('<code class="language-mermaid">');
+    expect(html).toContain("Start --&gt; Finish");
+  });
+
   it("closes quotes before following fenced code blocks", () => {
     const html = parseMarkdown("> A focused note.\n\n```ts\nconst ready = true;\n```");
 

@@ -118,6 +118,7 @@ function setFeatures(features: Partial<{ terminal: boolean; debugger: boolean }>
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  window.localStorage.removeItem("r0.bottom-pane-height.v1");
   workspaceRuntimeRegistry.resetForTests();
   setFeatures({ terminal: true, debugger: true });
   useProjectStore.setState({ rootFolderPath: "/repo" });
@@ -136,6 +137,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
   document.body.innerHTML = "";
+  window.localStorage.removeItem("r0.bottom-pane-height.v1");
   setFeatures({ terminal: true, debugger: true });
   vi.unstubAllGlobals();
 });
@@ -170,14 +172,35 @@ describe("bottom pane", () => {
     });
     expect(document.body.style.cursor).toBe("");
     expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("520px");
+    expect(window.localStorage.getItem("r0.bottom-pane-height.v1")).toBe("520");
 
     await act(async () => {
       fireEvent.mouseDown(gutter, { clientY: 400 });
     });
+
     await act(async () => {
       fireEvent.mouseMove(document, { clientY: 2000 });
       fireEvent.mouseUp(document);
     });
+    expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("200px");
+  });
+
+  it("restores a validated saved height when the bottom pane mounts", async () => {
+    window.localStorage.setItem("r0.bottom-pane-height.v1", "480");
+    await render();
+    expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("480px");
+  });
+
+  it("falls back for invalid saved heights and supports keyboard resizing", async () => {
+    window.localStorage.setItem("r0.bottom-pane-height.v1", "not-a-size");
+    await render();
+    await show("terminal");
+    expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("320px");
+
+    const gutter = view().getByRole("separator", { name: "Resize bottom pane" });
+    await act(async () => fireEvent.keyDown(gutter, { key: "ArrowUp" }));
+    expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("336px");
+    await act(async () => fireEvent.keyDown(gutter, { key: "Home" }));
     expect(frame().style.getPropertyValue("--bottom-pane-height")).toContain("200px");
   });
 

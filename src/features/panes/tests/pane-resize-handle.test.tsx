@@ -146,6 +146,8 @@ describe("pane resize handle", () => {
     await act(async () => {
       fireEvent.mouseMove(document, { clientX: 700, clientY: 0 });
     });
+    expect(pane("first").style.flex).toBe("70 1 0%");
+    expect(pane("second").style.flex).toBe("30 1 0%");
     expect(pane("first").style.flexGrow).toBe("70");
     expect(pane("second").style.flexGrow).toBe("30");
     expect(sizes).toEqual([50, 50]);

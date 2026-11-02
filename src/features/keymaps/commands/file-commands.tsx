@@ -20,6 +20,7 @@ import {
   closeTabsToLeft,
   closeTabsToRight,
   createNewFile,
+  createNewDiagram,
   openFolderDialog,
   openProjectPicker,
   openQuickOpen,
@@ -144,6 +145,15 @@ export const fileCommands: Command[] = [
     icon: <FilePlusIcon />,
     palette: { label: "File: New File" },
     execute: createNewFile,
+  },
+  {
+    id: "diagram.new",
+    title: "New Mermaid Diagram",
+    category: "File",
+    description: "Create an editable Mermaid diagram",
+    icon: <FilePlusIcon />,
+    palette: { label: "Diagram: New Mermaid Diagram" },
+    execute: createNewDiagram,
   },
   {
     id: "file.newDocument",

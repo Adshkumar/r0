@@ -21,6 +21,21 @@ import { BottomBufferPane } from "./bottom-buffer-pane";
 
 const DebuggerView = lazy(() => import("@/features/debugger/components/debugger-view"));
 
+const BOTTOM_PANE_HEIGHT_KEY = "r0.bottom-pane-height.v1";
+const DEFAULT_BOTTOM_PANE_HEIGHT = 320;
+const MIN_BOTTOM_PANE_HEIGHT = 200;
+
+function getInitialBottomPaneHeight(): number {
+  try {
+    const storedHeight = Number(window.localStorage.getItem(BOTTOM_PANE_HEIGHT_KEY));
+    if (!Number.isFinite(storedHeight) || storedHeight <= 0) return DEFAULT_BOTTOM_PANE_HEIGHT;
+    return Math.min(Math.max(storedHeight, MIN_BOTTOM_PANE_HEIGHT), window.innerHeight * 0.8);
+  } catch (error) {
+    console.warn("Unable to read bottom pane height.", error);
+    return DEFAULT_BOTTOM_PANE_HEIGHT;
+  }
+}
+
 const BottomPane = () => {
   const isBottomPaneVisible = useUIState((state) => state.isBottomPaneVisible);
   const bottomPaneActiveTab = useUIState((state) => state.bottomPaneActiveTab);
@@ -39,7 +54,7 @@ const BottomPane = () => {
   }, [bottomRoot]);
   const { moveBufferToPane } = usePaneStore.use.actions();
   const { openTerminalBuffer } = useBufferStore.use.actions();
-  const [height, setHeight] = useState(320);
+  const [height, setHeight] = useState(getInitialBottomPaneHeight);
   const [isResizing, setIsResizing] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isInternalHoverTarget, setIsInternalHoverTarget] = useState(false);
@@ -121,6 +136,11 @@ const BottomPane = () => {
           );
         }
         setHeight(currentHeight);
+        try {
+          window.localStorage.setItem(BOTTOM_PANE_HEIGHT_KEY, String(Math.round(currentHeight)));
+        } catch (error) {
+          console.warn("Unable to save bottom pane height.", error);
+        }
         setIsResizing(false);
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
@@ -135,6 +155,23 @@ const BottomPane = () => {
     },
     [height],
   );
+
+  const adjustHeight = useCallback((nextHeight: number) => {
+    const clampedHeight = Math.min(
+      Math.max(nextHeight, MIN_BOTTOM_PANE_HEIGHT),
+      window.innerHeight * 0.8,
+    );
+    setHeight(clampedHeight);
+    paneFrameRef.current?.style.setProperty(
+      "--bottom-pane-height",
+      `calc(${clampedHeight}px + var(--r0-workbench-gap))`,
+    );
+    try {
+      window.localStorage.setItem(BOTTOM_PANE_HEIGHT_KEY, String(Math.round(clampedHeight)));
+    } catch (error) {
+      console.warn("Unable to save bottom pane height.", error);
+    }
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     if (!e.dataTransfer.types.includes("application/tab-data") && !getInternalTabDragData()) {
@@ -213,6 +250,22 @@ const BottomPane = () => {
       tabIndex={0}
       aria-orientation="horizontal"
       aria-label="Resize bottom pane"
+      aria-valuenow={Math.round(height)}
+      aria-valuemin={MIN_BOTTOM_PANE_HEIGHT}
+      aria-valuemax={Math.round(window.innerHeight * 0.8)}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          event.preventDefault();
+          const step = event.shiftKey ? 40 : 16;
+          adjustHeight(height + (event.key === "ArrowUp" ? step : -step));
+        } else if (event.key === "Home") {
+          event.preventDefault();
+          adjustHeight(MIN_BOTTOM_PANE_HEIGHT);
+        } else if (event.key === "End") {
+          event.preventDefault();
+          adjustHeight(window.innerHeight * 0.8);
+        }
+      }}
     >
       <div
         className={cn(
