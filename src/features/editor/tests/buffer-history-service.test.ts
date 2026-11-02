@@ -90,6 +90,18 @@ describe("editor history across native editor lifetimes", () => {
     applyBufferHistory(owner(), "same-id", "redo");
     expect(current()).toMatchObject({ content: "bar", savedContent: "bar", isDirty: false });
   });
+  it("supports undo and redo for editable untitled virtual buffers", () => {
+    owner().store.setState({
+      buffers: [{ ...current(), path: "untitled:Untitled Diagram.mmd", isVirtual: true }],
+    });
+
+    replace("flowchart TD\n  A --> B");
+
+    expect(applyBufferHistory(owner(), "same-id", "undo")?.content).toBe("foo");
+    expect(current().content).toBe("foo");
+    expect(applyBufferHistory(owner(), "same-id", "redo")?.content).toBe("flowchart TD\n  A --> B");
+    expect(current().content).toBe("flowchart TD\n  A --> B");
+  });
   it("undoes grouped typing and replacement separately, then redoes both in order", () => {
     replace("bar");
     type("!");

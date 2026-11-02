@@ -64,6 +64,8 @@ beforeEach(async () => {
     "terminal.close",
     "workbench.toggleSidebar",
     "editor.format",
+    "editor.undo",
+    "editor.redo",
   ]) {
     register(command);
   }
@@ -145,6 +147,76 @@ describe("keyboard shortcut dispatch", () => {
     press({ key: "i", code: "KeyI", metaKey: true, shiftKey: true }, editor);
 
     expect(executed.map((entry) => entry.command)).toEqual(["editor.format"]);
+  });
+
+  it("lets CodeMirror handle native editing shortcuts", () => {
+    for (const [key, command] of [
+      ["ctrl+a", "editor.selectAll"],
+      ["ctrl+c", "editor.copy"],
+      ["ctrl+x", "editor.cut"],
+      ["ctrl+v", "editor.paste"],
+    ]) {
+      register(command);
+      keymapRegistry.registerKeybinding({ key, command, source: "default" });
+    }
+
+    const host = document.createElement("div");
+    host.dataset.editorEngine = "codemirror";
+    const editor = document.createElement("div");
+    editor.className = "cm-editor";
+    host.append(editor);
+    document.body.append(host);
+
+    const shortcuts: Array<{ key: string; shiftKey: boolean }> = [
+      { key: "a", shiftKey: false },
+      { key: "c", shiftKey: false },
+      { key: "x", shiftKey: false },
+      { key: "v", shiftKey: false },
+    ];
+    for (const { key, shiftKey } of shortcuts) {
+      const event = press(
+        { key, code: `Key${key.toUpperCase()}`, ctrlKey: true, shiftKey },
+        editor,
+      );
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(executed).toEqual([]);
+    host.remove();
+  });
+
+  it("runs the editor's undo and redo commands for CodeMirror history shortcuts", () => {
+    for (const [key, command] of [
+      ["ctrl+z", "editor.undo"],
+      ["ctrl+shift+z", "editor.redo"],
+      ["ctrl+y", "editor.redo"],
+    ]) {
+      keymapRegistry.registerKeybinding({ key, command, source: "default" });
+    }
+
+    const host = document.createElement("div");
+    host.dataset.editorEngine = "codemirror";
+    const editor = document.createElement("div");
+    editor.className = "cm-editor";
+    host.append(editor);
+    document.body.append(host);
+
+    for (const [key, shiftKey] of [
+      ["z", false],
+      ["z", true],
+      ["y", false],
+    ] as const) {
+      const event = press(
+        { key, code: `Key${key.toUpperCase()}`, ctrlKey: true, shiftKey },
+        editor,
+      );
+      expect(event.defaultPrevented).toBe(true);
+    }
+    expect(executed.map(({ command }) => command)).toEqual([
+      "editor.undo",
+      "editor.redo",
+      "editor.redo",
+    ]);
+    host.remove();
   });
 
   it("completes a chord within the timeout", () => {

@@ -1,5 +1,11 @@
 import { isNativeTextInputTarget } from "@/utils/keyboard/text-input-target";
 
+export function isCodeMirrorEditorKeyboardTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.closest(".cm-panels") !== null) return false;
+  return target.closest('[data-editor-engine="codemirror"] .cm-editor') !== null;
+}
+
 export function isEditorKeyboardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
 

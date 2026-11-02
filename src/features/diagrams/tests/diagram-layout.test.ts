@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import {
+  calculateDiagramFitZoom,
   calculateDiagramPinchTransform,
   calculateDiagramZoomTransform,
   getDefaultDiagramWorkspacePreferences,
@@ -98,6 +99,18 @@ describe("Diagram Studio layout preferences", () => {
     expect(newDiagramPoint.x).toBeCloseTo(oldDiagramPoint.x);
     expect(newDiagramPoint.y).toBeCloseTo(oldDiagramPoint.y);
     expect(calculateDiagramZoomTransform(current, 99, point, viewport).zoom).toBe(4);
+  });
+
+  it("fits wide and tall diagrams within the viewport with padding", () => {
+    const wideZoom = calculateDiagramFitZoom(2400, 800, 900, 600);
+    expect(2400 * wideZoom).toBeLessThanOrEqual(900);
+    expect(800 * wideZoom).toBeLessThanOrEqual(600);
+    expect(wideZoom).toBeCloseTo(0.3375);
+
+    const tallZoom = calculateDiagramFitZoom(800, 2400, 900, 600);
+    expect(800 * tallZoom).toBeLessThanOrEqual(900);
+    expect(2400 * tallZoom).toBeLessThanOrEqual(600);
+    expect(tallZoom).toBeCloseTo(0.225);
   });
 
   it("zooms in and out around a two-finger pinch while following its center", () => {

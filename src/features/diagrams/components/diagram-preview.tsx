@@ -35,6 +35,7 @@ import {
   type MermaidThemePresetId,
 } from "../services/diagram-theme-presets";
 import {
+  calculateDiagramFitZoom,
   calculateDiagramPinchTransform,
   calculateDiagramZoomTransform,
   getDefaultDiagramWorkspacePreferences,
@@ -151,7 +152,11 @@ export function DiagramPreview({
   } | null>(null);
   const spacePressedRef = useRef(false);
   const initialDocumentPreferencesRef = useRef(readDiagramDocumentPreferences(filePath));
-  const fitToViewportRef = useRef(initialDocumentPreferencesRef.current.fitToViewport);
+  const fitToViewportRef = useRef(
+    initialDocumentPreferencesRef.current.fitToViewport ||
+      initialDocumentPreferencesRef.current.viewportWidth <= 0 ||
+      initialDocumentPreferencesRef.current.viewportHeight <= 0,
+  );
   const restoreViewportRef = useRef(
     !initialDocumentPreferencesRef.current.fitToViewport &&
       initialDocumentPreferencesRef.current.viewportWidth > 0 &&
@@ -167,6 +172,7 @@ export function DiagramPreview({
     zoom: number;
     pan: { x: number; y: number };
   } | null>(null);
+  const previousSourceRef = useRef(source);
   const touchPinchStartRef = useRef<{
     zoom: number;
     pan: { x: number; y: number };
@@ -384,9 +390,11 @@ export function DiagramPreview({
     renderedSvg.style.width = `${width}px`;
     renderedSvg.style.height = `${height}px`;
     renderedSvg.style.maxWidth = "none";
-    const fittedZoom = Math.min(
-      MAX_ZOOM,
-      Math.max(0.01, Math.min(viewport.clientWidth / width, viewport.clientHeight / height) * 0.9),
+    const fittedZoom = calculateDiagramFitZoom(
+      width,
+      height,
+      viewport.clientWidth,
+      viewport.clientHeight,
     );
     setZoom(fittedZoom);
     setPan({ x: 0, y: 0 });
@@ -451,6 +459,15 @@ export function DiagramPreview({
       cancelMermaidRender(renderKey);
     };
   }, [renderKey, source, theme, themePreset]);
+
+  useEffect(() => {
+    if (previousSourceRef.current === source) return;
+    previousSourceRef.current = source;
+    if (!source.trim()) return;
+    fitToViewportRef.current = true;
+    restoreViewportRef.current = false;
+    persistDocumentPreferences({ fitToViewport: true });
+  }, [persistDocumentPreferences, source]);
 
   useEffect(
     () => () => {

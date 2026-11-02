@@ -211,6 +211,34 @@ export interface DiagramPoint {
   y: number;
 }
 
+export function calculateDiagramFitZoom(
+  diagramWidth: number,
+  diagramHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  padding = 0.9,
+): number {
+  if (
+    !Number.isFinite(diagramWidth) ||
+    !Number.isFinite(diagramHeight) ||
+    !Number.isFinite(viewportWidth) ||
+    !Number.isFinite(viewportHeight) ||
+    diagramWidth <= 0 ||
+    diagramHeight <= 0 ||
+    viewportWidth <= 0 ||
+    viewportHeight <= 0
+  ) {
+    return 1;
+  }
+  return Math.min(
+    4,
+    Math.max(
+      0.01,
+      Math.min(viewportWidth / diagramWidth, viewportHeight / diagramHeight) * padding,
+    ),
+  );
+}
+
 export function getDiagramWheelZoomDelta(event: {
   ctrlKey: boolean;
   metaKey: boolean;

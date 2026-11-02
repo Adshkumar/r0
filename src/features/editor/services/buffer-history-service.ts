@@ -13,7 +13,14 @@ export function applyBufferHistory(
 ): HistoryEntry | null {
   if (!isBufferStoreOwnerLive(owner)) return null;
   const buffer = getBufferById(owner.store.getState().buffers, bufferId);
-  if (!buffer || buffer.type !== "editor" || buffer.readOnly || buffer.isVirtual) return null;
+  if (
+    !buffer ||
+    buffer.type !== "editor" ||
+    buffer.readOnly ||
+    (buffer.isVirtual && !buffer.path.startsWith("untitled:"))
+  ) {
+    return null;
+  }
 
   const content = readBufferText(buffer);
   flushPendingBufferHistory(bufferId, content, owner.workspaceId);

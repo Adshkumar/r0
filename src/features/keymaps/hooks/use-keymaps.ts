@@ -16,6 +16,7 @@ import { useKeymapStore } from "../stores/keymaps.store";
 import { getEffectiveKeybindings } from "../services/effective-keymaps";
 import {
   getMarkdownPreviewKeyboardTarget,
+  isCodeMirrorEditorKeyboardTarget,
   isEditorKeyboardTarget,
 } from "../services/editor-keyboard-target";
 import { resolveEffectiveKeymapContexts } from "../utils/effective-contexts";
@@ -154,6 +155,37 @@ export function useKeymaps() {
         registryKeybindings,
         userKeybindings,
       });
+
+      const codeMirrorTarget =
+        isCodeMirrorEditorKeyboardTarget(target) ||
+        isCodeMirrorEditorKeyboardTarget(document.activeElement);
+      const isNativeCodeMirrorEditShortcut =
+        codeMirrorTarget &&
+        (e.ctrlKey || e.metaKey) &&
+        !e.altKey &&
+        ["a", "c", "x", "v", "z", "y"].includes(e.key.toLowerCase());
+      if (isNativeCodeMirrorEditShortcut) {
+        const matchingBinding = allKeybindings.find((keybinding) => {
+          if (!keybinding.enabled && keybinding.enabled !== undefined) return false;
+          if (keybinding.when && !evaluateWhenClause(keybinding.when, effectiveContexts))
+            return false;
+          return matchKeybinding(e, keybinding.key, chordState).matched;
+        });
+        if (matchingBinding && ["editor.undo", "editor.redo"].includes(matchingBinding.command)) {
+          e.preventDefault();
+          e.stopPropagation();
+          keymapRegistry.executeCommand(matchingBinding.command, matchingBinding.args);
+          return;
+        }
+        if (
+          !matchingBinding ||
+          ["editor.selectAll", "editor.copy", "editor.cut", "editor.paste"].includes(
+            matchingBinding.command,
+          )
+        ) {
+          return;
+        }
+      }
 
       // Get current event key
       const eventKey = eventToKey(e);
