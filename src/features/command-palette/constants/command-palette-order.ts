@@ -102,6 +102,7 @@ export const commandPaletteOrder: CommandPaletteSlot[] = [
   "share.selection",
   "share.agent",
   "file.new",
+  "diagram.new",
   "file.newDocument",
   "file.open",
   "file.openFolder",

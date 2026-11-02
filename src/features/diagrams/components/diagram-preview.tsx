@@ -1,5 +1,3 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { readBufferText } from "@/features/editor/services/buffer-text";
 import { useBufferText } from "@/features/editor/hooks/use-buffer-text";
@@ -14,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui/dropdown";
 import { applyDiagramSourceEdit } from "../services/apply-diagram-source-edit";
+import { exportDiagramFile } from "../services/diagram-export";
 import {
   cancelMermaidRender,
   renderMermaidSvg,
@@ -554,15 +553,7 @@ export function DiagramPreview({
     setExportError(null);
     setIsExporting(true);
     try {
-      const path = await save({
-        defaultPath: `${baseName}.svg`,
-        filters: [{ name: "SVG image", extensions: ["svg"] }],
-      });
-      if (!path) return;
-      if (!path.toLowerCase().endsWith(".svg")) {
-        throw new Error("Choose an SVG file name.");
-      }
-      await writeTextFile(path, svg);
+      await exportDiagramFile({ format: "svg", contents: svg, defaultPath: `${baseName}.svg` });
     } catch (error) {
       setExportError(errorMessage(error, "Unable to export the SVG."));
     } finally {
@@ -575,16 +566,12 @@ export function DiagramPreview({
     setExportError(null);
     setIsExporting(true);
     try {
-      const path = await save({
-        defaultPath: `${baseName}.png`,
-        filters: [{ name: "PNG image", extensions: ["png"] }],
-      });
-      if (!path) return;
-      if (!path.toLowerCase().endsWith(".png")) {
-        throw new Error("Choose a PNG file name.");
-      }
       const blob = await createPngBlob(svg, previewBackground);
-      await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      await exportDiagramFile({
+        format: "png",
+        contents: new Uint8Array(await blob.arrayBuffer()),
+        defaultPath: `${baseName}.png`,
+      });
     } catch (error) {
       setExportError(errorMessage(error, "Unable to export the PNG."));
     } finally {
