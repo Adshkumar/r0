@@ -333,6 +333,7 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
     setSelectedAgentId: (agentId) =>
       set((state) => {
         state.selectedAgentId = agentId;
+        state.lastSelectedAgentId = agentId;
       }),
     getCurrentAgentId: () => {
       const state = get();
@@ -348,6 +349,10 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
       get().actions.selectChatAgent(get().currentChatId, agentId);
     },
     selectChatAgent: (chatId, agentId, options = {}) => {
+      set((draft) => {
+        draft.selectedAgentId = agentId;
+        draft.lastSelectedAgentId = agentId;
+      });
       const state = get();
       const chat = state.chats.find((candidate) => candidate.id === chatId);
       if (!chat && !chatId) {
@@ -478,6 +483,11 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
       const state = get();
       const activate = options.activate ?? true;
       const nextAgentId = agentId || state.selectedAgentId;
+      if (options.rememberAgent ?? true) {
+        set((draft) => {
+          draft.lastSelectedAgentId = nextAgentId;
+        });
+      }
 
       // "New Agent" used to mint a row per click, so the history filled up with
       // identical untouched sessions. Hand back the one that is already waiting.
@@ -534,6 +544,7 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
 
       const newChat = createChat(agentId || state.selectedAgentId, chatId);
       set((draft) => {
+        draft.lastSelectedAgentId = newChat.agentId;
         draft.chats.unshift(newChat);
         draft.messagesByChat[newChat.id] = [];
         draft.chatMessageLoadStates[newChat.id] = "loaded";
@@ -586,6 +597,8 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
     switchToChat: (chatId) => {
       set((state) => {
         state.currentChatId = chatId;
+        const chat = state.chats.find((candidate) => candidate.id === chatId);
+        if (chat) state.lastSelectedAgentId = chat.agentId;
       });
       ensureChatMessagesLoaded(set, get, chatId);
     },
@@ -895,7 +908,9 @@ export function createChatActions(set: SetAIChatStore, get: GetAIChatStore): Cha
     restoreWorkspaceSession: (snapshot) => {
       set((state) => {
         state.currentChatId = snapshot?.currentChatId || null;
-        state.selectedAgentId = snapshot?.selectedAgentId || "custom";
+        const selectedAgentId = snapshot?.selectedAgentId ?? state.selectedAgentId;
+        state.selectedAgentId = selectedAgentId;
+        state.lastSelectedAgentId = selectedAgentId;
       });
 
       if (snapshot?.currentChatId) {

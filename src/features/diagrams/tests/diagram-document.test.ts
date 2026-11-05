@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   DIAGRAM_TEMPLATES,
+  extractMermaidProposal,
   isMermaidDiagramPath,
   normalizeGeneratedDiagram,
   shouldConfirmTemplateReplacement,
@@ -54,5 +55,15 @@ describe("Mermaid diagram documents", () => {
     );
     expect(normalizeGeneratedDiagram("flowchart TD\n  A --> B")).toBe("flowchart TD\n  A --> B");
     expect(normalizeGeneratedDiagram("```mermaid\nincomplete")).toBe("```mermaid\nincomplete");
+  });
+
+  it("extracts the last complete Mermaid code block as a reviewable proposal", () => {
+    expect(
+      extractMermaidProposal(
+        "Here is the revised diagram:\n```mermaid\nflowchart TD\n  A --> B\n```\nDone.",
+      ),
+    ).toBe("flowchart TD\n  A --> B");
+    expect(extractMermaidProposal("```typescript\nconst x = 1;\n```")).toBeNull();
+    expect(extractMermaidProposal("```mermaid\nincomplete")).toBeNull();
   });
 });

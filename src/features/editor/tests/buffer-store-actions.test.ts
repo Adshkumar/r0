@@ -18,6 +18,8 @@ import { selectActivePane } from "@/features/panes/stores/pane-selectors";
 import type { EditorContent, PaneContent } from "@/features/panes/types/pane-content.types";
 import { seedActiveBuffer } from "@/features/panes/tests/helpers/seed-pane-tabs";
 import { useTerminalStore } from "@/features/terminal/stores/terminal.store";
+import { workspaceSessionRepository } from "@/features/workspace/persistence/services/workspace-session-repository";
+import { useProjectStore } from "@/features/workspace/stores/project.store";
 import { workspaceRuntimeRegistry } from "@/features/workspace/services/workspace-runtime-registry";
 import { subscribeToEditorDocumentChanges } from "../services/editor-document-events";
 import { useBufferStore } from "../stores/buffer.store";
@@ -77,6 +79,7 @@ afterEach(() => {
   workspaceRuntimeRegistry.resetForTests();
   vi.restoreAllMocks();
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
 
 describe("opening tool and GitHub tabs", () => {
@@ -424,6 +427,52 @@ describe("buffer updates", () => {
 
     actions().markBufferSaved("a", "older body");
     expect(byId("a")).toMatchObject({ isDirty: true, savedContent: "older body" });
+  });
+
+  it("persists a saved-as buffer path in the workspace session", () => {
+    vi.useFakeTimers();
+    useProjectStore.setState({ rootFolderPath: "/ws" });
+    const saveSession = vi.spyOn(workspaceSessionRepository, "save");
+    show([editor("a", "untitled-1", "body", { isVirtual: true, isDirty: true })], "a");
+
+    actions().markBufferSaved("a", "body", "/ws/notes.md");
+    vi.advanceTimersByTime(300);
+
+    expect(saveSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectPath: "/ws",
+        buffers: [expect.objectContaining({ path: "/ws/notes.md" })],
+      }),
+    );
+  });
+
+  it("persists a kept virtual editor's source in the workspace session", () => {
+    vi.useFakeTimers();
+    useProjectStore.setState({ rootFolderPath: "/ws" });
+    const saveSession = vi.spyOn(workspaceSessionRepository, "save");
+    show(
+      [
+        editor("a", "untitled:Untitled Diagram.mmd", "flowchart TD\n  A --> B", {
+          isVirtual: true,
+        }),
+      ],
+      "a",
+    );
+
+    expect(actions().persistEditorSessionDraft("a")).toBe(true);
+    vi.advanceTimersByTime(300);
+
+    expect(saveSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectPath: "/ws",
+        buffers: [
+          expect.objectContaining({
+            path: "untitled:Untitled Diagram.mmd",
+            draftContent: "flowchart TD\n  A --> B",
+          }),
+        ],
+      }),
+    );
   });
 
   it("moves a buffer to a new path and treats its text as saved", () => {

@@ -91,9 +91,15 @@ const AIChat = memo(function AIChat({
   isActiveSurface = true,
   activeBuffer,
   buffers = [],
+  initialContextBufferIds,
+  taskInstructions,
+  renderMessageAddon,
   selectedFiles = [],
   allProjectFiles = [],
   headerActions,
+  conversationHistory,
+  onSelectConversation,
+  onDeleteConversation,
 }: AIChatProps) {
   const rootFolderPath = useProjectStore((state) => state.rootFolderPath);
   const aiProviderId = useSettingsStore((state) => state.settings.aiProviderId);
@@ -122,7 +128,12 @@ const AIChat = memo(function AIChat({
   const [isMessageSearchOpen, setIsMessageSearchOpen] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const [activeMessageSearchIndex, setActiveMessageSearchIndex] = useState(0);
-  const composerContext = useComposerContextSelection(peekAgentDraft(surfaceId));
+  const composerContext = useComposerContextSelection(
+    peekAgentDraft(surfaceId) ??
+      (initialContextBufferIds
+        ? { bufferIds: initialContextBufferIds, filePaths: [], editorContexts: [] }
+        : undefined),
+  );
   const { selectedBufferIds, selectedEditorContexts, selectedFilesPaths } =
     composerContext.inputProps;
   const effectiveChatId = chatId ?? currentChatId;
@@ -150,6 +161,15 @@ const AIChat = memo(function AIChat({
         <CloudRunCard chatId={effectiveChatId} messageId={messageId} />
       ) : null,
     [cloudRunMessageIds, effectiveChatId],
+  );
+  const renderMessageAddons = useCallback(
+    (messageId: string) => (
+      <>
+        {isCloudSession ? renderCloudRunCard(messageId) : null}
+        {renderMessageAddon?.(messageId)}
+      </>
+    ),
+    [isCloudSession, renderCloudRunCard, renderMessageAddon],
   );
   const sessionNotices = useAcpNoticesStore((state) =>
     chatSessionId ? state.notices[chatSessionId] : undefined,
@@ -333,6 +353,7 @@ const AIChat = memo(function AIChat({
       projectRoot: rootFolderPath,
       providerId,
       agentId,
+      taskInstructions,
     };
 
     if (selectedActiveBuffer) {
@@ -352,6 +373,8 @@ const AIChat = memo(function AIChat({
         html: "HTML",
         json: "JSON",
         md: "Markdown",
+        mmd: "Mermaid",
+        mermaid: "Mermaid",
         sql: "SQL",
         sh: "Shell Script",
         yml: "YAML",
@@ -819,6 +842,9 @@ const AIChat = memo(function AIChat({
       <ChatHeader
         chatId={effectiveChatId}
         sessionActions={headerActions}
+        conversationHistory={conversationHistory}
+        onSelectConversation={onSelectConversation}
+        onDeleteConversation={onDeleteConversation}
         isMessageSearchOpen={isMessageSearchOpen}
         messageSearchQuery={messageSearchQuery}
         onToggleMessageSearch={() => {
@@ -896,7 +922,7 @@ const AIChat = memo(function AIChat({
                       searchQuery={messageSearchQuery}
                       activeSearchMessageId={activeMessageSearchMatch?.messageId ?? null}
                       activeSearchIndex={activeMessageSearchIndex}
-                      renderMessageAddon={isCloudSession ? renderCloudRunCard : undefined}
+                      renderMessageAddon={renderMessageAddons}
                     />
                   </MessageScrollerViewport>
                   <MessageScrollerButton />

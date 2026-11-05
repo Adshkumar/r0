@@ -23,8 +23,8 @@ export const windowCommands: Command[] = [
     category: "Window",
     execute: async () => {
       const { openUrl } = await import("@tauri-apps/plugin-opener");
-      const { getApiBase } = await import("@/utils/api-base");
-      await openUrl(new URL("/dashboard/settings/billing", getApiBase()).toString());
+      const { getServiceUrls } = await import("@/config/services");
+      await openUrl(getServiceUrls().dashboardBillingUrl);
     },
   },
   {

@@ -8,6 +8,7 @@ interface EditorBufferSession {
   isPinned: boolean;
   isPreview?: boolean;
   workspaceScope?: "workspace" | "external";
+  draftContent?: string;
   editorState?: PersistedEditorViewState;
 }
 

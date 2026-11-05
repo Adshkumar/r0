@@ -41,7 +41,10 @@ import {
 } from "../lib/conversation-history";
 import { setCustomProviderBaseUrl } from "./providers/ai-provider-registry";
 import { CODEX_INTEGRATION_ID } from "../integrations/integration-registry";
-import { CodexIntegrationService } from "../integrations/codex/codex-integration-service";
+import {
+  CodexIntegrationService,
+  type CodexIntegrationOptions,
+} from "../integrations/codex/codex-integration-service";
 
 // Check if an agent uses ACP (CLI-based) vs HTTP API
 export const isAcpAgent = (agentId: AgentType): boolean => {
@@ -72,6 +75,8 @@ export const getChatCompletionStream = async (
   chatId?: string,
   systemPromptOverride?: string,
   onResponsePhase?: (phase: "starting" | "waiting" | "stalled") => void,
+  codexOptions?: CodexIntegrationOptions,
+  onSessionOpened?: (sessionId: string) => void,
 ): Promise<void> => {
   try {
     if (context.projectRoot) {
@@ -91,6 +96,7 @@ export const getChatCompletionStream = async (
           onEvent: onAcpEvent,
         },
         chatId,
+        codexOptions,
       );
       const contextPrompt = buildContextPrompt(context);
       await integration.start(
@@ -114,6 +120,7 @@ export const getChatCompletionStream = async (
           onToolComplete,
           onPermissionRequest,
           onEvent: onAcpEvent,
+          onSessionOpened,
           onImageChunk,
           onResourceChunk,
           onResponsePhase,

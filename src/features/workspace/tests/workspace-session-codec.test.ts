@@ -146,6 +146,22 @@ describe("workspace session codec", () => {
       }),
     ).toBeNull();
     expect(
+      encodeWorkspaceBuffer(
+        createEditorBuffer({
+          path: "untitled:Untitled Diagram.mmd",
+          name: "Untitled Diagram.mmd",
+          content: "flowchart TD\n  A --> B",
+          isVirtual: true,
+          persistedSessionDraft: true,
+        }),
+        { workspaceRootPath: "/workspace" },
+      ),
+    ).toMatchObject({
+      type: "editor",
+      path: "untitled:Untitled Diagram.mmd",
+      draftContent: "flowchart TD\n  A --> B",
+    });
+    expect(
       encodeWorkspaceBuffer(unsupportedBuffer, { workspaceRootPath: "/workspace" }),
     ).toBeNull();
   });

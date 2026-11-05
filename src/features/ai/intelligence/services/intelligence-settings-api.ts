@@ -1,7 +1,7 @@
 import { tauriFetch } from "@/utils/tauri-fetch";
 import { getAuthToken } from "@/features/auth/services/auth-api";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
-import { getApiBase } from "@/utils/api-base";
+import { API_BASE_NOT_CONFIGURED_MESSAGE, getApiBase } from "@/utils/api-base";
 import { parseIntelligencePreferences } from "../lib/intelligence-preferences";
 import type { IntelligencePreferences, IntelligenceSnapshot } from "../types/intelligence.types";
 
@@ -27,8 +27,10 @@ export async function fetchIntelligenceSettings(
     throw new IntelligenceSettingsError("The active account changed. Try again.", 409);
   }
   if (!token) throw new IntelligenceSettingsError("Sign in to sync your AI settings.", 401);
+  const apiBase = getApiBase();
+  if (!apiBase) throw new IntelligenceSettingsError(API_BASE_NOT_CONFIGURED_MESSAGE, 503);
   const response = await tauriFetch(
-    `${getApiBase()}/api/account/intelligence?scope=${encodeURIComponent(scope)}`,
+    `${apiBase}/api/account/intelligence?scope=${encodeURIComponent(scope)}`,
     {
       method: update ? "PUT" : "GET",
       signal: AbortSignal.timeout(10000),

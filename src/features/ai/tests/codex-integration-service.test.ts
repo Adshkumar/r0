@@ -70,6 +70,54 @@ describe("Codex integration service", () => {
     }
   });
 
+  it("uses a read-only sandbox and deletes temporary diagram threads", async () => {
+    vi.mocked(invoke).mockImplementation(async (command) => {
+      if (command === "start_codex_thread") return { thread: { id: "diagram-thread" } };
+      if (command === "start_codex_turn") return { turn: { id: "diagram-turn" } };
+      return undefined;
+    });
+    vi.mocked(listen).mockResolvedValue(vi.fn());
+    const service = new CodexIntegrationService(
+      { onChunk: vi.fn(), onComplete: vi.fn(), onError: vi.fn() },
+      "mermaid-chat",
+      { ephemeral: true, readOnly: true },
+    );
+
+    try {
+      await service.start("Generate a diagram", { projectRoot: "/workspace" });
+
+      expect(invoke).toHaveBeenCalledWith(
+        "start_codex_thread",
+        expect.objectContaining({
+          args: expect.objectContaining({
+            settings: expect.objectContaining({
+              approvalPolicy: "never",
+              sandbox: "read-only",
+            }),
+          }),
+        }),
+      );
+      expect(invoke).toHaveBeenCalledWith(
+        "start_codex_turn",
+        expect.objectContaining({
+          args: expect.objectContaining({
+            settings: expect.objectContaining({
+              approvalPolicy: "never",
+              sandbox: "read-only",
+            }),
+          }),
+        }),
+      );
+    } finally {
+      await CodexIntegrationService.cancel();
+      await vi.waitFor(() =>
+        expect(invoke).toHaveBeenCalledWith("delete_codex_thread", {
+          threadId: "diagram-thread",
+        }),
+      );
+    }
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -48,6 +48,7 @@
     {
       "identifier": "http:allow-fetch",
       "allow": [
+        { "url": "https://r0-ide.vercel.app/**" },
         { "url": "https://adshkumar.is-a.dev/**" },
         { "url": "https://api.openai.com/**" },
         { "url": "https://openrouter.ai/**" },

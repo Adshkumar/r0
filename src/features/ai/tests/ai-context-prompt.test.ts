@@ -185,9 +185,11 @@ describe("context prompt for the built-in agent", () => {
     const prompt = buildContextPrompt({
       teamInstructions: "Prefer small PRs.",
       projectRules: { text: "Use bun." } as never,
+      taskInstructions: "Only help with Mermaid diagrams.",
     });
     expect(prompt.startsWith("Team workspace instructions")).toBe(true);
     expect(prompt).toContain("Prefer small PRs.\n\nUse bun.");
+    expect(prompt).toContain("Task-specific instructions:\nOnly help with Mermaid diagrams.");
   });
 });
 

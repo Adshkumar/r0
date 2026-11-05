@@ -190,7 +190,7 @@ describe("loading chat messages", () => {
     actions().restoreWorkspaceSession(null);
     expect(actions().getWorkspaceSessionSnapshot()).toEqual({
       currentChatId: null,
-      selectedAgentId: "custom",
+      selectedAgentId: "claude-code",
     });
   });
 });
@@ -376,6 +376,24 @@ describe("chat list actions", () => {
     const fresh = actions().createNewChat("codex", { reuseEmpty: true, activate: false });
     expect(fresh).not.toBe("old");
     expect(state().currentChatId).toBe("old");
+  });
+
+  it("can create a bound chat without changing the remembered agent or active chat", () => {
+    useAIChatStore.setState({
+      currentChatId: "old",
+      selectedAgentId: "custom",
+      lastSelectedAgentId: "custom",
+    });
+
+    const newChatId = actions().createNewChat("codex", {
+      activate: false,
+      rememberAgent: false,
+    });
+
+    expect(state().chats.find((chat) => chat.id === newChatId)?.agentId).toBe("codex");
+    expect(state().currentChatId).toBe("old");
+    expect(state().selectedAgentId).toBe("custom");
+    expect(state().lastSelectedAgentId).toBe("custom");
   });
 
   it("finds a chat for an agent in the current workspace", () => {

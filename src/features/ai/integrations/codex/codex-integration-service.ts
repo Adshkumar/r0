@@ -26,6 +26,11 @@ interface CodexHandlers {
   onEvent?: (event: AcpEvent) => void;
 }
 
+export interface CodexIntegrationOptions {
+  ephemeral?: boolean;
+  readOnly?: boolean;
+}
+
 export const codexSettingsKey = "r0-codex-integration-settings";
 export const defaultCodexSettings: CodexThreadSettings = {
   effort: "medium",
@@ -45,8 +50,10 @@ export function getCodexSettings(): CodexThreadSettings {
   }
 }
 
-function codexThreadSettingsArg(): CodexThreadSettingsArg {
-  const settings = getCodexSettings();
+function codexThreadSettingsArg(
+  overrides: Partial<CodexThreadSettings> = {},
+): CodexThreadSettingsArg {
+  const settings = { ...getCodexSettings(), ...overrides };
   return {
     model: settings.model ?? null,
     effort: settings.effort ?? null,
@@ -101,6 +108,7 @@ export class CodexIntegrationService {
   constructor(
     private handlers: CodexHandlers,
     private chatId?: string,
+    private options: CodexIntegrationOptions = {},
   ) {}
 
   async start(message: string, context: ContextInfo) {
@@ -118,7 +126,9 @@ export class CodexIntegrationService {
       const result = (await commands.startCodexThread({
         cwd,
         threadId: chat?.acpSessionId ?? null,
-        settings: codexThreadSettingsArg(),
+        settings: codexThreadSettingsArg(
+          this.options.readOnly ? { approvalPolicy: "never", sandbox: "read-only" } : {},
+        ),
       })) as { thread: { id: string } };
       this.threadId = result.thread.id;
       if (this.chatId) {
@@ -133,7 +143,9 @@ export class CodexIntegrationService {
           ...(message ? [{ type: "text", text: message, text_elements: [] }] : []),
           ...(context.images ?? []).map((image) => ({ type: "image", url: imageDataUrl(image) })),
         ],
-        settings: codexThreadSettingsArg(),
+        settings: codexThreadSettingsArg(
+          this.options.readOnly ? { approvalPolicy: "never", sandbox: "read-only" } : {},
+        ),
       })) as { turn?: { id?: string } | null };
       this.turnId = turn.turn?.id ?? null;
     } catch (error) {
@@ -292,6 +304,12 @@ export class CodexIntegrationService {
     this.unlisten?.();
     this.unlisten = null;
     if (CodexIntegrationService.active === this) CodexIntegrationService.active = null;
+    if (this.options.ephemeral && this.threadId) {
+      void commands.deleteCodexThread(this.threadId).catch((error) => {
+        console.error("Failed to remove the temporary Codex diagram session:", error);
+      });
+      this.threadId = null;
+    }
   }
 
   static async cancel() {

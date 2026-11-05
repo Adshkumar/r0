@@ -55,6 +55,7 @@ import {
   type CodeMirrorViewOptions,
   codeMirrorViewExtensions,
 } from "../engines/codemirror/view-options";
+import { calculateResponsiveFontSize } from "../engines/codemirror/responsive-font-size";
 import { applyBufferHistory } from "../services/buffer-history-service";
 import { captureBufferStoreOwner } from "../services/buffer-store-owner";
 import { readBufferRevision, readBufferText } from "../services/buffer-text";
@@ -119,6 +120,8 @@ export function CodeMirrorEditor({
   isActiveSurface = true,
   isPreviewMode = false,
   readOnly = false,
+  shrinkToFit = false,
+  wordWrap,
   scrollable = true,
   backgroundLayer,
   onReadonlySurfaceClick,
@@ -168,21 +171,24 @@ export function CodeMirrorEditor({
   const filePath = buffer?.path ?? "";
   const languageId = buffer?.languageOverride ?? getLanguageIdFromPath(filePath);
   const settings = useEditorViewSettings();
+  const [fitFontSize, setFitFontSize] = useState<number | null>(null);
   const relativeLineNumbers = useSettingsStore(
     (state) => state.settings.vimMode && state.settings.vimRelativeLineNumbers,
   );
   const { setCursorAndSelection, setScrollForBuffer, setViewportHeightForView } =
     useEditorStateStore.use.actions();
   const isReadOnly = readOnly || isPreviewMode;
+  const effectiveFontSize = shrinkToFit ? (fitFontSize ?? settings.fontSize) : settings.fontSize;
+  const fontScale = effectiveFontSize / settings.fontSize;
   const viewOptions = useMemo<CodeMirrorViewOptions>(
     () => ({
       fontFamily: settings.fontFamily,
-      fontSize: settings.fontSize,
-      lineHeight: settings.lineHeight,
+      fontSize: effectiveFontSize,
+      lineHeight: settings.lineHeight * fontScale,
       fontLigatures: settings.editorFontLigatures,
       italicComments: settings.editorItalicComments,
       tabSize: settings.tabSize,
-      wordWrap: settings.wordWrap,
+      wordWrap: wordWrap ?? settings.wordWrap,
       lineNumbers: settings.lineNumbers,
       lineNumberOptions: {
         start: lineNumberStart,
@@ -200,6 +206,8 @@ export function CodeMirrorEditor({
     }),
     [
       isActiveSurface,
+      effectiveFontSize,
+      fontScale,
       lineNumberMap,
       lineNumberStart,
       relativeLineNumbers,
@@ -219,6 +227,8 @@ export function CodeMirrorEditor({
       settings.renderWhitespace,
       settings.tabSize,
       settings.wordWrap,
+      shrinkToFit,
+      wordWrap,
     ],
   );
 
@@ -503,6 +513,53 @@ export function CodeMirrorEditor({
       window.removeEventListener("resize", handleWindowResize);
     };
   }, [view]);
+
+  useEffect(() => {
+    if (!view || !shrinkToFit || typeof ResizeObserver === "undefined") {
+      setFitFontSize(null);
+      return;
+    }
+
+    let frame = 0;
+    const measureFontSize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const doc = view.state.doc;
+        let longestLineLength = 1;
+        for (const line of doc.iterLines()) {
+          longestLineLength = Math.max(longestLineLength, line.length);
+        }
+
+        const baseCharacterWidth =
+          (view.defaultCharacterWidth * settings.fontSize) / effectiveFontSize;
+        const fittedFontSize = calculateResponsiveFontSize(
+          settings.fontSize,
+          view.scrollDOM.clientWidth - 8,
+          baseCharacterWidth,
+          longestLineLength,
+        );
+        setFitFontSize((current) =>
+          current !== null && Math.abs(current - fittedFontSize) < 0.25 ? current : fittedFontSize,
+        );
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(measureFontSize);
+    resizeObserver.observe(view.dom);
+    const mutationObserver = new MutationObserver(measureFontSize);
+    mutationObserver.observe(view.contentDOM, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+    measureFontSize();
+
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [effectiveFontSize, settings.fontSize, shrinkToFit, view]);
 
   useEffect(() => {
     const session = sessionRef.current;

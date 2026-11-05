@@ -26,10 +26,44 @@ describe("Diagram Studio layout preferences", () => {
     expect(readDiagramWorkspacePreferences()).toEqual(getDefaultDiagramWorkspacePreferences());
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ splitRatio: "wide" }));
     expect(readDiagramWorkspacePreferences()).toMatchObject({
-      splitRatio: 50,
-      assistantRatio: 18,
-      assistantExpanded: false,
+      splitRatio: 65,
+      assistantRatio: (25 / 65) * 100,
+      assistantExpanded: true,
     });
+  });
+
+  it("migrates saved diagrams to the balanced three-panel proportions", () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 3,
+        splitRatio: 50,
+        assistantRatio: 40,
+        documents: {
+          "diagram.mmd": {
+            viewMode: "split",
+            zoom: 1.5,
+            panX: 12,
+            panY: -8,
+            viewportWidth: 1000,
+            viewportHeight: 700,
+            assistantChatId: "mermaid-chat",
+            splitRatio: 30,
+            assistantRatio: 55,
+          },
+        },
+      }),
+    );
+
+    expect(readDiagramDocumentPreferences("diagram.mmd")).toMatchObject({
+      splitRatio: 65,
+      assistantRatio: (25 / 65) * 100,
+      zoom: 1.5,
+      panX: 12,
+      panY: -8,
+      assistantChatId: "mermaid-chat",
+    });
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}").version).toBe(4);
   });
 
   it("clamps persisted dimensions and restores panel state", () => {
@@ -57,6 +91,7 @@ describe("Diagram Studio layout preferences", () => {
       fitToViewport: false,
       splitRatio: 70,
       assistantExpanded: true,
+      assistantChatId: "mermaid-chat-1",
     });
     expect(preferences).toMatchObject({
       viewMode: "preview",
@@ -66,6 +101,7 @@ describe("Diagram Studio layout preferences", () => {
       fitToViewport: false,
       splitRatio: 70,
       assistantExpanded: true,
+      assistantChatId: "mermaid-chat-1",
     });
     expect(readDiagramDocumentPreferences("C:/repo/diagram.mmd")).toEqual(preferences);
 
@@ -74,6 +110,15 @@ describe("Diagram Studio layout preferences", () => {
       zoom: 4,
       panX: -45,
     });
+  });
+
+  it("clears a deleted document conversation from saved preferences", () => {
+    saveDiagramDocumentPreferences("diagram.mmd", { assistantChatId: "mermaid-chat" });
+
+    const saved = saveDiagramDocumentPreferences("diagram.mmd", { assistantChatId: null });
+
+    expect(saved.assistantChatId).toBeNull();
+    expect(readDiagramDocumentPreferences("diagram.mmd").assistantChatId).toBeNull();
   });
 
   it("keeps per-document state when shared layout settings are saved", () => {

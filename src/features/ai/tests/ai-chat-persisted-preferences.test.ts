@@ -45,9 +45,43 @@ describe("persisted chat preferences", () => {
         mode: useAIChatStore.getState().mode,
         outputStyle: useAIChatStore.getState().outputStyle,
         selectedAgentId: "codex",
+        lastSelectedAgentId: "codex",
         acpOptionCache: {},
       },
       version: 3,
+    });
+  });
+
+  it("remembers a bound chat's selected agent as the default without activating the chat", () => {
+    const actions = useAIChatStore.getState().actions;
+    useAIChatStore.setState((state) => {
+      state.chats = [
+        {
+          id: "bound-chat",
+          title: "Bound chat",
+          createdAt: new Date(0),
+          lastMessageAt: new Date(0),
+          agentId: "custom",
+          acpSessionId: null,
+          providerId: "r0",
+          modelId: "auto",
+          isPinned: false,
+          archivedAt: null,
+          workspacePath: null,
+          messageCount: 0,
+        },
+      ];
+      state.chatMessageLoadStates["bound-chat"] = "loaded";
+      state.selectedAgentId = "custom";
+    });
+
+    actions.selectChatAgent("bound-chat", "github-copilot-cli", { activate: false });
+
+    expect(useAIChatStore.getState().selectedAgentId).toBe("github-copilot-cli");
+    expect(useAIChatStore.getState().lastSelectedAgentId).toBe("github-copilot-cli");
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").state).toMatchObject({
+      selectedAgentId: "github-copilot-cli",
+      lastSelectedAgentId: "github-copilot-cli",
     });
   });
 

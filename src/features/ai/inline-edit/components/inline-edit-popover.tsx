@@ -1,13 +1,14 @@
 import { isComposingKeyboardEvent } from "@/utils/keyboard/is-composing-keyboard-event";
 import { CheckIcon, MagicWandIcon, XIcon } from "@/ui/icons";
 import { type CSSProperties, type KeyboardEvent, useRef } from "react";
-import { Alert, AlertDescription } from "@/ui/alert";
+import { Alert, AlertActions, AlertDescription } from "@/ui/alert";
 import { Button } from "@/ui/button";
 import Input from "@/ui/input";
 import Keybinding from "@/ui/keybinding";
 import { Popover, PopoverListContent } from "@/ui/popover";
 import { Spinner } from "@/ui/spinner";
 import type { Range } from "@/features/editor/types/editor.types";
+import { useDesktopSignIn } from "@/features/auth/hooks/use-desktop-sign-in";
 import type { useInlineEdit } from "../hooks/use-inline-edit";
 import { ModelConnectionPicker } from "@/features/ai/components/selectors/model-connection-picker";
 
@@ -20,6 +21,9 @@ interface InlineEditPopoverProps {
 
 export function InlineEditPopover({ state, selection }: InlineEditPopoverProps) {
   const anchorRef = useRef<HTMLSpanElement>(null);
+  const { signIn, isSigningIn, cancel, reopen } = useDesktopSignIn({
+    onSuccess: () => state.setInlineEditError(null),
+  });
   if (!state.inlineEditVisible || !state.popoverAnchor) return null;
 
   const proposal = state.inlineEditProposal;
@@ -216,6 +220,29 @@ export function InlineEditPopover({ state, selection }: InlineEditPopoverProps) 
           {state.inlineEditError && (
             <Alert id="inline-edit-error" aria-live="assertive" tone="error" variant="banner">
               <AlertDescription>{state.inlineEditError}</AlertDescription>
+              {state.inlineEditError === "Sign in to use r0 AI." && (
+                <AlertActions>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (isSigningIn) {
+                        reopen();
+                      } else {
+                        void signIn().catch(() => undefined);
+                      }
+                    }}
+                  >
+                    {isSigningIn ? "Open sign-in page" : "Sign in"}
+                  </Button>
+                  {isSigningIn && (
+                    <Button type="button" size="sm" variant="ghost" onClick={cancel}>
+                      Cancel
+                    </Button>
+                  )}
+                </AlertActions>
+              )}
             </Alert>
           )}
         </PopoverListContent>

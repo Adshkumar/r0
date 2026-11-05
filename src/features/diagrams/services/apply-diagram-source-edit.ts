@@ -5,7 +5,7 @@ import { useEditorStateStore } from "@/features/editor/stores/state.store";
 
 export function applyDiagramSourceEdit(bufferId: string, nextContent: string): boolean {
   const buffer = useBufferStore.getState().buffers.find((item) => item.id === bufferId);
-  if (!buffer || buffer.type !== "editor" || buffer.readOnly || buffer.isVirtual) return false;
+  if (!buffer || buffer.type !== "editor" || buffer.readOnly) return false;
 
   const currentContent = readBufferText(buffer);
   if (currentContent === nextContent) return true;

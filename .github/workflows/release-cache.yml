@@ -64,6 +64,8 @@ jobs:
             args: "--target aarch64-pc-windows-msvc"
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 90
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v6
 

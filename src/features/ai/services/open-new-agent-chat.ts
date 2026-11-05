@@ -17,20 +17,21 @@ export function openNewAgentChat(
   // Every agent opens in the chat, never in a terminal, including ids saved before the
   // terminal-only agents moved to ACP.
   const nextAgentId = migrateLegacyAgentId(agentId ?? chatStore.actions.getCurrentAgentId());
+  const hasContext = Boolean(options.editorSelections?.length);
 
   const chatId = chatStore.actions.createNewChat(nextAgentId, {
     activate: false,
     // A pending launch request needs its own session; a bare "New Agent" does not.
-    reuseEmpty: !options.editorSelections?.length,
+    reuseEmpty: !hasContext,
   });
-  if (options.editorSelections?.length) {
+  if (hasContext) {
     chatStore.actions.setPendingAgentLaunchRequest({
       chatId,
       agentId: nextAgentId,
       prompt: null,
       selectedBufferIds: [],
       selectedFilesPaths: [],
-      editorSelections: options.editorSelections,
+      editorSelections: options.editorSelections ?? [],
     });
   }
   const windowSession = openAgentWindowSession(chatId);

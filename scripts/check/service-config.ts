@@ -2,6 +2,7 @@
 
 export type Services = {
   websiteBaseUrl: string;
+  apiBaseUrl?: string;
   stableUpdateUrl: string;
 };
 
@@ -32,6 +33,7 @@ export function getServiceConfigErrors({
     ) || [];
 
   for (const [name, value] of Object.entries(services)) {
+    if (name === "apiBaseUrl" && value === "") continue;
     if (typeof value !== "string" || !value.startsWith("https://")) {
       errors.push(`${name} must be a public HTTPS URL.`);
     }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ModelConnectionMenuList } from "@/features/ai/components/selectors/model-connection-picker";
 import { useTabCompletionModel } from "@/features/ai/hooks/use-tab-completion-model";
+import { useDesktopSignIn } from "@/features/auth/hooks/use-desktop-sign-in";
 import { useIntelligenceCompletionStore } from "@/features/editor/stores/intelligence-completion.store";
 import type { IntelligenceCompletionStatus as CompletionStatus } from "@/features/editor/stores/intelligence-completion.store";
 import { useSettingsStore } from "@/features/settings/stores/settings.store";
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger,
   type MenuItem,
 } from "@/ui/dropdown";
-import { PauseIcon, SparkleIcon, WarningCircleIcon } from "@/ui/icons";
+import { PauseIcon, SignInIcon, SparkleIcon, WarningCircleIcon, XIcon } from "@/ui/icons";
 import { useMenuSearch } from "@/ui/menu-search";
 import { Spinner } from "@/ui/spinner";
 
@@ -53,14 +54,29 @@ export function IntelligenceCompletionStatus() {
   const updateSetting = useSettingsStore((state) => state.actions.updateSetting);
   const status = useIntelligenceCompletionStore.use.status();
   const { resume } = useIntelligenceCompletionStore.use.actions();
+  const { signIn, isSigningIn, cancel, reopen } = useDesktopSignIn({ onSuccess: resume });
   const { title, detail, tone } = describeStatus(enabled, status);
   const showRetry = enabled && (status.kind === "paused" || status.kind === "error");
   const model = useTabCompletionModel();
   const modelSearch = useMenuSearch();
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const canChooseModel = enabled && model.allowed;
+  const signInRequired = status.kind === "paused" && status.reason === "sign-in";
 
   const items: MenuItem[] = [
+    ...(signInRequired
+      ? [
+          {
+            id: "sign-in",
+            label: isSigningIn ? "Open sign-in page" : "Sign In",
+            icon: <SignInIcon />,
+            onClick: isSigningIn ? reopen : () => void signIn().catch(() => undefined),
+          },
+          ...(isSigningIn
+            ? [{ id: "cancel-sign-in", label: "Cancel sign-in", icon: <XIcon />, onClick: cancel }]
+            : []),
+        ]
+      : []),
     ...(showRetry ? [{ id: "retry", label: "Retry now", onClick: resume }] : []),
     {
       id: "settings",

@@ -2,6 +2,7 @@ import { commands } from "@/bindings/commands";
 import { tauriFetch } from "@/utils/tauri-fetch";
 import { getAuthToken } from "@/features/auth/services/auth-api";
 import { getServiceUrls } from "@/config/services";
+import { API_BASE_NOT_CONFIGURED_MESSAGE } from "@/utils/api-base";
 
 export const GITHUB_ACCOUNT_API_BASE = getServiceUrls().apiBaseUrl;
 export const GITHUB_CONNECTION_URL = getServiceUrls().dashboardIntegrationsUrl;
@@ -43,6 +44,7 @@ export const syncGitHubTokenFromAccount = async (): Promise<GitHubTokenSyncResul
   if (!token) {
     return { status: "notSignedIn" };
   }
+  if (!GITHUB_ACCOUNT_API_BASE) throw new Error(API_BASE_NOT_CONFIGURED_MESSAGE);
 
   const response = await tauriFetch(`${GITHUB_ACCOUNT_API_BASE}/api/desktop/github/token`, {
     headers: {

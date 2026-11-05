@@ -6,6 +6,7 @@ export function createInitialAIChatState(): AIChatState {
     messagesByChat: {},
     currentChatId: null,
     selectedAgentId: "custom",
+    lastSelectedAgentId: "custom",
     pendingAgentLaunchRequest: null,
     agentRuns: {},
     agentMessageQueues: {},

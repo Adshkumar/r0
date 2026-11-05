@@ -621,3 +621,13 @@ export function normalizeGeneratedDiagram(content: string): string {
   const fenced = trimmed.match(/^```(?:mermaid)?\s*\r?\n([\s\S]*?)\r?\n```$/i);
   return (fenced?.[1] ?? trimmed).trim();
 }
+
+export function extractMermaidProposal(content: string): string | null {
+  const fences = content.matchAll(/```(?:mermaid|mmd)\s*\r?\n([\s\S]*?)\r?\n```/gi);
+  let proposal: string | null = null;
+  for (const fence of fences) {
+    const source = fence[1]?.trim();
+    if (source) proposal = source;
+  }
+  return proposal;
+}

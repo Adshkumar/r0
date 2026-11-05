@@ -181,10 +181,17 @@ export interface AIChatProps {
   // Context from the main app
   activeBuffer?: PaneContent | null;
   buffers?: PaneContent[];
+  initialContextBufferIds?: string[];
+  taskInstructions?: string;
+  renderMessageAddon?: (messageId: string) => ReactNode;
   selectedFiles?: string[];
   allProjectFiles?: FileEntry[];
   /** Controls the host adds to the session header, such as its tool panel toggle. */
   headerActions?: ReactNode;
+  /** Optional conversation history for embedded chat surfaces. */
+  conversationHistory?: ChatSession[];
+  onSelectConversation?: (chatId: string) => void;
+  onDeleteConversation?: (chatId: string) => void;
   mode: "chat";
 }
 

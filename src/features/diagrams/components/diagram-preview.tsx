@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { readBufferText } from "@/features/editor/services/buffer-text";
 import { useBufferText } from "@/features/editor/hooks/use-buffer-text";
 import { useBufferStore } from "@/features/editor/stores/buffer.store";
+import AIChat from "@/features/ai/components/chat/ai-chat";
+import { useAIChatStore } from "@/features/ai/stores/ai-chat.store";
+import { EMPTY_CHAT_MESSAGES } from "@/features/ai/services/chat-normalization";
+import { selectAgentSessions } from "@/features/ai/services/agent-session-list";
+import { useOpenBuffersIgnoringText } from "@/features/editor/hooks/use-buffer-text";
+import { PaneResizeHandle } from "@/features/panes/components/pane-resize-handle";
+import { ChatBubbleTextIcon, CheckIcon, PaletteIcon, XIcon } from "@/ui/icons";
 import { Button } from "@/ui/button";
-import { PaletteIcon } from "@/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +19,7 @@ import {
 } from "@/ui/dropdown";
 import { applyDiagramSourceEdit } from "../services/apply-diagram-source-edit";
 import { exportDiagramFile } from "../services/diagram-export";
-import {
-  cancelMermaidRender,
-  renderMermaidSvg,
-  validateMermaidSource,
-} from "../services/mermaid-renderer";
-import { normalizeGeneratedDiagram } from "../services/diagram-document";
+import { cancelMermaidRender, renderMermaidSvg } from "../services/mermaid-renderer";
 import { useDiagramTheme } from "../hooks/use-diagram-theme";
 import {
   getMermaidErrorMessage,
@@ -26,8 +27,7 @@ import {
   getRenderableMermaidSource,
   needsSequenceDiagramDeclaration,
 } from "../services/mermaid-source";
-import { requestMermaidEdit } from "../services/diagram-ai-edit";
-import { PaneResizeHandle } from "@/features/panes/components/pane-resize-handle";
+import { extractMermaidProposal } from "../services/diagram-document";
 import {
   MERMAID_THEME_PRESETS,
   isMermaidThemePresetId,
@@ -102,15 +102,15 @@ async function createPngBlob(svg: string, background: string): Promise<Blob> {
 export function DiagramPreview({
   bufferId,
   filePath,
-  readOnly = false,
   splitRatio,
 }: {
   bufferId: string;
   filePath: string;
-  readOnly?: boolean;
   splitRatio?: number;
 }) {
   const source = useBufferText(bufferId, { debounceMs: 200 });
+  const buffers = useOpenBuffersIgnoringText();
+  const activeBuffer = buffers.find((buffer) => buffer.id === bufferId) ?? null;
   const renderOwnerId = useId();
   const theme = useDiagramTheme();
   const [themePreset, setThemePreset] = useState<MermaidThemePresetId>("mermaid-chart");
@@ -126,20 +126,34 @@ export function DiagramPreview({
   const [assistantExpanded, setAssistantExpanded] = useState(
     () => readDiagramDocumentPreferences(filePath).assistantExpanded,
   );
+  const [stackAssistantPanel, setStackAssistantPanel] = useState(false);
   const [assistantRatio, setAssistantRatio] = useState(
     () => readDiagramDocumentPreferences(filePath).assistantRatio,
   );
+  const [assistantChatId, setAssistantChatId] = useState(
+    () => readDiagramDocumentPreferences(filePath).assistantChatId,
+  );
+  const chatSessions = useAIChatStore((state) => state.chats);
+  const conversationHistory = useMemo(
+    () =>
+      selectAgentSessions(chatSessions, {
+        anyWorkspace: true,
+        includeArchived: true,
+        keepIds: [assistantChatId],
+      }).filter((chat) => chat.title.startsWith("Mermaid:") || chat.id === assistantChatId),
+    [assistantChatId, chatSessions],
+  );
+  const assistantMessages = useAIChatStore(
+    (state) => state.messagesByChat[assistantChatId ?? ""] ?? EMPTY_CHAT_MESSAGES,
+  );
+  const [dismissedProposalId, setDismissedProposalId] = useState<string | null>(null);
+  const [appliedProposalId, setAppliedProposalId] = useState<string | null>(null);
+  const [proposalError, setProposalError] = useState<string | null>(null);
+  const creatingAssistantChatRef = useRef<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  const [prompt, setPrompt] = useState("");
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [proposedDiagram, setProposedDiagram] = useState<{
-    source: string;
-    originalSource: string;
-  } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const generationController = useRef<AbortController | null>(null);
+  const previewLayoutRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
@@ -187,6 +201,95 @@ export function DiagramPreview({
   const baseName = getExportBaseName(filePath);
   const renderKey = `diagram-preview:${renderOwnerId}`;
   const canFixSequenceDeclaration = needsSequenceDiagramDeclaration(source);
+  const latestMessage = assistantMessages[assistantMessages.length - 1];
+  const proposalSource =
+    latestMessage?.role === "assistant" && !latestMessage.isStreaming
+      ? extractMermaidProposal(latestMessage.content)
+      : null;
+  const proposalMessageId =
+    proposalSource && latestMessage?.role === "assistant" ? latestMessage.id : null;
+
+  const renderMermaidProposal = useCallback(
+    (messageId: string) => {
+      if (!proposalSource || !proposalMessageId || messageId !== proposalMessageId) return null;
+      const isProposalApplied = messageId === appliedProposalId || proposalSource === source.trim();
+      if (messageId === dismissedProposalId || (isProposalApplied && !proposalError)) return null;
+
+      return (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-divider bg-surface p-2">
+          {!isProposalApplied ? (
+            <p className="mr-auto text-muted-foreground ui-text-caption">
+              Mermaid proposal ready. Keep it to update the source and preview.
+            </p>
+          ) : null}
+          {proposalError ? (
+            <p role="alert" className="basis-full text-destructive ui-text-caption">
+              {proposalError}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="accent"
+            onClick={() => {
+              const currentBuffer = useBufferStore
+                .getState()
+                .buffers.find((buffer) => buffer.id === bufferId);
+              if (!currentBuffer || currentBuffer.type !== "editor" || currentBuffer.readOnly) {
+                setProposalError("This Mermaid diagram is no longer editable.");
+                return;
+              }
+              if (!isProposalApplied && readBufferText(currentBuffer) !== source) {
+                setProposalError(
+                  "The diagram changed while this proposal was waiting. Ask for a new proposal.",
+                );
+                return;
+              }
+              if (!isProposalApplied) {
+                if (!applyDiagramSourceEdit(bufferId, proposalSource)) {
+                  setProposalError("Could not apply the Mermaid proposal.");
+                  return;
+                }
+                setAppliedProposalId(messageId);
+              }
+              if (!useBufferStore.getState().actions.persistEditorSessionDraft(bufferId)) {
+                setProposalError("Could not keep this Mermaid diagram in the workspace.");
+                return;
+              }
+              setProposalError(null);
+              setDismissedProposalId(messageId);
+            }}
+          >
+            <CheckIcon />
+            {isProposalApplied ? "Keep diagram" : "Keep changes"}
+          </Button>
+          {!isProposalApplied ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setProposalError(null);
+                setDismissedProposalId(messageId);
+              }}
+            >
+              <XIcon />
+              Undo
+            </Button>
+          ) : null}
+        </div>
+      );
+    },
+    [
+      appliedProposalId,
+      bufferId,
+      dismissedProposalId,
+      proposalError,
+      proposalMessageId,
+      proposalSource,
+      source,
+    ],
+  );
 
   const persistDocumentPreferences = useCallback(
     (changes: Partial<ReturnType<typeof readDiagramDocumentPreferences>>) => {
@@ -237,7 +340,57 @@ export function DiagramPreview({
     setPan({ x: preferences.panX, y: preferences.panY });
     setAssistantExpanded(preferences.assistantExpanded);
     setAssistantRatio(preferences.assistantRatio);
+    setAssistantChatId(preferences.assistantChatId);
   }, [filePath]);
+
+  useEffect(() => {
+    const container = previewLayoutRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setStackAssistantPanel(entry.contentRect.width < 720);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (assistantChatId || creatingAssistantChatRef.current === filePath) return;
+    creatingAssistantChatRef.current = filePath;
+    const chatStore = useAIChatStore.getState();
+    const agentId =
+      chatStore.lastSelectedAgentId ??
+      chatStore.actions.getCurrentAgentId() ??
+      chatStore.selectedAgentId;
+    const chatId = chatStore.actions.createNewChat(agentId, {
+      activate: false,
+      reuseEmpty: false,
+      rememberAgent: false,
+    });
+    const diagramName = filePath.split(/[\\/]/).pop() || "Diagram";
+    chatStore.actions.updateChatTitle(chatId, `Mermaid: ${diagramName}`);
+    setAssistantChatId(chatId);
+    saveDiagramDocumentPreferences(filePath, { assistantChatId: chatId });
+  }, [assistantChatId, filePath]);
+
+  const selectMermaidConversation = useCallback(
+    (chatId: string) => {
+      setAssistantChatId(chatId);
+      saveDiagramDocumentPreferences(filePath, { assistantChatId: chatId });
+    },
+    [filePath],
+  );
+
+  const deleteMermaidConversation = useCallback(
+    (chatId: string) => {
+      useAIChatStore.getState().actions.deleteChat(chatId);
+      if (chatId === assistantChatId) {
+        creatingAssistantChatRef.current = null;
+        setAssistantChatId(null);
+        saveDiagramDocumentPreferences(filePath, { assistantChatId: null });
+      }
+    },
+    [assistantChatId, filePath],
+  );
 
   const zoomAtPoint = useCallback(
     (nextZoomValue: number, clientX?: number, clientY?: number) => {
@@ -471,8 +624,6 @@ export function DiagramPreview({
 
   useEffect(
     () => () => {
-      generationController.current?.abort();
-      generationController.current = null;
       spacePressedRef.current = false;
     },
     [bufferId],
@@ -485,68 +636,6 @@ export function DiagramPreview({
     window.addEventListener("blur", resetSpace);
     return () => window.removeEventListener("blur", resetSpace);
   }, []);
-
-  const handleGenerate = async () => {
-    const request = prompt.trim();
-    if (!request || isGenerating) return;
-
-    const bufferAtStart = useBufferStore.getState().buffers.find((item) => item.id === bufferId);
-    if (!bufferAtStart || bufferAtStart.type !== "editor") {
-      setGenerationError("The diagram is no longer open.");
-      return;
-    }
-    const sourceAtRequest = readBufferText(bufferAtStart);
-    const controller = new AbortController();
-    generationController.current = controller;
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    try {
-      const editedText = await requestMermaidEdit({
-        filePath,
-        source: sourceAtRequest,
-        instruction: [
-          "Create or revise the Mermaid diagram to satisfy the user's request.",
-          "For edits, preserve unrelated nodes, edges, identifiers, and labels; make the smallest targeted change possible.",
-          "Use Mermaid syntax supported by Mermaid 12. Return only Mermaid source, without Markdown fences or explanation.",
-          request,
-        ].join("\n\n"),
-        signal: controller.signal,
-      });
-      if (controller.signal.aborted) return;
-
-      const generated = normalizeGeneratedDiagram(editedText);
-      if (!generated) throw new Error("The AI provider returned an empty diagram.");
-      await validateMermaidSource(generated);
-      if (controller.signal.aborted) return;
-
-      const buffer = useBufferStore.getState().buffers.find((item) => item.id === bufferId);
-      if (!buffer || buffer.type !== "editor") {
-        throw new Error("The diagram is no longer open.");
-      }
-      if (readBufferText(buffer) !== sourceAtRequest) {
-        throw new Error("The diagram changed while AI was generating. Review it and try again.");
-      }
-
-      if (sourceAtRequest) {
-        setProposedDiagram({ source: generated, originalSource: sourceAtRequest });
-      } else {
-        if (!applyDiagramSourceEdit(bufferId, generated)) {
-          throw new Error("The diagram is read-only and cannot be changed.");
-        }
-        setPrompt("");
-      }
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        setGenerationError(errorMessage(error, "Unable to generate the diagram."));
-      }
-    } finally {
-      if (generationController.current === controller) {
-        generationController.current = null;
-        setIsGenerating(false);
-      }
-    }
-  };
 
   const handleExportSvg = async () => {
     if (!svg || isExporting) return;
@@ -609,29 +698,6 @@ export function DiagramPreview({
       return;
     }
     setRenderError(null);
-  };
-
-  const applyProposedDiagram = () => {
-    if (!proposedDiagram) return;
-    const buffer = useBufferStore.getState().buffers.find((item) => item.id === bufferId);
-    if (!buffer || buffer.type !== "editor") {
-      setGenerationError("The diagram is no longer open.");
-      return;
-    }
-    if (readBufferText(buffer) !== proposedDiagram.originalSource) {
-      setGenerationError(
-        "The diagram changed after this proposal was created. Generate a new proposal.",
-      );
-      return;
-    }
-
-    if (!applyDiagramSourceEdit(bufferId, proposedDiagram.source)) {
-      setGenerationError("The diagram is read-only and cannot be changed.");
-      return;
-    }
-    setProposedDiagram(null);
-    setGenerationError(null);
-    setPrompt("");
   };
 
   return (
@@ -774,21 +840,18 @@ export function DiagramPreview({
           </Button>
         </div>
       </header>
-      {(generationError || exportError) && (
+      {exportError && (
         <div className="shrink-0 border-divider border-b px-3 py-2">
-          {generationError ? (
-            <p role="alert" className="whitespace-pre-wrap text-destructive ui-text-sm">
-              {generationError}
-            </p>
-          ) : null}
-          {exportError ? (
-            <p role="alert" className="whitespace-pre-wrap text-destructive ui-text-sm">
-              {exportError}
-            </p>
-          ) : null}
+          <p role="alert" className="whitespace-pre-wrap text-destructive ui-text-sm">
+            {exportError}
+          </p>
         </div>
       )}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-pane-split-container="true">
+      <div
+        ref={previewLayoutRef}
+        className={`flex min-h-0 min-w-0 flex-1 ${stackAssistantPanel ? "flex-col" : "flex-row"}`}
+        data-pane-split-container="true"
+      >
         <div
           ref={canvasRef}
           className={`relative min-h-0 min-w-0 overflow-hidden bg-background ${assistantExpanded ? "basis-0" : "flex-1"}`}
@@ -983,7 +1046,7 @@ export function DiagramPreview({
         </div>
         {assistantExpanded ? (
           <PaneResizeHandle
-            direction="vertical"
+            direction={stackAssistantPanel ? "vertical" : "horizontal"}
             initialSizes={[100 - assistantRatio, assistantRatio]}
             resizeHandleCount={1}
             onReset={() => {
@@ -996,20 +1059,20 @@ export function DiagramPreview({
                 assistantRatio: assistantShare,
               });
               setAssistantRatio(preferences.assistantRatio);
-              persistDocumentPreferences({
-                assistantRatio: preferences.assistantRatio,
-              });
+              persistDocumentPreferences({ assistantRatio: preferences.assistantRatio });
             }}
           />
         ) : null}
         <section
-          className={`min-h-0 min-w-0 shrink-0 border-divider border-t bg-surface text-foreground ${assistantExpanded ? "flex basis-0 flex-col" : ""}`}
+          aria-label="Mermaid AI"
+          className={`min-h-0 min-w-0 border-divider bg-surface text-foreground ${assistantExpanded ? `flex basis-0 flex-col ${stackAssistantPanel ? "border-t" : "border-l"}` : `${stackAssistantPanel ? "h-workbench" : "w-workbench"} shrink-0 ${stackAssistantPanel ? "border-t" : "border-l"}`}`}
           style={assistantExpanded ? { flex: `${assistantRatio} 1 0%` } : undefined}
         >
           <button
             type="button"
             aria-expanded={assistantExpanded}
-            className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left font-sans text-foreground ui-text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            title={assistantExpanded ? "Collapse Mermaid AI" : "Expand Mermaid AI"}
+            className={`flex cursor-pointer items-center gap-2 text-left font-sans text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus ${assistantExpanded ? "w-full px-3 py-2 ui-text-sm" : "h-full w-full flex-col px-2 py-3 ui-text-caption"}`}
             onClick={() => {
               const nextExpanded = !assistantExpanded;
               setAssistantExpanded(nextExpanded);
@@ -1017,88 +1080,45 @@ export function DiagramPreview({
               persistDocumentPreferences({ assistantExpanded: nextExpanded });
             }}
           >
-            <span>Generate or edit with AI</span>
-            <span className="text-muted-foreground ui-text-caption">
+            <ChatBubbleTextIcon className="size-4 shrink-0" />
+            {assistantExpanded ? <span>Mermaid AI</span> : null}
+            <span
+              className={`${assistantExpanded ? "ml-auto text-muted-foreground ui-text-caption" : "[writing-mode:vertical-rl] rotate-180 text-muted-foreground ui-text-caption"}`}
+            >
               {assistantExpanded ? "Collapse" : "Expand"}
             </span>
           </button>
           {assistantExpanded ? (
-            <form
-              className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto px-3 pb-3 text-foreground"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleGenerate();
-              }}
-            >
-              <label
-                htmlFor={`diagram-prompt-${bufferId}`}
-                className="font-sans text-foreground ui-text-sm"
-              >
-                Describe the diagram or edit you want
-              </label>
-              <textarea
-                id={`diagram-prompt-${bufferId}`}
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Describe the diagram you want…"
-                rows={2}
-                disabled={readOnly || isGenerating}
-                className="min-h-12 resize-y rounded-md border border-border bg-field px-2 py-1.5 font-sans text-foreground ui-text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-50"
+            assistantChatId ? (
+              <AIChat
+                mode="chat"
+                surfaceId={`mermaid-diagram:${bufferId}`}
+                chatId={assistantChatId}
+                conversationHistory={conversationHistory}
+                onSelectConversation={selectMermaidConversation}
+                onDeleteConversation={deleteMermaidConversation}
+                activeBuffer={activeBuffer}
+                buffers={buffers}
+                initialContextBufferIds={[bufferId]}
+                taskInstructions={[
+                  "You are the Mermaid diagram assistant for the open Mermaid document.",
+                  "Help only with creating, editing, explaining, validating, and improving Mermaid diagrams and their visual presentation.",
+                  "If asked about unrelated coding or general tasks, briefly explain that this panel is for Mermaid diagrams and redirect the user to the regular AI Chat.",
+                  "Never directly edit or save the diagram. For a requested change, respond with a complete proposed Mermaid source in exactly one fenced ```mermaid code block. The user reviews it with Keep changes or Undo before it is applied.",
+                  "Do not edit other files, run commands, or perform unrelated workspace actions.",
+                  "The user may attach screenshots or other images as visual references; use them only to help create or improve the Mermaid diagram.",
+                ].join("\n")}
+                renderMessageAddon={renderMermaidProposal}
+                className="min-h-0 flex-1"
               />
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="max-w-prose text-muted-foreground ui-text-caption">
-                  The current diagram and request are sent to your configured AI provider.
-                </p>
-                <div className="flex items-center gap-1">
-                  {isGenerating ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => generationController.current?.abort()}
-                    >
-                      Cancel
-                    </Button>
-                  ) : null}
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="accent"
-                    disabled={
-                      readOnly || isGenerating || !prompt.trim() || proposedDiagram !== null
-                    }
-                  >
-                    {isGenerating ? "Generating…" : "Generate"}
-                  </Button>
-                </div>
-              </div>
-              {proposedDiagram ? (
-                <section
-                  aria-label="Review generated Mermaid source"
-                  className="flex min-h-0 flex-col gap-2 rounded-md border border-border bg-background p-2"
-                >
-                  <p className="font-medium text-foreground ui-text-sm">
-                    Review this valid Mermaid proposal before applying it.
-                  </p>
-                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-field p-2 font-mono text-foreground ui-text-caption">
-                    {proposedDiagram.source}
-                  </pre>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setProposedDiagram(null)}
-                    >
-                      Discard
-                    </Button>
-                    <Button type="button" size="sm" variant="accent" onClick={applyProposedDiagram}>
-                      Apply proposal
-                    </Button>
-                  </div>
-                </section>
-              ) : null}
-            </form>
+            ) : (
+              <p
+                role="status"
+                className="grid min-h-0 flex-1 place-items-center text-muted-foreground ui-text-sm"
+              >
+                Preparing Mermaid chat…
+              </p>
+            )
           ) : null}
         </section>
       </div>

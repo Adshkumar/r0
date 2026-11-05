@@ -36,6 +36,7 @@ interface AcpHandlers {
   onChunk: (chunk: string) => void;
   onComplete: (result?: AgentCompletionResult) => void;
   onError: (error: string, canReconnect?: boolean) => void;
+  onSessionOpened?: (sessionId: string) => void;
   onResponseContinuation?: () => void;
   onToolUse?: (event: Extract<AcpEvent, { type: "tool_start" }>) => void;
   onToolUpdate?: (event: Extract<AcpEvent, { type: "tool_update" }>) => void;
@@ -242,6 +243,7 @@ export class AcpStreamHandler {
       if (!this.activeSessionId) {
         throw new Error(`${this.agentId} did not create an active session`);
       }
+      this.handlers.onSessionOpened?.(this.activeSessionId);
       if (
         context.images?.length &&
         !this.agentStatus?.agentCapabilities?.promptCapabilities.image

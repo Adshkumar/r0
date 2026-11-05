@@ -8,17 +8,25 @@ import {
 } from "../services/auth-api";
 
 describe("auth-api desktop auth parsers", () => {
+  it("reports when no API host is configured", () => {
+    expect(describeSessionCheckFailure(new Error("not configured"), "")).toEqual({
+      reason: "server_error",
+      message: "The r0 API URL is not configured. Set VITE_API_URL to the deployed r0 API.",
+      host: "r0 API",
+    });
+  });
+
   it("parses valid desktop auth init response", () => {
     const parsed = __test__.parseDesktopAuthInitResponse({
       sessionId: "desktop-123",
       pollSecret: "secret-456",
-      loginUrl: "https://adshkumar.is-a.dev/auth/desktop?desktop_session=desktop-123",
+      loginUrl: "https://login.example.test/auth",
     });
 
     expect(parsed).toEqual({
       sessionId: "desktop-123",
       pollSecret: "secret-456",
-      loginUrl: "https://adshkumar.is-a.dev/auth/desktop?desktop_session=desktop-123",
+      loginUrl: "https://login.example.test/auth",
     });
   });
 
@@ -52,15 +60,15 @@ describe("auth-api desktop auth parsers", () => {
   it("detects local api base URLs", () => {
     expect(apiBaseTest.isLocalApiBase("http://localhost:3000")).toBe(true);
     expect(apiBaseTest.isLocalApiBase("http://127.0.0.1:3000")).toBe(true);
-    expect(apiBaseTest.isLocalApiBase("https://adshkumar.is-a.dev")).toBe(false);
+    expect(apiBaseTest.isLocalApiBase("https://api.example.test")).toBe(false);
   });
 
   it("keeps authentication on the configured server", () => {
     expect(__test__.getPreferredAuthApiBase("http://localhost:3000/")).toBe(
       "http://localhost:3000",
     );
-    expect(__test__.getPreferredAuthApiBase("https://adshkumar.is-a.dev/")).toBe(
-      "https://adshkumar.is-a.dev",
+    expect(__test__.getPreferredAuthApiBase("https://api.example.test/")).toBe(
+      "https://api.example.test",
     );
   });
 
@@ -182,16 +190,17 @@ describe("session check failures", () => {
   });
 
   it("tells an unreachable host, a timeout and a server error apart", () => {
-    const timeout = new DOMException("timed out", "TimeoutError");
-    expect(
-      describeSessionCheckFailure(new TypeError("x"), "https://adshkumar.is-a.dev").reason,
-    ).toBe("unreachable");
-    expect(describeSessionCheckFailure(timeout, "https://adshkumar.is-a.dev").message).toBe(
-      "adshkumar.is-a.dev did not answer in time.",
+    const timeout = new Error("timed out");
+    timeout.name = "TimeoutError";
+    expect(describeSessionCheckFailure(new TypeError("x"), "https://api.example.test").reason).toBe(
+      "unreachable",
+    );
+    expect(describeSessionCheckFailure(timeout, "https://api.example.test").message).toBe(
+      "api.example.test did not answer in time.",
     );
     expect(
-      describeSessionCheckFailure(new AuthApiError("down", 503), "https://adshkumar.is-a.dev")
+      describeSessionCheckFailure(new AuthApiError("down", 503), "https://api.example.test")
         .message,
-    ).toBe("adshkumar.is-a.dev had a server error (503).");
+    ).toBe("api.example.test had a server error (503).");
   });
 });

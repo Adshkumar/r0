@@ -237,6 +237,10 @@ export const buildContextPrompt = (
     contextPrompt += `\n\nAttached context:\n${sections.join("\n\n")}`;
   }
 
+  if (context.taskInstructions) {
+    contextPrompt += `\n\nTask-specific instructions:\n${context.taskInstructions}`;
+  }
+
   return contextPrompt;
 };
 

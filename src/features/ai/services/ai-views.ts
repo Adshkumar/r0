@@ -13,8 +13,10 @@ import { useSessionHasInfo } from "../session-panel/hooks/use-session-boxes";
 import { registerPaneView } from "@/features/panes/services/pane-view-registry";
 import { registerDiffBanner } from "@/features/git/services/diff-banner-registry";
 import { registerTabDecoration } from "@/features/tabs/services/tab-decoration-registry";
+import { registerSidebarView } from "@/features/layout/services/sidebar-view-registry";
 import { AgentTabAttention, AgentTabIcon } from "../components/agent-tab-decorations";
 import { CLAUDE_CODE_PROPOSAL } from "../integrations/claude-code/services/claude-diff-proposal";
+import { ChatBubbleTextIcon } from "@/ui/icons";
 
 const loadAgentTab = () => import("../components/agent-tab");
 const AgentTab = lazy(() => loadAgentTab().then((module) => ({ default: module.AgentTab })));
@@ -22,6 +24,11 @@ const ContinuousAgentsResource = lazy(() => import("../continuous-agents/resourc
 const AcpInspectorView = lazy(() => import("../acp-inspector/components/acp-inspector-view"));
 const CustomizeView = lazy(() => import("../customize/components/customize-view"));
 const AgentEditsReviewView = lazy(() => import("../components/chat/agent-edits-review"));
+const AIChatSidebar = lazy(() =>
+  import("../components/chat/ai-chat-sidebar").then((module) => ({
+    default: module.AIChatSidebar,
+  })),
+);
 const ClaudeDiffReviewBar = lazy(() =>
   import("../integrations/claude-code/components/claude-diff-review-bar").then((module) => ({
     default: module.ClaudeDiffReviewBar,
@@ -94,6 +101,14 @@ function registerSessionDockPanes() {
 
 export function registerAiViews() {
   registerSessionDockPanes();
+  registerSidebarView({
+    id: "ai-chat",
+    title: "AI Chat",
+    icon: createElement(ChatBubbleTextIcon),
+    order: 0,
+    component: AIChatSidebar,
+    isAvailable: ({ coreFeatures }) => coreFeatures.aiChat,
+  });
   registerPaneView("agent", {
     component: AgentTab,
     getProps: (buffer, host) => ({ buffer, isActive: host.isActive }),

@@ -177,7 +177,6 @@ const CodeEditor = ({
   const [diagramSplitRatio, setDiagramSplitRatio] = useState(
     () => readDiagramWorkspacePreferences().splitRatio,
   );
-  const [isCompactDiagramWorkspace, setIsCompactDiagramWorkspace] = useState(false);
   const diagramSplitRef = useRef<HTMLDivElement>(null);
   const showInlineCodeLensesRef = useRef(false);
   const { setChangeHandler, setActiveEditorViewKey } = useEditorStateStore.use.actions();
@@ -277,16 +276,6 @@ const CodeEditor = ({
   const showHtmlPreview = activeBuffer?.type === "htmlPreview";
   const showCsvPreview = activeBuffer?.type === "csvPreview";
   const showSvgPreview = activeBuffer?.type === "svgPreview";
-
-  useEffect(() => {
-    const container = diagramSplitRef.current;
-    if (!isMermaidDiagram || !container || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setIsCompactDiagramWorkspace(entry.contentRect.width < 720);
-    });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [isMermaidDiagram]);
 
   const applyDiagramTemplate = useCallback(
     (content: string) => {
@@ -660,14 +649,14 @@ const CodeEditor = ({
         <div className="flex min-h-0 min-w-0 flex-1">
           <div
             ref={diagramSplitRef}
-            className={`flex min-h-0 min-w-0 flex-1 ${isCompactDiagramWorkspace ? "flex-col" : "flex-row"}`}
+            className="flex min-h-0 min-w-0 flex-1 flex-row"
             data-pane-split-container={
               isMermaidDiagram && diagramViewMode === "split" ? "true" : undefined
             }
           >
             <div
               ref={editorRef}
-              className={`editor-container relative min-h-0 min-w-0 overflow-hidden ${isMermaidDiagram && isActiveSurface && diagramViewMode === "preview" ? "hidden" : "flex-1"} ${isMermaidDiagram && isActiveSurface && diagramViewMode === "split" ? (isCompactDiagramWorkspace ? "min-h-40 basis-0" : "min-w-60 basis-0 border-divider border-r") : ""} ${className || ""}`}
+              className={`editor-container relative min-h-0 min-w-0 overflow-hidden ${isMermaidDiagram && isActiveSurface && diagramViewMode === "preview" ? "hidden" : "flex-1"} ${isMermaidDiagram && isActiveSurface && diagramViewMode === "split" ? "min-w-60 basis-0 border-divider border-r" : ""} ${className || ""}`}
               data-zoom-level={zoomLevel}
               style={{
                 scrollbarWidth: "none",
@@ -733,6 +722,12 @@ const CodeEditor = ({
                     viewStateKey={editorViewKey ?? undefined}
                     isActiveSurface={isActiveSurface}
                     isPreviewMode={isPreviewBuffer}
+                    shrinkToFit={isMermaidDiagram && isActiveSurface && diagramViewMode === "split"}
+                    wordWrap={
+                      isMermaidDiagram && isActiveSurface && diagramViewMode === "split"
+                        ? false
+                        : undefined
+                    }
                     readOnly={readOnly}
                     scrollable={scrollable}
                     backgroundLayer={backgroundLayer}
@@ -751,7 +746,7 @@ const CodeEditor = ({
             </div>
             {isMermaidDiagram && isActiveSurface && diagramViewMode === "split" ? (
               <PaneResizeHandle
-                direction={isCompactDiagramWorkspace ? "vertical" : "horizontal"}
+                direction="horizontal"
                 initialSizes={[100 - diagramSplitRatio, diagramSplitRatio]}
                 resizeHandleCount={1}
                 onReset={() => {
@@ -775,9 +770,9 @@ const CodeEditor = ({
             ) : null}
             {showDiagramPreview && activeBufferId ? (
               <DiagramPreview
+                key={activeBufferId}
                 bufferId={activeBufferId}
                 filePath={filePath}
-                readOnly={readOnly}
                 splitRatio={diagramViewMode === "split" ? diagramSplitRatio : undefined}
               />
             ) : null}

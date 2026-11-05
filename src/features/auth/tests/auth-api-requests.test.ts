@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 const tauriFetch = vi.hoisted(() => vi.fn());
 
 vi.mock("@/utils/tauri-fetch", () => ({ tauriFetch }));
+vi.mock("@/utils/api-base", () => ({
+  API_BASE_NOT_CONFIGURED_MESSAGE:
+    "The r0 API URL is not configured. Set VITE_API_URL to the deployed r0 API.",
+  getApiBase: () => "https://api.example.test",
+  isLocalApiBase: (value: string) => value.includes("localhost") || value.includes("127.0.0.1"),
+}));
 
 import { commands } from "@/bindings/commands";
 import {
@@ -127,9 +133,9 @@ describe("authenticatedFetch", () => {
 
 describe("account requests", () => {
   it("returns the signed-in user", async () => {
-    tauriFetch.mockResolvedValue(json({ user: { id: 1, email: "dev@adshkumar.is-a.dev" } }));
+    tauriFetch.mockResolvedValue(json({ user: { id: 1, email: "dev@example.test" } }));
 
-    await expect(fetchCurrentUser()).resolves.toEqual({ id: 1, email: "dev@adshkumar.is-a.dev" });
+    await expect(fetchCurrentUser()).resolves.toEqual({ id: 1, email: "dev@example.test" });
     expect(lastRequest().url).toMatch(/\/api\/auth\/me$/);
   });
 
@@ -222,16 +228,23 @@ describe("account requests", () => {
 describe("desktop sign-in", () => {
   it("starts a session on the requested server", async () => {
     tauriFetch.mockResolvedValue(
-      json({ sessionId: "s1", pollSecret: "p1", loginUrl: "https://adshkumar.is-a.dev/login" }),
+      json({ sessionId: "s1", pollSecret: "p1", loginUrl: "https://login.example.test/auth" }),
     );
 
     await expect(beginDesktopAuthSession({ apiBase: "http://localhost:3000/" })).resolves.toEqual({
       sessionId: "s1",
       pollSecret: "p1",
-      loginUrl: "https://adshkumar.is-a.dev/login",
+      loginUrl: "https://login.example.test/auth",
       apiBase: "http://localhost:3000",
     });
     expect(lastRequest().url).toBe("http://localhost:3000/api/auth/desktop/session/init");
+  });
+
+  it("does not send sign-in requests when no API URL is configured", async () => {
+    await expect(beginDesktopAuthSession({ apiBase: "" })).rejects.toThrow(
+      "The r0 API URL is not configured. Set VITE_API_URL to the deployed r0 API.",
+    );
+    expect(tauriFetch).not.toHaveBeenCalled();
   });
 
   it("explains why a session could not start", async () => {

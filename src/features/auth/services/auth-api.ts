@@ -1,6 +1,6 @@
 import { commands } from "@/bindings/commands";
 import { tauriFetch } from "@/utils/tauri-fetch";
-import { getApiBase, isLocalApiBase } from "@/utils/api-base";
+import { API_BASE_NOT_CONFIGURED_MESSAGE, getApiBase, isLocalApiBase } from "@/utils/api-base";
 
 const API_BASE = getApiBase();
 const DESKTOP_AUTH_POLL_INTERVAL_MS = 1500;
@@ -484,6 +484,13 @@ export function describeSessionCheckFailure(
   error: unknown,
   apiBase: string = API_BASE,
 ): SessionCheckFailure {
+  if (!apiBase) {
+    return {
+      reason: "server_error",
+      message: API_BASE_NOT_CONFIGURED_MESSAGE,
+      host: "r0 API",
+    };
+  }
   const host = describeApiHost(apiBase);
   if (error instanceof AuthApiError) {
     return {
@@ -521,7 +528,11 @@ function normalizeApiBase(apiBase: string): string {
 }
 
 function getPreferredAuthApiBase(apiBase?: string): string {
-  return normalizeApiBase(apiBase ?? API_BASE);
+  const normalized = normalizeApiBase(apiBase ?? API_BASE);
+  if (!normalized) {
+    throw new DesktopAuthError("endpoint_unavailable", API_BASE_NOT_CONFIGURED_MESSAGE);
+  }
+  return normalized;
 }
 
 // Secure token storage via Rust backend
@@ -637,10 +648,10 @@ export async function updateEnterprisePolicy(
 }
 
 export async function logoutFromServer(): Promise<void> {
-  const apiBase = getPreferredAuthApiBase();
   try {
     const token = await getAuthToken();
     if (!token) return;
+    const apiBase = getPreferredAuthApiBase();
     await tauriFetch(`${apiBase}/api/auth/logout`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },

@@ -1,6 +1,7 @@
 const STORAGE_KEY = "r0.diagram-workspace.v1";
-const DEFAULT_SPLIT_RATIO = 50;
-const DEFAULT_ASSISTANT_RATIO = 18;
+const PREFERENCES_VERSION = 4;
+const DEFAULT_SPLIT_RATIO = 65;
+const DEFAULT_ASSISTANT_RATIO = (25 / 65) * 100;
 
 export interface DiagramWorkspacePreferences {
   splitRatio: number;
@@ -11,7 +12,7 @@ export interface DiagramWorkspacePreferences {
 const DEFAULT_PREFERENCES: DiagramWorkspacePreferences = {
   splitRatio: DEFAULT_SPLIT_RATIO,
   assistantRatio: DEFAULT_ASSISTANT_RATIO,
-  assistantExpanded: false,
+  assistantExpanded: true,
 };
 const MAX_SAVED_DOCUMENTS = 50;
 
@@ -26,6 +27,7 @@ export interface DiagramDocumentPreferences {
   splitRatio: number;
   assistantRatio: number;
   assistantExpanded: boolean;
+  assistantChatId: string | null;
 }
 
 const DEFAULT_DOCUMENT_PREFERENCES: DiagramDocumentPreferences = {
@@ -38,7 +40,8 @@ const DEFAULT_DOCUMENT_PREFERENCES: DiagramDocumentPreferences = {
   fitToViewport: false,
   splitRatio: DEFAULT_SPLIT_RATIO,
   assistantRatio: DEFAULT_ASSISTANT_RATIO,
-  assistantExpanded: false,
+  assistantExpanded: true,
+  assistantChatId: null,
 };
 
 function clampRatio(value: unknown, fallback: number): number {
@@ -52,7 +55,7 @@ export function readDiagramWorkspacePreferences(): DiagramWorkspacePreferences {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return DEFAULT_PREFERENCES;
-    const value: unknown = JSON.parse(stored);
+    const value = migrateSavedRatios(JSON.parse(stored));
     if (typeof value !== "object" || value === null) return DEFAULT_PREFERENCES;
     const preferences = value as Partial<DiagramWorkspacePreferences>;
     return {
@@ -75,6 +78,42 @@ function documentKey(filePath: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function migrateSavedRatios(value: unknown): unknown {
+  if (
+    !isRecord(value) ||
+    (typeof value.version === "number" && value.version >= PREFERENCES_VERSION)
+  ) {
+    return value;
+  }
+
+  const documents = isRecord(value.documents) ? value.documents : {};
+  const migrated = {
+    ...value,
+    version: PREFERENCES_VERSION,
+    splitRatio: DEFAULT_SPLIT_RATIO,
+    assistantRatio: DEFAULT_ASSISTANT_RATIO,
+    documents: Object.fromEntries(
+      Object.entries(documents).map(([path, preferences]) => [
+        path,
+        isRecord(preferences)
+          ? {
+              ...preferences,
+              splitRatio: DEFAULT_SPLIT_RATIO,
+              assistantRatio: DEFAULT_ASSISTANT_RATIO,
+            }
+          : preferences,
+      ]),
+    ),
+  };
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+  } catch (error) {
+    console.warn("Unable to migrate Diagram Studio panel proportions.", error);
+  }
+  return migrated;
 }
 
 function finiteNumber(value: unknown, fallback: number, min: number, max: number): number {
@@ -107,6 +146,12 @@ function validateDocumentPreferences(
       typeof value.assistantExpanded === "boolean"
         ? value.assistantExpanded
         : fallback.assistantExpanded,
+    assistantChatId:
+      value.assistantChatId === null
+        ? null
+        : typeof value.assistantChatId === "string"
+          ? value.assistantChatId
+          : fallback.assistantChatId,
   };
 }
 
@@ -120,7 +165,7 @@ export function readDiagramDocumentPreferences(filePath: string): DiagramDocumen
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return fallback;
-    const value: unknown = JSON.parse(stored);
+    const value = migrateSavedRatios(JSON.parse(stored));
     if (!isRecord(value) || !isRecord(value.documents)) return fallback;
     return validateDocumentPreferences(value.documents[documentKey(filePath)], fallback);
   } catch (error) {
@@ -154,7 +199,7 @@ export function saveDiagramDocumentPreferences(
       STORAGE_KEY,
       JSON.stringify({
         ...record,
-        version: 2,
+        version: PREFERENCES_VERSION,
         documents: retainedDocuments,
       }),
     );
@@ -187,7 +232,7 @@ export function saveDiagramWorkspacePreferences(
       JSON.stringify({
         ...record,
         ...next,
-        version: 2,
+        version: PREFERENCES_VERSION,
       }),
     );
   } catch (error) {

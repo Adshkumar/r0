@@ -11,7 +11,7 @@ import {
 } from "@/features/ai/services/custom-provider-config";
 import { useSettingsStore } from "@/features/settings/stores/settings.store";
 import { normalizeOllamaBaseUrl } from "@/features/settings/services/ollama-endpoint";
-import { getApiBase } from "@/utils/api-base";
+import { getApiBase, API_BASE_NOT_CONFIGURED_MESSAGE } from "@/utils/api-base";
 import { commands } from "@/bindings/commands";
 import { createIntelligenceModelFetch } from "./intelligence-model-fetch";
 
@@ -60,7 +60,11 @@ export async function getIntelligenceSdkModel(
   let baseURL = provider.apiUrl.replace(/\/chat\/completions\/?$/, "");
   if (providerId === "ollama")
     baseURL = `${normalizeOllamaBaseUrl(useSettingsStore.getState().settings.ollamaBaseUrl)}/v1`;
-  if (r0) baseURL = `${getApiBase()}/api/ai`;
+  if (r0) {
+    const apiBase = getApiBase();
+    if (!apiBase) throw new Error(API_BASE_NOT_CONFIGURED_MESSAGE);
+    baseURL = `${apiBase}/api/ai`;
+  }
   if (providerId === "custom")
     baseURL = (legacyAutocomplete || resolveCustomProviderBaseUrl(settings))
       .replace(/\/chat\/completions\/?$/, "")

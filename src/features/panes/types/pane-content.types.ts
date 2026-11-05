@@ -78,6 +78,7 @@ export interface EditorContent extends PaneContentBase {
   savedContent: string;
   isDirty: boolean;
   isVirtual: boolean;
+  persistedSessionDraft?: boolean;
   isMarkdownPreview?: boolean;
   readOnly?: boolean;
   language?: string;
@@ -384,6 +385,7 @@ export type OpenContentSpec =
       name: string;
       content: string;
       isVirtual?: boolean;
+      persistedSessionDraft?: boolean;
       isPreview?: boolean;
       readOnly?: boolean;
       language?: string;

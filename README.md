@@ -146,6 +146,26 @@ bun dev
 `bun setup` installs the project dependencies and checks your platform's native requirements.
 See the [project documentation](https://r0-ide.vercel.app/docs) for platform setup and usage.
 
+### Desktop account API configuration
+
+The desktop account menu, hosted AI, and other account-backed features need a deployed r0 API.
+The website's `/auth` page and the current static Vercel deployment are not that API. Until the
+API has the desktop session, account, and hosted-AI endpoints, leave `VITE_API_URL` unset; the
+desktop will show an explicit configuration warning rather than send account requests to the
+portfolio or website.
+
+After deploying the API:
+
+- For local builds, add `VITE_API_URL=https://<your-api-domain>` to the ignored `.env.local` file
+  at the repository root, then restart the dev server or rebuild the desktop app.
+- For GitHub Actions release, Linux, and test builds, add a repository **Actions variable**
+  named `VITE_API_URL` in **Settings → Secrets and variables → Actions → Variables**. Use a
+  variable, not a secret: this public API base URL is embedded in the app. Do not put tokens,
+  Supabase service-role keys, or other credentials in it.
+
+Do not set this to `https://r0-ide.vercel.app` unless the desktop API endpoints are actually
+implemented and deployed there. A URL setting alone cannot create the API or complete sign-in.
+
 ## Contributing
 
 Contributions and bug reports are welcome. Please open an

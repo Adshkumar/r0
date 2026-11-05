@@ -247,6 +247,7 @@ interface BufferActions {
   markBufferDirty: (bufferId: string, isDirty: boolean) => void;
   updateImageDraft: (bufferId: string, draft: ImageDraftState) => void;
   markBufferSaved: (bufferId: string, content: string, path?: string) => void;
+  persistEditorSessionDraft: (bufferId: string) => boolean;
   updateBufferPath: (bufferId: string, newPath: string) => void;
   updateBuffer: (updatedBuffer: PaneContent) => void;
   updateBrowserBuffer: (
@@ -1377,6 +1378,7 @@ const createBufferStore = (workspaceId: string) => {
                 isRedoing: false,
                 fullContent: content,
               });
+              if (buffer.type === "editor" && buffer.persistedSessionDraft) saveWorkspaceSession();
             }
           },
 
@@ -1466,6 +1468,7 @@ const createBufferStore = (workspaceId: string) => {
               bufferId,
               filePath: buffer.path,
             });
+            if (buffer.persistedSessionDraft) saveWorkspaceSession();
             return { accepted: true, synchronized: true, contentRevision };
           },
 
@@ -1528,6 +1531,7 @@ const createBufferStore = (workspaceId: string) => {
               bufferId,
               filePath: buffer.path,
             });
+            if (buffer.persistedSessionDraft) saveWorkspaceSession();
             return { accepted: true, synchronized: true, contentRevision };
           },
 
@@ -1570,6 +1574,7 @@ const createBufferStore = (workspaceId: string) => {
             const original = getBufferById(get().buffers, bufferId);
             if (!original || !isEditorContent(original)) return;
             const isDirty = readBufferText(original) !== content;
+            const pathChanged = path !== undefined && path !== original.path;
             if (!isDirty) {
               savedContentTracker.markSaved(bufferId, content);
               rememberSavedText(bufferId, content);
@@ -1586,6 +1591,18 @@ const createBufferStore = (workspaceId: string) => {
                 buffer.language = detectLanguageFromFileName(buffer.name);
               }
             });
+            if (pathChanged) saveWorkspaceSession();
+          },
+
+          persistEditorSessionDraft: (bufferId: string) => {
+            const original = getBufferById(get().buffers, bufferId);
+            if (!original || !isEditorContent(original)) return false;
+            set((state) => {
+              const buffer = state.buffers.find((item) => item.id === bufferId);
+              if (buffer && isEditorContent(buffer)) buffer.persistedSessionDraft = true;
+            });
+            saveWorkspaceSession();
+            return true;
           },
 
           updateBufferPath: (bufferId: string, newPath: string) => {

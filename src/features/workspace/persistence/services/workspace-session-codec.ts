@@ -85,6 +85,19 @@ export function encodeWorkspaceBuffer(
   }: EncodeWorkspaceBufferOptions,
 ): BufferSession | null {
   const isPinned = pinnedBufferIds?.has(buffer.id) ?? false;
+  if (buffer.type === "editor" && buffer.persistedSessionDraft) {
+    return {
+      type: "editor",
+      ...(includeEditorId ? { id: buffer.id } : {}),
+      name: buffer.name,
+      path: buffer.path,
+      isPinned,
+      isPreview: previewBufferIds?.has(buffer.id) ?? false,
+      draftContent: buffer.content,
+      editorState: buildPersistedEditorViewState(buffer),
+    };
+  }
+
   if (buffer.type === "editor" && !buffer.isVirtual) {
     return {
       type: "editor",

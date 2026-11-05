@@ -19,6 +19,7 @@ export interface ContextInfo {
   editorSelections?: EditorSelectionContext[];
   projectRoot?: string;
   teamInstructions?: string;
+  taskInstructions?: string;
   /** AGENTS.md, CLAUDE.md, rule folders and user rules loaded for the built-in agent. */
   projectRules?: LoadedProjectRules;
   language?: string;

@@ -1,7 +1,10 @@
 import type { OpenContentSpec } from "@/features/panes/types/pane-content.types";
 import type { BufferSession } from "@/features/workspace/types/workspace-session.types";
 
-type RestoredVirtualContentSpec = Extract<OpenContentSpec, { type: "terminal" | "browser" }>;
+type RestoredVirtualContentSpec = Extract<
+  OpenContentSpec,
+  { type: "editor" | "terminal" | "browser" }
+>;
 
 interface WorkspaceSessionBufferRestoreContext {
   openContent: (spec: RestoredVirtualContentSpec) => string;
@@ -37,9 +40,21 @@ export async function restoreWorkspaceSessionBuffer(
       path: buffer.path,
     });
   } else if (buffer.type === "editor") {
-    await context.openFile(buffer.path, buffer.isPreview);
-    context.restoreEditorState(buffer);
-    restoredBufferId = context.findBufferIdByPath(buffer.path);
+    if (buffer.draftContent !== undefined) {
+      restoredBufferId = context.openContent({
+        type: "editor",
+        path: buffer.path,
+        name: buffer.name,
+        content: buffer.draftContent,
+        isVirtual: true,
+        persistedSessionDraft: true,
+      });
+      context.restoreEditorState(buffer);
+    } else {
+      await context.openFile(buffer.path, buffer.isPreview);
+      context.restoreEditorState(buffer);
+      restoredBufferId = context.findBufferIdByPath(buffer.path);
+    }
   }
 
   if (buffer.isPinned && restoredBufferId) {

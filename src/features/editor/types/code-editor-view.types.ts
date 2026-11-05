@@ -32,6 +32,8 @@ export interface CodeEditorViewProps {
   isActiveSurface?: boolean;
   isPreviewMode?: boolean;
   readOnly?: boolean;
+  shrinkToFit?: boolean;
+  wordWrap?: boolean;
   scrollable?: boolean;
   backgroundLayer?: ReactNode;
   onReadonlySurfaceClick?: (position: { line: number; column: number }) => void;

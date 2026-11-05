@@ -1,6 +1,6 @@
 import { useIntelligenceSettingsStore } from "@/features/ai/intelligence/stores/intelligence-settings.store";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
-import { getApiBase } from "@/utils/api-base";
+import { getApiBase, API_BASE_NOT_CONFIGURED_MESSAGE } from "@/utils/api-base";
 import { getAuthToken } from "@/features/auth/services/auth-api";
 import { tauriFetch } from "@/utils/tauri-fetch";
 import {
@@ -63,10 +63,14 @@ export class R0Provider extends AIProvider {
   }
 
   buildUrl(): string {
-    return `${getApiBase()}/api/ai/chat`;
+    const apiBase = getApiBase();
+    if (!apiBase) throw new Error(API_BASE_NOT_CONFIGURED_MESSAGE);
+    return `${apiBase}/api/ai/chat`;
   }
 
   override async getModels(): Promise<ProviderModel[]> {
+    const apiBase = getApiBase();
+    if (!apiBase) throw new Error(API_BASE_NOT_CONFIGURED_MESSAGE);
     let response: Response;
     try {
       response = await tauriFetch(this.buildUrl(), {
@@ -75,7 +79,7 @@ export class R0Provider extends AIProvider {
       });
     } catch (error) {
       // The HTTP plugin rejects with a bare string, which the menu would reduce to a generic line.
-      const host = new URL(getApiBase()).host;
+      const host = new URL(apiBase).host;
       throw new Error(
         error instanceof DOMException && error.name === "TimeoutError"
           ? `r0 at ${host} took too long to answer.`

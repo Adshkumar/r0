@@ -76,6 +76,7 @@ export interface AIChatState {
   messagesByChat: Record<string, Message[]>;
   currentChatId: string | null;
   selectedAgentId: AgentType;
+  lastSelectedAgentId: AgentType;
   pendingAgentLaunchRequest: PendingAgentLaunchRequest | null;
   agentRuns: Record<string, AgentRunState>;
   agentMessageQueues: Record<string, QueuedAgentMessage[]>;
@@ -132,7 +133,12 @@ export interface AIChatActions {
   removeQueuedAgentMessage: (chatId: string, index: number) => void;
   createNewChat: (
     agentId?: AgentType,
-    options?: { activate?: boolean; reuseEmpty?: boolean; workspacePath?: string | null },
+    options?: {
+      activate?: boolean;
+      reuseEmpty?: boolean;
+      rememberAgent?: boolean;
+      workspacePath?: string | null;
+    },
   ) => string;
   ensureChatSession: (
     chatId: string,

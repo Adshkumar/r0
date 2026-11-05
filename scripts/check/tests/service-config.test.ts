@@ -2,15 +2,16 @@ import { describe, expect, it } from "vitest";
 import { getServiceConfigErrors, type Services } from "../service-config";
 
 const services: Services = {
-  websiteBaseUrl: "https://adshkumar.is-a.dev",
-  stableUpdateUrl: "https://adshkumar.is-a.dev/api/releases/stable",
+  websiteBaseUrl: "https://r0-ide.vercel.app",
+  apiBaseUrl: "",
+  stableUpdateUrl: "https://api.example.test/releases/stable",
 };
 
 function validInput() {
   return {
     services,
     stable: {
-      app: { security: { csp: "default-src 'self' https://adshkumar.is-a.dev" } },
+      app: { security: { csp: "default-src 'self' https://r0-ide.vercel.app" } },
       plugins: { updater: { endpoints: [services.stableUpdateUrl] } },
     },
     capability: {

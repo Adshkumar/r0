@@ -20,6 +20,7 @@ import ProjectPicker from "@/features/workspace/project-picker/components/projec
 import { useWorkspaceTabsStore } from "@/features/workspace/stores/workspace-tabs.store";
 import { ControlSizeProvider } from "@/ui/control-size";
 import {
+  ChatBubbleTextIcon,
   ChevronLeftIcon,
   InboxIcon,
   PencilLineIcon,
@@ -28,6 +29,7 @@ import {
   SlidersIcon,
   TerminalWindowIcon,
 } from "@/ui/icons";
+import { showProjectTool } from "@/features/layout/services/project-tools";
 import Keybinding from "@/ui/keybinding";
 import { OverlaySideProvider } from "@/ui/overlay-side";
 import { SidebarIconButton, SidebarListItem, SidebarPanel, SidebarScrollArea } from "@/ui/sidebar";
@@ -90,6 +92,12 @@ function SidebarTop() {
       </SidebarListItem>
       {aiEnabled ? (
         <>
+          <SidebarListItem
+            leading={<ChatBubbleTextIcon />}
+            onClick={() => showProjectTool("ai-chat")}
+          >
+            AI Chat
+          </SidebarListItem>
           <SidebarListItem
             leading={<PencilLineIcon />}
             onClick={() => void startAgentInProject(activeProjectId)}

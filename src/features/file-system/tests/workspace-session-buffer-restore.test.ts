@@ -101,6 +101,30 @@ describe("workspace session buffer restore", () => {
     );
   });
 
+  it("restores a kept Mermaid draft without opening or saving a file", async () => {
+    const context = createContext();
+    const buffer: BufferSession = {
+      type: "editor",
+      path: "untitled:Untitled Diagram.mmd",
+      name: "Untitled Diagram.mmd",
+      isPinned: false,
+      draftContent: "flowchart TD\n  A --> B",
+    };
+
+    await expect(restoreWorkspaceSessionBuffer(buffer, context)).resolves.toBe("virtual-buffer");
+
+    expect(context.openContent).toHaveBeenCalledWith({
+      type: "editor",
+      path: buffer.path,
+      name: buffer.name,
+      content: buffer.draftContent,
+      isVirtual: true,
+      persistedSessionDraft: true,
+    });
+    expect(context.restoreEditorState).toHaveBeenCalledWith(buffer);
+    expect(context.openFile).not.toHaveBeenCalled();
+  });
+
   it("does not pin an editor that failed to produce a buffer", async () => {
     const context = createContext();
     context.findBufferIdByPath.mockReturnValue(null);

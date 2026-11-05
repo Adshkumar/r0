@@ -29,8 +29,10 @@ vi.mock("@/features/settings/stores/settings.store", () => {
   return { useSettingsStore: (selector: (value: typeof state) => unknown) => selector(state) };
 });
 vi.mock("@/features/auth/stores/auth.store", () => {
-  const state = { isAuthenticated: false, subscription: null };
-  return { useAuthStore: (selector: (value: typeof state) => unknown) => selector(state) };
+  return {
+    useAuthStore: (selector: (value: typeof authState.state) => unknown) =>
+      selector(authState.state),
+  };
 });
 vi.mock("@/features/ai/intelligence/services/intelligence-text-service", () => ({
   requestInlineEdit: vi.fn(),
@@ -41,6 +43,21 @@ const picker = vi.hoisted(() => ({
     value: { providerId: string; modelId: string } | null;
     onChange: (connection: { providerId: string; modelId: string } | null) => void;
   },
+}));
+const desktopSignIn = vi.hoisted(() => ({
+  signIn: vi.fn(() => Promise.resolve()),
+  isSigningIn: false,
+  cancel: vi.fn(),
+  reopen: vi.fn(),
+}));
+const authState = vi.hoisted(() => ({
+  state: {
+    isAuthenticated: false,
+    subscription: null as { status: "pro"; capabilities: { intelligence: true } } | null,
+  },
+}));
+vi.mock("@/features/auth/hooks/use-desktop-sign-in", () => ({
+  useDesktopSignIn: () => desktopSignIn,
 }));
 vi.mock("@/features/ai/components/selectors/model-connection-picker", () => ({
   ModelConnectionPicker: (props: NonNullable<typeof picker.props>) => {
@@ -121,6 +138,8 @@ const escape = () => press({ key: "Escape" });
 beforeEach(async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
+  authState.state.isAuthenticated = false;
+  authState.state.subscription = null;
   vi.stubGlobal(
     "requestAnimationFrame",
     vi.fn(() => 0),
@@ -353,6 +372,23 @@ describe("Inline edit request ownership", () => {
 });
 
 describe("Inline edit model", () => {
+  it("offers the existing desktop sign-in flow when hosted inline edit needs an account", async () => {
+    authState.state.subscription = { status: "pro", capabilities: { intelligence: true } };
+    await act(async () => picker.props?.onChange({ providerId: "r0", modelId: "auto" }));
+    await type("make this clearer");
+    await press();
+
+    expect(document.body.textContent).toContain("Sign in to use r0 AI.");
+    const signInButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim() === "Sign in",
+    );
+    expect(signInButton).toBeDefined();
+    await act(async () => signInButton?.click());
+    expect(desktopSignIn.signIn).toHaveBeenCalledOnce();
+
+    await act(async () => picker.props?.onChange(null));
+  });
+
   it("shows the connection it runs on and saves a new choice for inline edit only", async () => {
     expect(picker.props?.value).toEqual({ providerId: "openai", modelId: "test-model" });
     await act(async () => picker.props?.onChange({ providerId: "r0", modelId: "auto" }));

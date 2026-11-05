@@ -9,7 +9,7 @@ import { useSettingsStore } from "@/features/settings/stores/settings.store";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useIntelligenceSettingsStore } from "../stores/intelligence-settings.store";
 import { getAuthToken } from "@/features/auth/services/auth-api";
-import { getApiBase } from "@/utils/api-base";
+import { API_BASE_NOT_CONFIGURED_MESSAGE, getApiBase } from "@/utils/api-base";
 import { processStreamingResponse } from "@/utils/stream-utils";
 import {
   getIntelligenceConnection,
@@ -163,6 +163,9 @@ async function sendInlineEditRequest(
   }
   if (!token) {
     throw new InlineEditError("Sign in to use r0 AI.", 401, { hosted: true });
+  }
+  if (!API_BASE) {
+    throw new InlineEditError(API_BASE_NOT_CONFIGURED_MESSAGE, 503, { hosted: true });
   }
 
   const autocomplete = request.feature === "autocomplete";

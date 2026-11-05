@@ -29,7 +29,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:3000 http://127.0.0.1:3000 https://adshkumar.is-a.dev https://*.adshkumar.is-a.dev wss://*.adshkumar.is-a.dev ws://localhost:8787 ws://127.0.0.1:8787 https://api.github.com https://api.anthropic.com https://api.openai.com https://api.mistral.ai https://openrouter.ai https://generativelanguage.googleapis.com https://*.githubusercontent.com; img-src 'self' asset: http://asset.localhost https: data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src 'self' blob:; object-src 'none'",
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://localhost:3000 http://127.0.0.1:3000 https://r0-ide.vercel.app https://adshkumar.is-a.dev https://*.adshkumar.is-a.dev wss://*.adshkumar.is-a.dev ws://localhost:8787 ws://127.0.0.1:8787 https://api.github.com https://api.anthropic.com https://api.openai.com https://api.mistral.ai https://openrouter.ai https://generativelanguage.googleapis.com https://*.githubusercontent.com; img-src 'self' asset: http://asset.localhost https: data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src 'self' blob:; object-src 'none'",
       "dangerousDisableAssetCspModification": ["style-src"],
       "capabilities": ["main-capability"],
       "assetProtocol": {
@@ -42,7 +42,7 @@
   "bundle": {
     "active": true,
     "publisher": "Adarsh Kumar",
-    "homepage": "https://adshkumar.is-a.dev/",
+    "homepage": "https://r0-ide.vercel.app/",
     "category": "DeveloperTool",
     "shortDescription": "A lightweight code editor with Git, terminal and AI agents",
     "longDescription": "r0 is a code editor with Git, an integrated terminal, a database viewer and AI coding agents.",

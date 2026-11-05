@@ -16,11 +16,13 @@ import {
   XIcon,
   DotsIcon,
   FileIcon,
+  TrashIcon,
 } from "@/ui/icons";
 import { type ReactNode, useEffect, useRef } from "react";
 import { PaneActions, PaneHeader, PaneTitle } from "@/ui/pane";
 import { Button } from "@/ui/button";
 import Input from "@/ui/input";
+import type { ChatSession } from "@/features/ai/types/ai-chat.types";
 import { useAIChatStore } from "../../stores/ai-chat.store";
 import {
   isAgentWindow,
@@ -32,6 +34,9 @@ interface ChatHeaderProps {
   chatId?: string | null;
   /** Session controls from the host, such as its tools. */
   sessionActions?: ReactNode;
+  conversationHistory?: ChatSession[];
+  onSelectConversation?: (chatId: string) => void;
+  onDeleteConversation?: (chatId: string) => void;
   isMessageSearchOpen: boolean;
   messageSearchQuery: string;
   onToggleMessageSearch: () => void;
@@ -46,6 +51,9 @@ interface ChatHeaderProps {
 export function ChatHeader({
   chatId,
   sessionActions,
+  conversationHistory,
+  onSelectConversation,
+  onDeleteConversation,
   isMessageSearchOpen,
   messageSearchQuery,
   onToggleMessageSearch,
@@ -152,7 +160,71 @@ export function ChatHeader({
         </PaneHeader>
       ) : (
         <PaneHeader>
-          <PaneTitle>{currentChatTitle || "Agent"}</PaneTitle>
+          {conversationHistory && onSelectConversation ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label="Conversation history"
+                    title="Switch conversation"
+                    className="flex min-w-0 flex-1 items-center gap-chrome-loose rounded-md px-1 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-focus"
+                  />
+                }
+              >
+                <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                  {currentChatTitle || "Agent"}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" size="wide" viewport="list">
+                <div className="px-2 py-1 font-sans font-medium text-subtle-foreground ui-text-caption">
+                  Mermaid conversations
+                </div>
+                {conversationHistory.length > 0 ? (
+                  conversationHistory.map((chat) => (
+                    <div key={chat.id} className="flex items-center">
+                      <DropdownMenuItem
+                        className="min-w-0 flex-1"
+                        onClick={() => onSelectConversation(chat.id)}
+                      >
+                        <span className="min-w-0 truncate">{chat.title}</span>
+                      </DropdownMenuItem>
+                      {onDeleteConversation ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                iconOnly
+                                aria-label={`More actions for ${chat.title}`}
+                                tooltip="More actions"
+                              />
+                            }
+                          >
+                            <DotsIcon />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => onDeleteConversation(chat.id)}
+                            >
+                              <TrashIcon />
+                              Delete conversation
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>No previous conversations</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <PaneTitle>{currentChatTitle || "Agent"}</PaneTitle>
+          )}
           <PaneActions>
             <Button
               type="button"
@@ -206,6 +278,15 @@ export function ChatHeader({
                     {standalone ? "Return agent to main window" : "Open agent in new window"}
                   </DropdownMenuItem>
                 )}
+                {effectiveChatId && onDeleteConversation ? (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => onDeleteConversation(effectiveChatId)}
+                  >
+                    <TrashIcon />
+                    Delete conversation
+                  </DropdownMenuItem>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </PaneActions>
