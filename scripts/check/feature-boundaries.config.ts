@@ -61,7 +61,8 @@
  * the shared type or helper down to the lower feature, run the higher feature's action through
  * its command (`keymapRegistry.executeCommand`), notify through `src/utils/app-events.ts`, or move
  * the code that needs the higher feature into it. Only if the import is intended, list the file
- * in `publicFiles` below with its reason.
+ * in `publicFiles` below with its reason. A necessary lower-to-higher integration can be listed
+ * in `allowedUpwardImports` with its exact importer, target, and reason.
  *
  * After removing violations, shrink the baseline with:
  *
@@ -90,6 +91,8 @@ export type FeatureBoundaryConfig = {
    * `dir/**` (whole subtree). Every entry must match an existing file.
    */
   publicFiles: Record<string, Record<string, string>>;
+  /** Exact lower-to-higher imports that are intentional feature integrations, each with a reason. */
+  allowedUpwardImports: Record<string, string>;
   layers: FeatureLayers;
 };
 
@@ -146,6 +149,12 @@ export const featureBoundaries: FeatureBoundaryConfig = {
   storeFilePattern: /(\.store|\.types|-selectors)\.tsx?$/,
   publicFiles: {
     ai: {
+      "components/chat/ai-chat.tsx":
+        "Mermaid's integrated assistant renders the shared AI chat surface.",
+      "integrations/codex/codex-integration-service.ts":
+        "Mermaid requests use the shared Codex integration for agent-backed generation.",
+      "integrations/integration-registry.ts":
+        "Mermaid requests resolve the explicitly selected AI agent from the shared registry.",
       "components/history/agent-sessions-dialog.tsx": APP_SHELL,
       "continuous-agents/continuous-agents-runtime.tsx": APP_SHELL,
       "detached/detached-agent-window.tsx": APP_SHELL,
@@ -339,6 +348,16 @@ export const featureBoundaries: FeatureBoundaryConfig = {
       "project-icons/components/project-glyph.tsx":
         "Project icon or folder glyph the workbench sidebar and session details show.",
     },
+  },
+  allowedUpwardImports: {
+    "src/features/diagrams/components/diagram-preview.tsx -> src/features/ai/components/chat/ai-chat.tsx":
+      "The Mermaid editor hosts the shared AI chat surface.",
+    "src/features/diagrams/components/diagram-preview.tsx -> src/features/ai/stores/ai-chat.store.ts":
+      "Mermaid conversations are managed by the shared AI chat store.",
+    "src/features/diagrams/components/diagram-preview.tsx -> src/features/ai/services/chat-normalization.ts":
+      "Mermaid conversation messages use the shared AI chat normalization.",
+    "src/features/diagrams/components/diagram-preview.tsx -> src/features/ai/services/agent-session-list.ts":
+      "Mermaid history uses the shared AI agent session list.",
   },
   layers: {
     order: ["foundation", "core", "features", "shell"],

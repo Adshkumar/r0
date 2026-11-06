@@ -439,6 +439,7 @@ export function findUpwardImports(
   const counts = new Map<string, number>();
   for (const edge of graph.edges) {
     if (edge.kind === "mock" || isTestFile(edge.from)) continue;
+    if (config.allowedUpwardImports[`${edge.from} -> ${edge.to}`]) continue;
     const sourceFeature = featureOf(edge.from, config);
     const targetFeature = featureOf(edge.to, config);
     if (!sourceFeature || !targetFeature || sourceFeature === targetFeature) continue;
@@ -462,6 +463,7 @@ export function listUpwardImports(
   const lines = new Set<string>();
   for (const edge of graph.edges) {
     if (edge.kind === "mock" || isTestFile(edge.from)) continue;
+    if (config.allowedUpwardImports[`${edge.from} -> ${edge.to}`]) continue;
     if (featureOf(edge.from, config) === featureOf(edge.to, config)) continue;
     const source = layerOf(edge.from, config);
     const target = layerOf(edge.to, config);
@@ -469,6 +471,38 @@ export function listUpwardImports(
     lines.add(`${source.module} -> ${target.module}: ${edge.from} -> ${edge.to}`);
   }
   return [...lines].sort();
+}
+
+/** Configured upward imports that no longer exist, are not upward, or lack a reason. */
+export function findInvalidUpwardImports(
+  graph: ImportGraph,
+  config: FeatureBoundaryConfig = featureBoundaries,
+): string[] {
+  const invalid: string[] = [];
+  for (const [edge, reason] of Object.entries(config.allowedUpwardImports)) {
+    const separator = edge.indexOf(" -> ");
+    const from = separator < 0 ? "" : edge.slice(0, separator);
+    const to = separator < 0 ? "" : edge.slice(separator + 4);
+    const exists = graph.edges.some(
+      (candidate) =>
+        candidate.from === from &&
+        candidate.to === to &&
+        candidate.kind !== "mock" &&
+        !isTestFile(candidate.from),
+    );
+    if (!exists) {
+      invalid.push(`${edge}: matches no import`);
+      if (!reason.trim()) invalid.push(`${edge}: has no reason`);
+      continue;
+    }
+    const source = layerOf(from, config);
+    const target = layerOf(to, config);
+    if (!source || !target || target.rank <= source.rank) {
+      invalid.push(`${edge}: is not an upward import`);
+    }
+    if (!reason.trim()) invalid.push(`${edge}: has no reason`);
+  }
+  return invalid;
 }
 
 /** Features with no tier or several tiers, and tier overrides that match nothing or lack a reason. */

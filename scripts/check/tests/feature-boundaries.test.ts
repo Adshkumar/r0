@@ -10,6 +10,7 @@ import {
   findInvalidLayers,
   findInvalidPublicFiles,
   findPrivateImports,
+  findInvalidUpwardImports,
   findUpwardImports,
   layerOf,
   parseImports,
@@ -57,6 +58,10 @@ describe("feature boundaries", () => {
 
   it("adds no imports from a lower feature tier into a higher one", () => {
     expect(result.newUpwardImports, HOW_TO_FIX).toEqual([]);
+  });
+
+  it("keeps intentional upward-import exceptions valid and documented", () => {
+    expect(findInvalidUpwardImports(graph)).toEqual([]);
   });
 
   it("lists only existing public files, each with a reason", () => {
@@ -283,6 +288,37 @@ describe("feature boundary analysis", () => {
       "core -> extra": 1,
       "extra -> core/commands": 1,
     });
+  });
+
+  it("excludes only documented, existing upward-import exceptions", () => {
+    const from = "src/features/base/a.ts";
+    const to = "src/features/core/b.ts";
+    const fixture: ImportGraph = {
+      files: [from, to, "src/features/core/c.ts"],
+      edges: [
+        { from, to, kind: "static" },
+        { from, to: "src/features/core/c.ts", kind: "type" },
+      ],
+    };
+    const config: FeatureBoundaryConfig = {
+      ...layered,
+      allowedUpwardImports: { [`${from} -> ${to}`]: "An intentional integration." },
+    };
+
+    expect(findUpwardImports(fixture, config)).toEqual({ "base -> core": 1 });
+    expect(findInvalidUpwardImports(fixture, config)).toEqual([]);
+    expect(
+      findInvalidUpwardImports(fixture, {
+        ...config,
+        allowedUpwardImports: { [`${from} -> ${to}`]: " " },
+      }),
+    ).toEqual([`${from} -> ${to}: has no reason`]);
+    expect(
+      findInvalidUpwardImports(fixture, {
+        ...config,
+        allowedUpwardImports: { [`${from} -> src/features/core/missing.ts`]: "Stale." },
+      }),
+    ).toEqual([`${from} -> src/features/core/missing.ts: matches no import`]);
   });
 
   it("reports features without a tier and overrides that match nothing", () => {
