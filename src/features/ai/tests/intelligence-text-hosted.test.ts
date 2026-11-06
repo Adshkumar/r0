@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock("@/utils/tauri-fetch", () => ({ tauriFetch: mocks.fetch }));
+vi.mock("@/utils/api-base", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/api-base")>()),
+  getApiBase: () => "https://api.test",
+}));
 vi.mock("@/features/auth/services/auth-api", () => ({ getAuthToken: async () => "token" }));
 vi.mock("../intelligence/services/intelligence-connection", () => ({
   getIntelligenceConnection: async () => ({
@@ -90,7 +94,7 @@ describe("Hosted Intelligence text requests", () => {
     });
     expect(result.editedText).toBe("value;\nreturn value;");
     const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/\/api\/ai\/autocomplete$/);
+    expect(url).toBe("https://api.test/api/ai/autocomplete");
     const body = JSON.parse(String(init.body));
     expect(body.beforeCursor).toHaveLength(12000);
     expect(body.afterCursor).toHaveLength(4000);

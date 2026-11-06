@@ -61,6 +61,7 @@ describe("workbench contributions", () => {
       expect(view.icon, view.id).toBeTruthy();
     }
     expect(getSidebarViews().map((view) => view.id)).toEqual([
+      "ai-chat",
       "git",
       "github-prs",
       "views",
