@@ -171,3 +171,9 @@ implemented and deployed there. A URL setting alone cannot create the API or com
 Contributions and bug reports are welcome. Please open an
 [issue](https://github.com/Adshkumar/r0/issues) or start a
 [discussion](https://github.com/Adshkumar/r0/discussions).
+
+## License
+
+r0 is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+Third-party dependencies and bundled assets remain subject to their respective licenses.
