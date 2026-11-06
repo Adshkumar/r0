@@ -7,6 +7,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/utils/tauri-fetch", () => ({ tauriFetch: mocks.fetch }));
+vi.mock("@/utils/api-base", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/api-base")>()),
+  getApiBase: () => "https://api.test",
+}));
 vi.mock("@/features/auth/services/auth-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/auth/services/auth-api")>()),
   getAuthToken: mocks.token,
@@ -265,7 +269,7 @@ describe("hosted inline edits", () => {
     expect(await requestInlineEdit({ model: "", ...select })).toEqual({ editedText: "2" });
 
     const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/\/api\/ai\/inline-edit$/);
+    expect(url).toBe("https://api.test/api/ai/inline-edit");
     expect(init.headers).toMatchObject({
       Authorization: "Bearer session",
       "X-R0-Intelligence-Scope": "personal",

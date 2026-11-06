@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), token: vi.fn() }));
 
 vi.mock("@/utils/tauri-fetch", () => ({ tauriFetch: mocks.fetch }));
+vi.mock("@/utils/api-base", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/api-base")>()),
+  getApiBase: () => "https://api.test",
+}));
 vi.mock("@/features/auth/services/auth-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/auth/services/auth-api")>()),
   getAuthToken: mocks.token,
@@ -87,7 +91,7 @@ describe("getIntelligenceConnection", () => {
       modelId: "auto",
     });
     const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/\/api\/account\/intelligence\?scope=personal$/);
+    expect(url).toBe("https://api.test/api/account/intelligence?scope=personal");
     expect(init.method).toBe("GET");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer session-token");
   });
@@ -247,7 +251,7 @@ describe("fetchIntelligenceSettings", () => {
       modelId: "gpt-5.6-sol",
     });
     const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/scope=team%3A2$/);
+    expect(url).toBe("https://api.test/api/account/intelligence?scope=team%3A2");
     expect(init.method).toBe("PUT");
     expect(JSON.parse(init.body as string)).toEqual({ scope: "team:2", revision: 7, preferences });
   });
