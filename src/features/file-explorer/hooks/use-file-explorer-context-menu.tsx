@@ -196,6 +196,14 @@ export function useFileExplorerContextMenu({
     setContextMenu({ x, y, path: filePath, isDir });
   }, []);
 
+  const handleRenameFromContextMenu = useCallback(
+    (path: string) => {
+      setContextMenu(null);
+      requestAnimationFrame(() => onRenamePath?.(path));
+    },
+    [onRenamePath],
+  );
+
   const contextMenuItems = useMemo<MenuItem[]>(() => {
     if (!contextMenu) return [];
 
@@ -449,7 +457,7 @@ export function useFileExplorerContextMenu({
           id: "rename",
           label: "Rename",
           icon: <PenIcon />,
-          onClick: () => onRenamePath?.(contextMenu.path),
+          onClick: () => handleRenameFromContextMenu(contextMenu.path),
         },
         {
           id: "reveal",
@@ -489,6 +497,7 @@ export function useFileExplorerContextMenu({
     clipboardActions,
     contextMenu,
     createEnvTemplateFile,
+    handleRenameFromContextMenu,
     onCreateNewFolderInDirectory,
     onCreateNewFileInDirectory,
     onDeleteRequested,
