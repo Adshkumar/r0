@@ -9,6 +9,13 @@ vi.mock("@/utils/tauri-fetch", () => ({ tauriFetch: harness.tauriFetch }));
 vi.mock("@/features/auth/services/auth-api", () => ({
   getAuthToken: async () => harness.authToken,
 }));
+vi.mock("@/config/services", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/config/services")>();
+  return {
+    ...actual,
+    getServiceUrls: () => ({ ...actual.getServiceUrls(), apiBaseUrl: "https://api.test" }),
+  };
+});
 vi.mock("@/features/editor/stores/buffer.store", () => ({
   useBufferStore: { use: { actions: () => ({}) } },
 }));
@@ -72,7 +79,7 @@ describe("syncGitHubTokenFromAccount", () => {
       scopes: "repo",
     });
     const [url, init] = harness.tauriFetch.mock.calls[0];
-    expect(url).toMatch(/\/api\/desktop\/github\/token$/);
+    expect(url).toBe("https://api.test/api/desktop/github/token");
     expect(init.headers).toEqual({ Authorization: "Bearer r0-token" });
     expect(commands.storeGithubToken).toHaveBeenCalledWith("gho_123");
   });
