@@ -172,8 +172,12 @@ type InlineRenameInputProps = Omit<
   width?: "full" | "content";
 };
 
-/** How long after opening a rename field a lost focus is taken back rather than submitted. */
-const RENAME_FOCUS_SETTLE_MS = 400;
+/**
+ * Some shells and file trees close a menu asynchronously after a user action, and Windows can be
+ * slower to settle focus back to the inline editor. Keep the rename field alive for longer during
+ * that transition instead of submitting the stale name too early.
+ */
+const RENAME_FOCUS_SETTLE_MS = 1000;
 
 export function InlineRenameInput({
   value,
@@ -206,6 +210,7 @@ export function InlineRenameInput({
     if (!touchedRef.current && performance.now() < settlingUntilRef.current) {
       requestAnimationFrame(() => {
         if (finishedRef.current || !inputRef.current) return;
+        if (document.activeElement === inputRef.current) return;
         inputRef.current.focus();
         inputRef.current.select();
       });
